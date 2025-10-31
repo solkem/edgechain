@@ -1,7 +1,7 @@
 
 import path from 'node:path';
 import { NetworkId, setNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
-import { QuickStarterPrivateStateId } from '@quick-starter/quick-starter-api';
+import { QuickStarterPrivateStateId } from '@edgechain/api';
 
 export interface Config {
   readonly privateStateStoreName: string;

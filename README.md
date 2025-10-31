@@ -1,440 +1,359 @@
-# 🌙 Midnight Quick Starter Template
+# EdgeChain 🌾
 
-> **Base template for blockchain projects on Midnight Network** - A complete and modern template for developing decentralized applications (dApps) with smart contracts, backend APIs, CLI tools, and user interfaces.
+**Privacy-Preserving AI for Farmers on Midnight Network**
 
-## 📋 Table of Contents
+EdgeChain is a decentralized federated learning platform that brings AI-powered agricultural predictions to farmers while protecting sensitive farm data through zero-knowledge proofs.
 
-- [🎯 Description](#-description)
-- [✨ Features](#-features)
-- [🏗️ Architecture](#️-architecture)
-- [⚙️ System Requirements](#️-system-requirements)
-- [🚀 Installation](#-installation)
-- [📖 Basic Usage](#-basic-usage)
-- [🏛️ Project Structure](#️-project-structure)
-- [🔍 Quick Development Guide](#-quick-development-guide)
-- [🐳 Docker Services](#-docker-services)
-- [🚀 Running the Application](#-running-the-application)
-- [🤝 Contributing](#-contributing)
-- [📄 License](#-license)
-- [🚀 Roadmap & Ideas for Improvement](#-roadmap-ideas-for-improvement)
+## 🎯 Vision
 
-## 🎯 Description
-
-**Midnight Quick Starter** is a complete and modern template for developing blockchain applications on the Midnight network. This template provides a solid foundation with all the necessary tools to create dApps with smart contracts, APIs, user interfaces, and CLI tools.
-
-### Use Cases
-
-- ✅ Complete dApp development on Midnight Network
-- ✅ Smart contract creation with Compact
-- ✅ Backend APIs for blockchain interaction
-- ✅ Modern user interfaces with React
-- ✅ CLI tools for development
-- ✅ Monorepo with optimized dependency management
+Traditional agriculture AI solutions require farmers to upload sensitive farm data (soil composition, yield history, financial info) to centralized servers. EdgeChain changes this: farmers train AI models locally on their own data, participate in decentralized model aggregation, and access predictions through simple SMS—all while keeping their data completely private.
 
 ## ✨ Features
 
-- **🔧 Monorepo with Turbo** - Optimized build system and dependency management
-- **📝 TypeScript** - Complete static typing across all packages
-- **⚡ React + Vite** - Modern UI with hot reload
-- **🔒 Compact Contracts** - Smart contracts with Compact language
-- **🌐 REST/WebSocket API** - Backend for blockchain interaction
-- **🖥️ CLI Tools** - Command line tools
-- **🎨 Tailwind CSS** - Modern and responsive styles
-- **📏 ESLint + Prettier** - Clean and consistent code
+- **🔐 Privacy-First** - Uses Midnight Network's zero-knowledge proofs. Sensitive farm data never leaves the farmer's device
+- **📱 SMS Predictions** - Works on any phone, no app download needed. Farmers text commands to get crop predictions instantly
+- **🤝 Decentralized Aggregation** - Multiple aggregators can submit, system picks the best one by historical accuracy 
+- **💰 Incentive System** - Farmers and honest aggregators earn rewards for participation and verification
+- **⚡ Federated Learning** - Train models locally, aggregate globally. Each farmer's data stays on-device
+- **🌐 Accessible** - Designed for smallholder farmers with limited tech literacy and connectivity
 
 ## 🏗️ Architecture
 
 ```
-midnight-quick-starter/
-├── 📦 packages/
-│   ├── 🎨 ui/          # React + Vite Frontend
-│   ├── 🔧 api/         # Backend API
-│   ├── 🖥️ cli/         # CLI Tools
-│   └── 🔒 contract/    # Compact Contracts
-├── 🔧 compact/         # Compact Compiler
-└── 📚 docs/           # Documentation
+┌─────────────────────────────────────────────────────────────┐
+│                      EdgeChain System                       │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  🌾 FARMERS                                                 │
+│  ├─ Train models locally on device                          │
+│  ├─ Submit encrypted model weights                          │
+│  ├─ Aggregation to generate global model used for inference │
+│  └─ Claim rewards via Lace wallet                          │
+│                                                             │
+│  🔗 MIDNIGHT NETWORK (Smart Contract)                       │
+│  ├─ Register aggregators (permissionless)                   │
+│  ├─ Accept submitted model weights                          │
+│  └─ Distribute rewards                                      │
+│                                                             │
+│  🔄 AGGREGATORS                                             │
+│  ├─ Download submitted weights from farmers                 │
+│  ├─ Run federated averaging locally                         │
+│  ├─ Submit aggregation results                              │
+│  └─ Earn rewards for honest participation                   │
+│                                                             │
+│  💬 SMS BOT (Inference Service)                             │
+│  ├─ Accepts farmer SMS queries (any phone)                  │
+│  ├─ Runs inference on latest model                          │
+│  ├─ Returns predictions (rainfall, yield, etc.)             │
+│  └─ Accessible to farmers without tech skills              │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-## ⚙️ System Requirements
+## 🔑 Key Concepts
 
-- **Node.js** >= 22.0.0
-- **Yarn** >= 4.9.2
-- **Git** >= 2.0.0
-- **Docker** (optional, for local testing)
+### Federated Learning
+Instead of centralizing data, models are trained locally on each farmer's device. Only model updates are submitted to aggregators, not raw farm data.
 
-### Requirements Verification
+### Zero-Knowledge Proofs
+Farmers can prove they own data and participated honestly without revealing the data itself. Aggregators can verify proofs without seeing the actual data.
 
-```bash
-node --version  # >= 22.0.0
-yarn --version  # >= 4.9.2
-git --version   # >= 2.0.0
-```
+### Decentralized Aggregation
+- Multiple aggregators can register (no permission needed)
+- Each submits their version of the aggregated model
+- Honest participants are rewarded
 
-## 🚀 Installation
+### SMS Interface
+Predictions available via simple text messages. Farmers don't need smartphones or internet—works on basic phones with SMS.
 
-### 1. Clone the Template
+## 🚀 Getting Started
 
-```bash
-# Option 1: Use "Use this template" button on GitHub
-# Click "Use this template" → "Create a new repository"
+### Prerequisites
 
-# Option 2: Fork the repository
-# Click "Fork" → Clone your forked repository
-git clone <your-forked-repository-url>
-cd midnight-quick-starter
+- Node.js >= 22.0.0
+- Yarn >= 4.9.2
+- Git >= 2.0.0
+- Lace Midnight wallet (for on-chain participation)
 
-# Option 3: Clone directly (for contributing)
-git clone <repository-url>
-cd midnight-quick-starter
-```
-
-### 2. Install Dependencies
+### Installation
 
 ```bash
+# 1. Clone repository
+git clone https://github.com/your-team/edgechain-midnight-hackathon.git
+cd edgechain-midnight-hackathon
+
+# 2. Install dependencies
 yarn install
-```
 
-### 3. Download and Prepare ZK Parameters (Required for Proofs)
-
-Before building, you need to fetch the zero-knowledge (ZK) parameters required by the proof server. This is done via a helper script that you should place in the CLI package:
-
-```bash
-# Move to the CLI package directory
+# 3. Download ZK parameters
 cd packages/cli
-
-# Download the fetch-zk-params.sh script
 curl -O https://raw.githubusercontent.com/bricktowers/midnight-proof-server/main/fetch-zk-params.sh
-# or
-wget https://raw.githubusercontent.com/bricktowers/midnight-proof-server/main/fetch-zk-params.sh
-
-# Give execution permissions
 chmod +x fetch-zk-params.sh
-
-# Run the script to download ZK parameters
 ./fetch-zk-params.sh
-```
 
-> **Note:**
-> - This script will generate a folder at `/.cache/midnight/zk-params` with all the required parameters for zero-knowledge proofs.
-> - **Why is this needed?** If you see an error like:
->   `Error in response: Proving(public parameters for k=16 not found in cache)`
->   it means the required parameters are missing.
-> - **This script is a workaround** to ensure your application works locally. The Midnight team is working on a more integrated solution for parameter management in the future.
-
-### 4. Configure Compact Compiler
-
-To Install the compiler in your teminal follow these steps:
-
-**Download compiler**
-
-This command will download and run a shell script. It will instruct you how to add the binary directory it uses to your PATH environment variable.
-
-```bash
-curl --proto '=https' --tlsv1.2 -LsSf https://github.com/midnightntwrk/compact/releases/latest/download/compact-installer.sh | sh
-```
-
-**Update compiler**
-
-Once you've done this, the compact command line tool is available to use. This tool has a number of useful subcommands that can be invoked. For instance, to update the toolchain to the latest version, you will run the command:
-
-```bash
-compact update
-```
-
-The output will look something like this (on an Apple Silicon macOS machine, for instance):
-
-```bash
-compact: aarch64-darwin -- 0.24.0 -- installed
-compact: aarch64-darwin -- 0.24.0 -- default.
-```
-
-**Check new version available**
-
-You can check if there is a new version available using the check subcommand like this:
-
-```bash
-compact check
-```
-
-If there is a new version available, you will see something like:
-
-```
-compact: aarch64-darwin -- Update Available -- 0.24.0
-compact: Latest version available: 0.24.0.
-```
-
-This is reporting that you are on version 0.24.0 and that 0.25.0 is available.
-
-**Note:**
-You will not actually see this output until there is a new version available. Instead, you will see that you are on the latest version:
-
-```bash
-compact: aarch64-darwin -- Up to date -- 0.24.0
-```
-
-**Invoking the Compiler**
-
-In addition to keeping the toolchain updated, the compact tool will also be the official supported way to invoke all the toolchain tools themselves. For the time being, the only such tool is the compiler, but we will be building out more tools in the future. The compiler can be invoked with the compile subcommand:
-
-```bash
-compact compile <contract file> <output directory>
-```
-
-You can see and learn more information, commands about the compiler here: [compact developer tools](https://docs.midnight.network/blog/compact-developer-tools)
-
-### 5. Build All Packages
-
-```bash
-# Build all packages (creates necessary folders automatically)
+# 4. Build all packages
+cd ../..
 yarn build:all
 ```
 
-> **Note:** The build process automatically creates the necessary folders (`keys` and `zkir`) that are required by the frontend. No manual folder creation is needed.
->
-> **What `yarn build:all` does:**
-> - Builds the contract package (compiles Compact contracts)
-> - Builds the API package (TypeScript compilation)
-> - Builds the CLI package (TypeScript compilation)
-> - Builds the UI package (Vite build with contract assets)
-> - Creates necessary folders for frontend compatibility
+### Quick Start
 
-## 🏛️ Project Structure
-
-### 📦 Main Packages
-
-#### `packages/ui/` - Frontend
-```
-ui/
-├── src/
-│   ├── components/     # React Components
-│   ├── hooks/         # Custom hooks
-│   ├── lib/           # Utilities
-│   ├── providers/     # Context providers
-│   └── assets/        # Static resources
-├── public/            # Public files
-└── dist/              # Production build
-```
-
-#### `packages/api/` - Backend API
-```
-api/
-├── src/
-│   ├── index.ts       # Entry point
-│   └── test/          # Tests
-└── dist/              # Compiled build
-```
-
-#### `packages/contract/` - Smart Contracts
-```
-contract/
-├── src/
-│   ├── quick-starter.compact  # Main contract
-│   ├── managed/               # Generated contracts
-│   └── index.ts              # Exports
-└── dist/                     # Compiled build
-```
-
-#### `packages/cli/` - CLI Tools
-```
-cli/
-├── src/
-│   ├── launcher/      # Network launchers
-│   ├── config.ts      # Configurations
-│   └── index.ts       # Entry point
-└── dist/              # Compiled build
-```
-
-### 🔧 Configuration
-
-- **`turbo.json`** - Monorepo configuration
-- **`package.json`** - Root dependencies and scripts
-- **`.eslintrc.js`** - Linting rules
-- **`tsconfig.json`** - TypeScript configuration
-
-## 🔍 Quick Development Guide
-
-### 🎯 Areas to Modify (Marked with TODO)
-
-To quickly find areas that need customization, search for `TODO` comments throughout the codebase:
-
-**Using your code editor's global search:**
-- **VS Code:** `Ctrl+Shift+F` (or `Cmd+Shift+F` on Mac) and search for `TODO`
-- **WebStorm/IntelliJ:** `Ctrl+Shift+F` and search for `TODO`
-- **Sublime Text:** `Ctrl+Shift+F` and search for `TODO`
-
-**Using command line:**
-```bash
-# Search for all TODO comments
-grep -r "TODO" .
-
-# Or search in specific packages
-grep -r "TODO" packages/contract/
-grep -r "TODO" packages/api/
-grep -r "TODO" packages/ui/
-grep -r "TODO" packages/cli/
-```
-
-### 📝 Key Files to Customize
-
-- **`packages/contract/src/quick-starter.compact`** - Your main smart contract
-- **`packages/contract/src/index.ts`** - Contract exports and logic
-- **`packages/api/src/index.ts`** - Backend API implementation
-- **`packages/cli/src/index.ts`** - CLI interaction logic
-- **`packages/ui/src/main.tsx`** - Main React application
-- **`packages/ui/src/components/`** - React components
-- **`packages/ui/src/hooks/`** - Custom React hooks
-- **`packages/ui/src/lib/`** - Utility functions
-- **`packages/ui/src/providers/`** - Context providers
-
-### 🚀 Development Workflow
-
-1. **Edit your contract** in `packages/contract/src/quick-starter.compact`
-2. **Build the contract** with `cd packages/contract && npx turbo run build`
-3. **Build other packages** as needed using individual build commands
-4. **Customize UI components** in `packages/ui/src/`
-5. **Implement API logic** in `packages/api/src/`
-
-## 🐳 Docker Services
-
-After building your packages, you can run the Infrastructure services using Docker:
-
-### Testnet Environment
+**For Developers:**
 
 ```bash
-cd packages/cli
-docker compose -f testnet.yml up -d
-```
+# Run development servers
+yarn dev
 
-### Standalone Environment
+# Run tests
+yarn test
 
-```bash
+# Compile Compact contracts
+cd packages/contract
+npm run compact
+
+# Build everything
+yarn build:all
+
+# Start local infrastructure
 cd packages/cli
 docker compose -f standalone.yml up -d
 ```
 
-> **Note:** The `-d` flag runs containers in detached mode (background), so you can continue using your terminal.
+## 📁 Project Structure
 
-You should see something like:
 ```
-✔ Container quick-starter-proof-server  Started
-✔ Container quick-starter-node          Started  
-✔ Container quick-starter-indexer       Started
+edgechain-midnight-hackathon/
+├── packages/
+│   ├── contract/           # Smart contracts (Compact)
+│   │   ├── src/
+│   │   │   ├── edgechain.compact    # Main contract
+│   │   │   ├── aggregation/         # Aggregation logic
+│   │   │   ├── voting/              # Voting & verification
+│   │   │   └── rewards/             # Reward distribution
+│   │   └── dist/
+│   │
+│   ├── api/                 # Backend API (TypeScript/Express)
+│   │   ├── src/
+│   │   │   ├── routes/
+│   │   │   │   ├── training.ts      # Local training endpoints
+│   │   │   │   ├── submission.ts    # Weight submission
+│   │   │   │   ├── aggregation.ts   # Aggregator endpoints
+│   │   │   │   ├── voting.ts        # Verification & voting
+│   │   │   │   └── rewards.ts       # Claim rewards
+│   │   │   ├── services/
+│   │   │   │   ├── ml.ts            # ML training logic
+│   │   │   │   ├── crypto.ts        # Encryption/ZK proofs
+│   │   │   │   └── blockchain.ts    # Midnight interaction
+│   │   │   └── index.ts
+│   │   └── dist/
+│   │
+│   ├── ui/                  # Frontend (React + Vite)
+│   │   ├── src/
+│   │   │   ├── components/
+│   │   │   │   ├── LoginScreen.tsx           # Lace wallet login
+│   │   │   │   ├── RegistrationScreen.tsx   # Farmer profile
+│   │   │   │   ├── TrainingScreen.tsx       # Model training
+│   │   │   │   ├── SubmissionScreen.tsx     # Weight submission
+│   │   │   │   ├── VerificationScreen.tsx   # Voting interface
+│   │   │   │   ├── RewardsScreen.tsx        # Claim rewards
+│   │   │   │   └── DashboardScreen.tsx      # Overview
+│   │   │   ├── hooks/
+│   │   │   │   ├── useLaceWallet.ts
+│   │   │   │   ├── useEdgeChain.ts
+│   │   │   │   └── useModel.ts
+│   │   │   ├── lib/
+│   │   │   │   ├── midnight.ts       # Midnight client setup
+│   │   │   │   ├── ml-training.ts    # TensorFlow.js integration
+│   │   │   │   └── crypto.ts         # ZK proof generation
+│   │   │   └── main.tsx
+│   │   └── dist/
+│   │
+│   └── cli/                 # CLI & SMS Bot (TypeScript/Node)
+│       ├── src/
+│       │   ├── commands/
+│       │   │   ├── train.ts          # Train command
+│       │   │   ├── submit.ts         # Submit weights
+│       │   │   ├── vote.ts           # Vote command
+│       │   │   ├── claim.ts          # Claim rewards
+│       │   │   └── predict.ts        # SMS prediction
+│       │   ├── sms/
+│       │   │   ├── handler.ts        # SMS message handler
+│       │   │   ├── inference.ts      # Model inference
+│       │   │   └── responses.ts      # SMS templates
+│       │   ├── config.ts
+│       │   └── index.ts
+│       └── dist/
+│
+├── turbo.json              # Monorepo configuration
+├── tsconfig.json           # TypeScript config
+├── package.json            # Root dependencies
+├── .eslintrc.js            # Linting rules
+├── README.md               # This file
+└── LICENSE                 # Apache 2.0
 ```
 
-## 🚀 Running the Application
+## 🔧 Development Guide
 
-### Start the UI
+### Contract Development
+
+Edit `/packages/contract/src/edgechain.compact`:
+
+```compact
+pragma language_version >= 0.16;
+import CompactStandardLibrary;
+
+// Public state
+export ledger round: Counter;
+export ledger aggregators: Map<Address, AggregatorInfo>;
+export ledger votes: Map<Address, Vote>;
+
+// Circuit for farmer submission
+export circuit submitWeights(): [] {
+  // TODO: Implement weight submission logic
+  round.increment(1);
+}
+
+// Circuit for finalization
+export circuit finalizeRound(): [] {
+  // TODO: Implement round finalization and reward distribution
+}
+```
+
+### Frontend Development
+
+Add components to `/packages/ui/src/components/`:
+
+## 📊 Data Flow
+
+### Training Round Flow
+
+```
+1. Farmer trains model locally
+   ↓
+2. Generates ZK proof of data ownership
+   ↓
+3. Submits encrypted weights to contract
+   ↓
+4. Multiple aggregators download weights
+   ↓
+5. Aggregators run federated averaging
+   ↓
+6. Aggregators submit results to contract
+   ↓
+7. Farmers & aggregators claim rewards
+```
+
+## 🎮 Usage Examples
+
+### Farmer Workflow
 
 ```bash
-cd packages/ui
-yarn start
-```
+# 1. Connect wallet and register
 
-The application will be available at `localhost:8080`
+# 2. Train model locally
 
-## 🤝 Contributing
+# 3. Submit weights
 
-### Contribution Guidelines
-
-This is a template designed to be used as a starting point for new projects. You can:
-
-1. **Use as Template** - Click "Use this template" to create a new repository
-2. **Fork** the repository for your own project
-3. **Contribute** - Any PR is welcome to improve the template
-
-If contributing:
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **Commit** your changes (`git commit -m 'feat: add amazing feature'`)
-4. **Push** to the branch (`git push origin feature/amazing-feature`)
-5. **Open** a Pull Request
-
-### Code Standards
-
-- Use **TypeScript** for all code
-- Follow configured **ESLint** and **Prettier**
-- Write **tests** for new features
-- Document **APIs** and complex functions
-
-### Commit Structure
+# 4. Claim rewards
 
 ```
-feat: new feature
-fix: bug fix
-docs: documentation
-style: code formatting
-refactor: refactoring
-test: tests
-chore: maintenance tasks
+
+### Aggregator Workflow
+
+```bash
+# 1. Register as aggregator
+
+# 2. Download farmer submissions
+
+# 3. Run federated averaging
+
+# 4. Submit result
+
+# 5. Monitor rewards
+
 ```
+
+### SMS Prediction (Farmer)
+
+```
+Farmer texts: "PREDICT maize rainfall:700"
+↓
+Bot responds: "Expected yield: 4.2 t/ha (89% confidence) 📈
+Plant on: March 15 | Cost estimate: $250"
+```
+
+## 🧪 Testing
+
+```bash
+# Run unit tests
+yarn test
+
+# Run integration tests
+yarn test:integration
+
+# Test contract compilation
+cd packages/contract
+yarn test:compact
+
+# Test SMS bot locally
+cd packages/cli
+yarn test:sms
+```
+
+## 🚢 Deployment
+
+### Local Testnet
+
+```bash
+# Start Midnight testnet
+cd packages/cli
+docker compose -f testnet.yml up -d
+
+# Deploy contract
+yarn edgechain deploy:contract
+
+# Start API & bot
+yarn edgechain start:api
+yarn edgechain start:bot
+```
+
+### Production (Midnight Mainnet)
+
+```bash
+# Build optimized bundle
+yarn build:all
+
+# Deploy to Midnight mainnet
+cd packages/contract
+yarn deploy:mainnet
+
+# Start services
+yarn start:production
+```
+
+## 📚 Resources
+
+- [Midnight Network Docs](https://docs.midnight.network/)
+- [Compact Language Guide](https://docs.midnight.network/develop/reference/compact/)
+- [Lace Wallet Integration](https://docs.midnight.network/wallet/lace/)
+- [Zero-Knowledge Proofs](https://docs.midnight.network/learn/zk-proofs/)
+- [Federated Learning Basics](https://ai.google/education/federated-learning/)
+
 
 ## 📄 License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache License 2.0. See [LICENSE](LICENSE) file for details.
 
-## 🚀 Roadmap & Ideas for Improvement
+## 🙏 Acknowledgments
 
-This template is designed to be a living project and welcomes suggestions and contributions for new features and improvements. Here are some ideas and known areas for future enhancement:
+- Built for the IOG Midnight Developer Challenge Hackathon
+- Powered by [Midnight Network](https://midnight.network/)
+- Uses [Compact](https://docs.midnight.network/develop/reference/compact/) smart contract language
+- Wallet integration with [Lace](https://www.lace.io/)
 
-- [ ] **Integrated ZK Parameter Management:**  
-  Instead of requiring a manual script, the ZK parameters could be downloaded automatically as part of the Docker image or build process.  
-  The infrastructure could check for missing parameters and fetch them on demand.
-
-- [x] **Better Developer Onboarding:**  
-  Add interactive setup scripts or a CLI wizard for first-time setup.  
-  Provide more example contracts, API endpoints, and UI components.
-
-- [x] **Automated Environment Checks:**  
-  Add pre-build checks for required tools, environment variables, and folder structure.
-
-- [ ] **Improved Error Handling:**  
-  More descriptive error messages and troubleshooting guides for common issues.
-
-- [ ] **Template Customization Tools:**  
-  Scripts to easily rename the template, update package names, and clean up example files.
-
-- [ ] **CI/CD Integration:**  
-  Add GitHub Actions or other CI pipelines for automated testing, linting, and deployment.
-
-- [ ] **Documentation Enhancements:**  
-  More diagrams, architecture overviews, and real-world usage examples.
-
-- [x] **Community Feedback:**  
-  Encourage users to open issues or discussions for feature requests and pain points.
-
-- [ ] **Unified CLI/Library for Project Management:**  
-  Create a library or CLI tool to automate all setup, configuration, and project management from a single command (e.g., midnight-quick-starter init).
-
-- [x] **Basic Hello World Contract Validation:**  
-  Add a minimal contract and test that simply sets and reads a "Hello World" message to validate that the toolchain and build are working correctly.
-
-- [ ] **Lace Beta Wallet Integration:**  
-  Add support and documentation for integrating with Lace Beta Wallet for user authentication and transaction signing in the UI.
-
-> **Have an idea?** Open an issue or pull request to help make this template even better!
 
 ---
 
-## 🆘 Support
+**Made with ❤️ (NeRudo) for smallholder farmers** 🌾
 
-If you have issues or questions:
-
-1. Check the [documentation](docs/)
-2. Search [existing issues](../../issues)
-3. Create a [new issue](../../issues/new)
-
-## 🔗 Useful Links
-
-- [Midnight Network Documentation](https://docs.midnight.network/)
-- [Compact Language Guide](https://docs.midnight.network/develop/reference/compact/)
-- [Turbo Documentation](https://turbo.build/repo/docs)
-- [React Documentation](https://react.dev/)
-- [TypeScript Documentation](https://www.typescriptlang.org/docs/)
-
----
-
-**⭐ If this template is useful to you, consider giving the repository a star!**
-
----
-
-**Made with ❤️ by the Midnight ecosystem**
+*EdgeChain: Privacy-Preserving AI, Farmer-Owned Data*

@@ -1,18 +1,18 @@
 {
-  "name": "quick-starter-ui",
+  "name": "edgechain-ui",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "start": "http-server --port 0 ./dist",
-    "build": "tsc && vite build --mode testnet && cp -r ../contract/dist/managed/quick-starter/keys ./dist/keys && cp -r ../contract/dist/managed/quick-starter/zkir ./dist/zkir",
+    "build": "tsc && vite build --mode testnet && cp -r ../contract/dist/managed/edgechain/keys ./dist/keys && cp -r ../contract/dist/managed/edgechain/zkir ./dist/zkir",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
-    "@quick-starter/quick-starter-api": "workspace:*",
-    "@quick-starter/quick-starter-contract": "workspace:*",
+    "@edgechain/api": "workspace:*",
+    "@edgechain/contract": "workspace:*",
     "@radix-ui/react-dialog": "^1.1.14",
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-progress": "^1.1.7",
