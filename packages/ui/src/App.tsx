@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+// Import the wallet hook we created
+import { useWallet } from './providers/WalletProvider';
 
 // Types
 interface Wallet {
@@ -133,12 +135,37 @@ export default function EdgeChainApp() {
 
 // Route Components
 function LoginRoute() {
-  const { wallet, setWallet, setFarmer } = useAppContext();
+  const { setWallet, setFarmer } = useAppContext();
   const navigate = useNavigate();
 
+  /**
+   * Use the real wallet from WalletProvider instead of mock
+   * This gives us:
+   * - Real Lace wallet connection
+   * - Wallet installation detection
+   * - Actual wallet address from extension
+   */
+  const walletContext = useWallet();
+  const {
+    isConnected,
+    address,
+    isLaceInstalled,
+    isConnecting,
+    error,
+    connectWallet,
+  } = walletContext;
+
+  /**
+   * When wallet connects successfully, update AppContext
+   * and navigate to registration or selection
+   */
   useEffect(() => {
-    if (wallet) {
-      const saved = localStorage.getItem(`farmer_${wallet.address}`);
+    if (isConnected && address) {
+      // Update the app's wallet state
+      setWallet({ address });
+
+      // Check if farmer profile exists
+      const saved = localStorage.getItem(`farmer_${address}`);
       if (saved) {
         const parsedFarmer = JSON.parse(saved);
         parsedFarmer.joinedAt = new Date(parsedFarmer.joinedAt);
@@ -148,15 +175,19 @@ function LoginRoute() {
         navigate('/register');
       }
     }
-  }, [wallet]);
+  }, [isConnected, address]);
 
-  const connect = () => {
-    const addr = `addr1qyxq${Math.random().toString(36).slice(2, 20)}`;
-    setWallet({ address: addr });
-    localStorage.setItem('laceAddress', addr);
-  };
-
-  return <Login onConnect={connect} />;
+  /**
+   * Pass wallet state and real connect function to Login component
+   */
+  return (
+    <Login
+      onConnect={connectWallet}
+      isConnecting={isConnecting}
+      isLaceInstalled={isLaceInstalled}
+      error={error}
+    />
+  );
 }
 
 function RegisterRoute() {
@@ -279,9 +310,28 @@ function PredictionsRoute() {
   );
 }
 
-// Screen Components (unchanged from original)
+// Screen Components
 
-function Login({ onConnect }: { onConnect: () => void }) {
+/**
+ * Login Component - Now with real Lace wallet integration!
+ *
+ * Props:
+ * - onConnect: Function to connect Lace wallet
+ * - isConnecting: Are we currently connecting?
+ * - isLaceInstalled: Is Lace extension installed?
+ * - error: Any error message to display
+ */
+function Login({
+  onConnect,
+  isConnecting = false,
+  isLaceInstalled = true,
+  error = null,
+}: {
+  onConnect: () => void;
+  isConnecting?: boolean;
+  isLaceInstalled?: boolean;
+  error?: string | null;
+}) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
@@ -293,10 +343,53 @@ function Login({ onConnect }: { onConnect: () => void }) {
           <p className="text-purple-200 text-lg">Federated Learning for Farmers</p>
           <p className="text-purple-300 text-sm mt-2">Powered by Midnight ZK-Proofs</p>
         </div>
+
         <div className="bg-slate-800/60 backdrop-blur-md border border-purple-500/30 rounded-2xl p-8">
-          <button onClick={onConnect} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-4 px-6 rounded-xl mb-8 transition-all">
-            Connect Lace Wallet
-          </button>
+          {/* Show error message if connection failed */}
+          {error && (
+            <div className="mb-4 p-4 bg-red-900/50 border border-red-500/50 rounded-lg">
+              <p className="text-red-200 text-sm">⚠️ {error}</p>
+            </div>
+          )}
+
+          {/* Show "Install Lace" button if not installed */}
+          {!isLaceInstalled ? (
+            <div className="mb-6">
+              <div className="mb-4 p-4 bg-yellow-900/50 border border-yellow-500/50 rounded-lg">
+                <p className="text-yellow-200 text-sm mb-2">
+                  ⚠️ Lace wallet is not installed
+                </p>
+                <p className="text-yellow-100 text-xs">
+                  You need the Lace browser extension to use EdgeChain.
+                </p>
+              </div>
+              <a
+                href="https://www.lace.io/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white font-semibold py-4 px-6 rounded-xl text-center transition-all"
+              >
+                Install Lace Wallet →
+              </a>
+            </div>
+          ) : (
+            /* Show connect button if Lace is installed */
+            <button
+              onClick={onConnect}
+              disabled={isConnecting}
+              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-4 px-6 rounded-xl mb-8 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isConnecting ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="animate-spin">⏳</span>
+                  Connecting...
+                </span>
+              ) : (
+                'Connect Lace Wallet'
+              )}
+            </button>
+          )}
+
           <div className="border-t border-slate-700 pt-6">
             <h3 className="text-white font-semibold mb-4">What is EdgeChain?</h3>
             <ul className="space-y-3 text-sm text-slate-300">
