@@ -1,5 +1,5 @@
 /**
- * midnight.d.ts (formerly lace.d.ts)
+ * lace.d.ts
  *
  * TypeScript type definitions for the Lace Midnight Preview browser extension.
  *
@@ -9,7 +9,8 @@
  * - Purpose: Developer tool for privacy-preserving DApps with zero-knowledge proofs
  * - Network: Midnight devnet only (not Cardano mainnet/testnet)
  *
- * Lace Midnight Preview injects a global `cardano.midnight` object into the browser window.
+ * Lace Midnight Preview injects a global `cardano.lace` object into the browser window
+ * (same API path as regular Lace, but connects to Midnight devnet instead of Cardano).
  * This file tells TypeScript what that object looks like, so we get:
  * - Autocomplete in our IDE
  * - Type checking
@@ -18,7 +19,7 @@
 
 /**
  * Extend the browser's Window interface
- * This adds the `cardano.midnight` property that Lace Midnight Preview injects
+ * This adds the `cardano.lace` property that Lace Midnight Preview injects
  */
 interface Window {
   cardano?: {
@@ -26,10 +27,10 @@ interface Window {
      * The Lace Midnight Preview wallet API
      * This is injected by the Lace Midnight Preview browser extension
      *
-     * Unlike regular Lace (window.cardano.lace), this extension connects to
+     * IMPORTANT: Uses window.cardano.lace (same as regular Lace) but connects to
      * the Midnight blockchain devnet with privacy features and ZK-proofs.
      */
-    midnight?: {
+    lace?: {
       /**
        * Request permission to connect to the Midnight Preview wallet
        * Returns true if user approves, false if they decline
@@ -223,21 +224,22 @@ export class MidnightWalletUserRejectedError extends MidnightWalletConnectionErr
  * How to use these types:
  *
  * 1. Access Lace Midnight Preview wallet:
- *    const midnight = window.cardano?.midnight;
+ *    const lace = window.cardano?.lace;
  *
  * 2. Connect to Midnight devnet:
- *    const enabled = await midnight?.enable();
+ *    const enabled = await lace?.enable();
  *
  * 3. Get Midnight address:
- *    const addresses: MidnightAddress[] = await midnight?.getUsedAddresses();
+ *    const addresses: MidnightAddress[] = await lace?.getUsedAddresses();
  *
  * 4. Get tDUST balance (test tokens):
- *    const balance = await midnight?.getBalance();
+ *    const balance = await lace?.getBalance();
  *
  * TypeScript will now autocomplete these methods and check types!
  *
  * IMPORTANT REMINDERS:
- * - Use window.cardano.midnight, NOT window.cardano.lace
+ * - Use window.cardano.lace (same API as regular Lace)
+ * - Lace Midnight Preview uses this same API path
  * - This is for Midnight devnet only, not Cardano mainnet/testnet
  * - Uses tDUST tokens (test tokens), not ADA
  * - Supports privacy features and zero-knowledge proofs

@@ -17,7 +17,7 @@
  * - Provide wallet functions to child components via Context API
  */
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 
 /**
  * TypeScript interfaces for type safety
@@ -97,8 +97,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
    * Check if Lace Midnight Preview extension is installed
    *
    * Lace Midnight Preview injects a global object into the browser window.
-   * Unlike regular Lace (window.cardano.lace), Midnight Preview uses:
-   * window.cardano.midnight (or similar - check Midnight docs for exact API)
+   * We check multiple possible injection points since different versions
+   * of the extension may use different paths.
    *
    * This specialized extension is ONLY for Midnight devnet, not Cardano.
    */
@@ -106,13 +106,16 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     // Check if we're in a browser (not server-side rendering)
     if (typeof window === 'undefined') return false;
 
-    // Check if Cardano object exists and has Midnight Preview
-    // @ts-ignore - cardano.midnight is injected by Lace Midnight Preview extension
-    // Note: The exact API path might be window.cardano.midnight or window.midnight
-    // Adjust based on actual Midnight Preview documentation
-    const hasMidnightPreview = window.cardano?.midnight !== undefined;
+    // Check multiple possible injection points for Midnight Preview
+    // @ts-ignore
+    const hasCardanoLace = window.cardano?.lace !== undefined;
+    // @ts-ignore
+    const hasMidnightDirect = window.midnight !== undefined;
+    // @ts-ignore
+    const hasCardanoMidnight = window.cardano?.midnight !== undefined;
 
-    return hasMidnightPreview;
+    // Return true if ANY of these exist
+    return hasCardanoLace || hasMidnightDirect || hasCardanoMidnight;
   };
 
   /**
@@ -148,13 +151,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         );
       }
 
-      // Step 2: Get Midnight Preview API
-      // @ts-ignore - cardano.midnight is injected by Lace Midnight Preview extension
-      const midnight = window.cardano.midnight;
+      // Step 2: Get Lace Midnight Preview API
+      // @ts-ignore - cardano.lace is injected by Lace Midnight Preview extension
+      const lace = window.cardano.lace;
 
       // Step 3: Request permission to connect
       // This will show a popup in Lace Midnight Preview asking user to approve
-      const isEnabled = await midnight.enable();
+      const isEnabled = await lace.enable();
 
       if (!isEnabled) {
         throw new Error('User denied wallet connection');
@@ -165,9 +168,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const network = 'devnet';
 
       // Get Midnight wallet addresses
-      // Note: API might differ from standard Lace - adjust based on Midnight docs
-      const usedAddresses = await midnight.getUsedAddresses();
-      const unusedAddresses = await midnight.getUnusedAddresses();
+      // Note: Lace Midnight Preview uses same API as regular Lace
+      const usedAddresses = await lace.getUsedAddresses();
+      const unusedAddresses = await lace.getUnusedAddresses();
 
       // Use the first available address
       const addresses = [...usedAddresses, ...unusedAddresses];
@@ -229,20 +232,40 @@ export function WalletProvider({ children }: { children: ReactNode }) {
    * This runs once when the component loads.
    * It checks if Lace Midnight Preview is installed and tries to auto-reconnect
    * if the user was previously connected.
+   *
+   * IMPORTANT: Wallet extensions load asynchronously, so we need to wait for them!
    */
   useEffect(() => {
-    // Check if Lace Midnight Preview is installed
-    const isInstalled = checkMidnightPreviewInstalled();
-    setWalletState(prev => ({ ...prev, isMidnightPreviewInstalled: isInstalled }));
+    // Function to check for wallet with retries
+    const checkWalletWithRetry = (retries = 10, delay = 100) => {
+      const check = (attemptsLeft: number) => {
+        const isInstalled = checkMidnightPreviewInstalled();
 
-    // Try to auto-reconnect if previously connected
-    const savedAddress = localStorage.getItem('midnightAddress');
-    const savedNetwork = localStorage.getItem('midnightNetwork') as 'devnet' | null;
+        if (isInstalled) {
+          // Wallet found! Update state
+          setWalletState(prev => ({ ...prev, isMidnightPreviewInstalled: true }));
 
-    if (savedAddress && savedNetwork && isInstalled) {
-      // Auto-connect (silently try to restore connection)
-      connectWallet().catch(console.error);
-    }
+          // Try to auto-reconnect if previously connected
+          const savedAddress = localStorage.getItem('midnightAddress');
+          const savedNetwork = localStorage.getItem('midnightNetwork') as 'devnet' | null;
+
+          if (savedAddress && savedNetwork) {
+            connectWallet().catch(console.error);
+          }
+        } else if (attemptsLeft > 0) {
+          // Not found yet, try again after delay
+          setTimeout(() => check(attemptsLeft - 1), delay);
+        } else {
+          // All retries exhausted - wallet not detected
+          setWalletState(prev => ({ ...prev, isMidnightPreviewInstalled: false }));
+        }
+      };
+
+      check(retries);
+    };
+
+    // Start checking with retries
+    checkWalletWithRetry();
   }, []);
 
   /**
@@ -255,8 +278,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     if (!checkMidnightPreviewInstalled()) return;
 
     // @ts-ignore
-    const midnight = window.cardano?.midnight;
-    if (!midnight) return;
+    const lace = window.cardano?.lace;
+    if (!lace) return;
 
     // Listen for account changes
     const handleAccountChange = (accounts: string[]) => {
@@ -271,16 +294,16 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    // Set up listener (if Midnight Preview supports it)
-    // Note: Check Midnight Preview docs for exact event name and API
-    if (midnight.on) {
-      midnight.on('accountsChanged', handleAccountChange);
+    // Set up listener (if Lace supports it)
+    // Note: Same event API as regular Lace
+    if (lace.on) {
+      lace.on('accountsChanged', handleAccountChange);
     }
 
     // Cleanup listener when component unmounts
     return () => {
-      if (midnight.off) {
-        midnight.off('accountsChanged', handleAccountChange);
+      if (lace.off) {
+        lace.off('accountsChanged', handleAccountChange);
       }
     };
   }, []);
