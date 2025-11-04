@@ -159,34 +159,37 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         throw new Error('Wallet API not found. Please refresh the page and try again.');
       }
 
-      // Midnight Preview wraps the actual API in an mLace property
+      // Lace Midnight Preview uses mnLace (midnight + Lace) NOT mLace!
       // @ts-ignore
-      const walletApi = walletContainer.mLace || walletContainer;
+      const walletApi = walletContainer.mnLace || walletContainer.mLace || walletContainer;
 
-      if (!walletApi || !walletApi.enable) {
+      if (!walletApi || typeof walletApi.enable !== 'function') {
         throw new Error('Wallet API structure not recognized. Please ensure Lace Midnight Preview is properly installed.');
       }
 
       // Step 3: Request permission to connect
       // This will show a popup in Lace Midnight Preview asking user to approve
-      const isEnabled = await walletApi.enable();
+      const midnightApi = await walletApi.enable();
 
-      if (!isEnabled) {
-        throw new Error('User denied wallet connection');
+      if (!midnightApi || typeof midnightApi !== 'object') {
+        throw new Error('Failed to get Midnight API after enabling');
       }
 
       // Step 4: Get Midnight wallet info
       // Midnight Preview always runs on devnet (development network)
       const network = 'devnet';
 
-      // Get Midnight wallet addresses
-      // Note: Lace Midnight Preview uses same API as regular Lace
-      const usedAddresses = await walletApi.getUsedAddresses();
-      const unusedAddresses = await walletApi.getUnusedAddresses();
+      // Get Midnight wallet address using the state() method
+      let address = null;
 
-      // Use the first available address
-      const addresses = [...usedAddresses, ...unusedAddresses];
-      const address = addresses[0] || null;
+      if (typeof midnightApi.state === 'function') {
+        const stateResult = await midnightApi.state();
+        address = stateResult?.address || null;
+      }
+
+      if (!address) {
+        throw new Error('Failed to get wallet address from Midnight Preview');
+      }
 
       // Step 5: Update state with connected Midnight wallet
       setWalletState({
@@ -289,9 +292,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!checkMidnightPreviewInstalled()) return;
 
-    // Get wallet API from whichever location it's injected
+    // Get wallet container and extract mnLace API
     // @ts-ignore
-    const walletApi = window.cardano?.lace || window.midnight || window.cardano?.midnight;
+    const walletContainer = window.cardano?.lace || window.midnight || window.cardano?.midnight;
+    if (!walletContainer) return;
+
+    // @ts-ignore
+    const walletApi = walletContainer.mnLace || walletContainer.mLace || walletContainer;
     if (!walletApi) return;
 
     // Listen for account changes
