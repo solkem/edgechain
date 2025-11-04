@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 
 // Types
 interface Wallet {
@@ -27,9 +28,38 @@ interface Message {
   time: string;
 }
 
-// Main App Component
+// Context to share state across routes
+import { createContext, useContext, ReactNode } from 'react';
+
+interface AppContextType {
+  wallet: Wallet | null;
+  farmer: Farmer | null;
+  round: number;
+  version: number;
+  submissions: Submission[];
+  aggregating: boolean;
+  progress: number;
+  setWallet: (wallet: Wallet | null) => void;
+  setFarmer: (farmer: Farmer | null) => void;
+  setRound: (round: number) => void;
+  setVersion: (version: number) => void;
+  setSubmissions: (submissions: Submission[]) => void;
+  setAggregating: (aggregating: boolean) => void;
+  setProgress: (progress: number) => void;
+  submitUpdate: () => void;
+  disconnect: () => void;
+}
+
+const AppContext = createContext<AppContextType | null>(null);
+
+function useAppContext() {
+  const context = useContext(AppContext);
+  if (!context) throw new Error('useAppContext must be used within AppProvider');
+  return context;
+}
+
+// Main App Component with Router
 export default function EdgeChainApp() {
-  const [screen, setScreen] = useState('login');
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [farmer, setFarmer] = useState<Farmer | null>(null);
   const [round, setRound] = useState(5);
@@ -37,20 +67,6 @@ export default function EdgeChainApp() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [aggregating, setAggregating] = useState(false);
   const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    if (wallet) {
-      const saved = localStorage.getItem(`farmer_${wallet.address}`);
-      if (saved) {
-        const parsedFarmer = JSON.parse(saved);
-        parsedFarmer.joinedAt = new Date(parsedFarmer.joinedAt);
-        setFarmer(parsedFarmer);
-        setScreen('selection');
-      } else {
-        setScreen('register');
-      }
-    }
-  }, [wallet]);
 
   useEffect(() => {
     if (aggregating && progress < 100) {
@@ -66,43 +82,6 @@ export default function EdgeChainApp() {
     }
   }, [aggregating, progress]);
 
-  const connect = () => {
-    const addr = `addr1qyxq${Math.random().toString(36).slice(2, 20)}`;
-    setWallet({ address: addr });
-    localStorage.setItem('laceAddress', addr);
-  };
-
-  const register = (data: Omit<Farmer, 'address' | 'joinedAt' | 'accuracy'>) => {
-    const newFarmer: Farmer = {
-      ...data,
-      address: wallet!.address,
-      joinedAt: new Date(),
-      accuracy: 87
-    };
-    localStorage.setItem(`farmer_${wallet!.address}`, JSON.stringify(newFarmer));
-    setFarmer(newFarmer);
-    setScreen('selection');
-  };
-
-  const skip = () => {
-    const guest: Farmer = {
-      name: 'Guest Farmer',
-      region: 'Unknown',
-      crops: [],
-      address: wallet!.address,
-      joinedAt: new Date(),
-      accuracy: 0
-    };
-    setFarmer(guest);
-    setScreen('selection');
-  };
-
-  const disconnect = () => {
-    setWallet(null);
-    setFarmer(null);
-    setScreen('login');
-  };
-
   const submitUpdate = () => {
     setSubmissions(prev => [...prev, {
       id: Date.now(),
@@ -111,17 +90,197 @@ export default function EdgeChainApp() {
     }]);
   };
 
-  if (screen === 'login') return <Login onConnect={connect} />;
-  if (screen === 'register') return <Register address={wallet?.address || ''} onRegister={register} onSkip={skip} />;
-  if (screen === 'selection') return <Selection farmer={farmer!} onFL={() => setScreen('fl')} onAI={() => setScreen('ai')} onDisconnect={disconnect} />;
-  if (screen === 'fl') return <FLDashboard farmer={farmer!} wallet={wallet!} round={round} version={version} submissions={submissions} onSubmit={submitUpdate} onAggregation={() => setScreen('aggregation')} onAI={() => setScreen('ai')} onDisconnect={disconnect} />;
-  if (screen === 'aggregation') return <Aggregation round={round} submissions={submissions} aggregating={aggregating} progress={progress} version={version} onTrigger={() => { setAggregating(true); setProgress(0); }} onBack={() => setScreen('fl')} />;
-  if (screen === 'ai') return <AIDashboard farmer={farmer!} onFL={() => setScreen('fl')} onDisconnect={disconnect} />;
+  const disconnect = () => {
+    setWallet(null);
+    setFarmer(null);
+  };
 
-  return null;
+  const contextValue: AppContextType = {
+    wallet,
+    farmer,
+    round,
+    version,
+    submissions,
+    aggregating,
+    progress,
+    setWallet,
+    setFarmer,
+    setRound,
+    setVersion,
+    setSubmissions,
+    setAggregating,
+    setProgress,
+    submitUpdate,
+    disconnect,
+  };
+
+  return (
+    <AppContext.Provider value={contextValue}>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<LoginRoute />} />
+          <Route path="/register" element={<RegisterRoute />} />
+          <Route path="/selection" element={<SelectionRoute />} />
+          <Route path="/train" element={<TrainRoute />} />
+          <Route path="/aggregation" element={<AggregationRoute />} />
+          <Route path="/predictions" element={<PredictionsRoute />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AppContext.Provider>
+  );
 }
 
-// Login Screen
+// Route Components
+function LoginRoute() {
+  const { wallet, setWallet, setFarmer } = useAppContext();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (wallet) {
+      const saved = localStorage.getItem(`farmer_${wallet.address}`);
+      if (saved) {
+        const parsedFarmer = JSON.parse(saved);
+        parsedFarmer.joinedAt = new Date(parsedFarmer.joinedAt);
+        setFarmer(parsedFarmer);
+        navigate('/selection');
+      } else {
+        navigate('/register');
+      }
+    }
+  }, [wallet]);
+
+  const connect = () => {
+    const addr = `addr1qyxq${Math.random().toString(36).slice(2, 20)}`;
+    setWallet({ address: addr });
+    localStorage.setItem('laceAddress', addr);
+  };
+
+  return <Login onConnect={connect} />;
+}
+
+function RegisterRoute() {
+  const { wallet, setFarmer } = useAppContext();
+  const navigate = useNavigate();
+
+  if (!wallet) {
+    return <Navigate to="/" replace />;
+  }
+
+  const register = (data: Omit<Farmer, 'address' | 'joinedAt' | 'accuracy'>) => {
+    const newFarmer: Farmer = {
+      ...data,
+      address: wallet.address,
+      joinedAt: new Date(),
+      accuracy: 87
+    };
+    localStorage.setItem(`farmer_${wallet.address}`, JSON.stringify(newFarmer));
+    setFarmer(newFarmer);
+    navigate('/selection');
+  };
+
+  const skip = () => {
+    const guest: Farmer = {
+      name: 'Guest Farmer',
+      region: 'Unknown',
+      crops: [],
+      address: wallet.address,
+      joinedAt: new Date(),
+      accuracy: 0
+    };
+    setFarmer(guest);
+    navigate('/selection');
+  };
+
+  return <Register address={wallet.address} onRegister={register} onSkip={skip} />;
+}
+
+function SelectionRoute() {
+  const { farmer, disconnect } = useAppContext();
+  const navigate = useNavigate();
+
+  if (!farmer) {
+    return <Navigate to="/" replace />;
+  }
+
+  return (
+    <Selection
+      farmer={farmer}
+      onFL={() => navigate('/train')}
+      onAI={() => navigate('/predictions')}
+      onDisconnect={() => {
+        disconnect();
+        navigate('/');
+      }}
+    />
+  );
+}
+
+function TrainRoute() {
+  const { farmer, wallet, round, version, submissions, submitUpdate, disconnect } = useAppContext();
+  const navigate = useNavigate();
+
+  if (!farmer || !wallet) {
+    return <Navigate to="/" replace />;
+  }
+
+  return (
+    <FLDashboard
+      farmer={farmer}
+      wallet={wallet}
+      round={round}
+      version={version}
+      submissions={submissions}
+      onSubmit={submitUpdate}
+      onAggregation={() => navigate('/aggregation')}
+      onAI={() => navigate('/predictions')}
+      onDisconnect={() => {
+        disconnect();
+        navigate('/');
+      }}
+    />
+  );
+}
+
+function AggregationRoute() {
+  const { round, submissions, aggregating, progress, version, setAggregating, setProgress } = useAppContext();
+  const navigate = useNavigate();
+
+  return (
+    <Aggregation
+      round={round}
+      submissions={submissions}
+      aggregating={aggregating}
+      progress={progress}
+      version={version}
+      onTrigger={() => { setAggregating(true); setProgress(0); }}
+      onBack={() => navigate('/train')}
+    />
+  );
+}
+
+function PredictionsRoute() {
+  const { farmer, disconnect } = useAppContext();
+  const navigate = useNavigate();
+
+  if (!farmer) {
+    return <Navigate to="/" replace />;
+  }
+
+  return (
+    <AIDashboard
+      farmer={farmer}
+      onFL={() => navigate('/train')}
+      onDisconnect={() => {
+        disconnect();
+        navigate('/');
+      }}
+    />
+  );
+}
+
+// Screen Components (unchanged from original)
+
 function Login({ onConnect }: { onConnect: () => void }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center p-4">
@@ -153,7 +312,6 @@ function Login({ onConnect }: { onConnect: () => void }) {
   );
 }
 
-// Register Screen
 function Register({ address, onRegister, onSkip }: { address: string; onRegister: (data: { name: string; region: string; crops: string[] }) => void; onSkip: () => void }) {
   const [form, setForm] = useState({ name: '', region: '', crops: [] as string[] });
   const crops = ['Wheat', 'Corn', 'Rice', 'Soybeans', 'Cotton', 'Barley'];
@@ -215,7 +373,6 @@ function Register({ address, onRegister, onSkip }: { address: string; onRegister
   );
 }
 
-// Selection Screen
 function Selection({ farmer, onFL, onAI, onDisconnect }: { farmer: Farmer; onFL: () => void; onAI: () => void; onDisconnect: () => void }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-4">
@@ -247,7 +404,6 @@ function Selection({ farmer, onFL, onAI, onDisconnect }: { farmer: Farmer; onFL:
   );
 }
 
-// FL Dashboard
 function FLDashboard({ farmer, wallet, round, version, submissions, onSubmit, onAggregation, onAI, onDisconnect }: { farmer: Farmer; wallet: Wallet; round: number; version: number; submissions: Submission[]; onSubmit: () => void; onAggregation: () => void; onAI: () => void; onDisconnect: () => void }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900">
@@ -313,7 +469,6 @@ function FLDashboard({ farmer, wallet, round, version, submissions, onSubmit, on
   );
 }
 
-// Aggregation Screen
 function Aggregation({ round, submissions, aggregating, progress, version, onTrigger, onBack }: { round: number; submissions: Submission[]; aggregating: boolean; progress: number; version: number; onTrigger: () => void; onBack: () => void }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 p-4">
@@ -375,7 +530,6 @@ function Aggregation({ round, submissions, aggregating, progress, version, onTri
   );
 }
 
-// AI Dashboard
 function AIDashboard({ farmer, onFL, onDisconnect }: { farmer: Farmer; onFL: () => void; onDisconnect: () => void }) {
   const [tab, setTab] = useState('sms');
   const [input, setInput] = useState('');
@@ -440,7 +594,7 @@ function AIDashboard({ farmer, onFL, onDisconnect }: { farmer: Farmer; onFL: () 
             </div>
             <div className="p-4 bg-white border-t-2">
               <div className="flex gap-2">
-                <input value={input} onChange={e => setInput(e.target.value)} onKeyPress={e => e.key === 'Enter' && send()} placeholder="Type your message..." className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-full focus:border-green-500 focus:outline-none transition-colors" />
+                <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()} placeholder="Type your message..." className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-full focus:border-green-500 focus:outline-none transition-colors" />
                 <button onClick={send} className="bg-green-600 hover:bg-green-700 text-white p-3 rounded-full transition-all">→</button>
               </div>
               <p className="text-xs text-gray-500 mt-2 text-center">💡 Try: "PREDICT maize rainfall:720 soil:loamy temp:22"</p>
