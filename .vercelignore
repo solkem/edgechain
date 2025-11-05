@@ -1,0 +1,15 @@
+# Ignore Turbo configuration to prevent Vercel from using Turbo build
+turbo.json
+
+# Ignore contract package to prevent compilation attempts
+packages/contract/
+
+# Ignore API package
+packages/api/
+
+# Ignore server
+server/
+
+# Ignore build artifacts
+packages/ui/node_modules/
+packages/ui/.vite/
