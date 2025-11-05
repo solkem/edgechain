@@ -3,7 +3,7 @@
   "name": "edgechain-midnight",
   "buildCommand": "yarn workspace edgechain-ui build",
   "outputDirectory": "packages/ui/dist",
-  "installCommand": "yarn install",
+  "installCommand": "corepack enable && yarn install",
   "framework": null,
   "rewrites": [
     {
