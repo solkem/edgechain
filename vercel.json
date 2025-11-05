@@ -1,9 +1,9 @@
 {
   "version": 2,
   "name": "edgechain-midnight",
-  "buildCommand": "cd packages/ui && yarn build",
+  "buildCommand": "yarn workspace edgechain-ui build",
   "outputDirectory": "packages/ui/dist",
-  "installCommand": "yarn install --immutable",
+  "installCommand": "yarn install",
   "framework": null,
   "rewrites": [
     {
