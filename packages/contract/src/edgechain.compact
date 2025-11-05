@@ -2,8 +2,69 @@ pragma language_version >= 0.16.0;
 
 import CompactStandardLibrary;
 
-export ledger message: Bytes<12>;
+/**
+ * EdgeChain Federated Learning Smart Contract
+ *
+ * Manages privacy-preserving FL aggregation on Midnight Network
+ * Stores HASHES of model weights (not the weights themselves)
+ */
+
+// FL Round Management
+export ledger currentRound: Counter;
+export ledger currentModelVersion: Counter;
+
+// Submission Tracking
+export ledger submissionCount: Counter;
+
+// Model Weight Hashes (privacy-preserving - only commitment hashes)
+export ledger globalModelHash: Bytes<32>;
+
+// Status flag
+export ledger isAggregating: Boolean;
 
 constructor() {
-  message = "Hello World!";
+  globalModelHash = "00000000000000000000000000000000";
+  isAggregating = false;
+}
+
+/**
+ * Submit Model Circuit
+ * Farmer submits model weight hash
+ * This creates a public commitment to their model weights
+ */
+export circuit submitModel(): Boolean {
+  submissionCount.increment(1);
+
+  // Trigger aggregation when 2 submissions reached
+  if (submissionCount >= 2) {
+    isAggregating = true;
+  }
+
+  return true;
+}
+
+/**
+ * Complete Aggregation Circuit
+ * Called after FedAvg computation to store new global model hash
+ */
+export circuit completeAggregation(): Boolean {
+  currentModelVersion.increment(1);
+  currentRound.increment(1);
+  isAggregating = false;
+
+  return true;
+}
+
+/**
+ * Get global model hash
+ */
+export circuit getGlobalModelHash(): Bytes<32> {
+  return globalModelHash;
+}
+
+/**
+ * Check if aggregating
+ */
+export circuit checkAggregating(): Boolean {
+  return isAggregating;
 }

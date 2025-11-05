@@ -18,6 +18,7 @@
   "scripts": {
     "compact": "compact compile src/edgechain.compact ./src/managed/edgechain",
     "build": "rm -rf dist && find src/managed -type d -empty -delete && tsc --project tsconfig.build.json && mkdir -p dist/managed && test -d ./src/managed/edgechain && cp -R ./src/managed/edgechain ./dist/managed/ && mkdir -p ./dist/managed/edgechain/keys ./dist/managed/edgechain/zkir && cp ./src/*.compact dist",
+    "deploy": "node --loader ts-node/esm deploy.ts",
     "lint": "eslint src",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "prepack": "yarn build"

@@ -9,9 +9,16 @@ import topLevelAwait from "vite-plugin-top-level-await";
 // https://vite.dev/config/
 export default defineConfig({
   cacheDir: "./.vite",
+  base: process.env.VITE_BASE_PATH || '/',
+  server: {
+    port: 8080,
+    host: true,
+  },
   build: {
     target: "esnext",
     minify: false,
+    outDir: 'dist',
+    assetsDir: 'assets',
   },
   plugins: [react(), tailwindcss(), wasm(), topLevelAwait(), viteCommonjs()],
   resolve: {
