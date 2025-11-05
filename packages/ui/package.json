@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "start": "http-server --port 0 ./dist",
-    "build": "tsc && vite build --mode testnet && cp -r ../contract/dist/managed/edgechain/keys ./dist/keys && cp -r ../contract/dist/managed/edgechain/zkir ./dist/zkir",
+    "build": "tsc && vite build --mode testnet && (cp -r ../contract/dist/managed/edgechain/keys ./dist/keys 2>/dev/null || mkdir -p ./dist/keys) && (cp -r ../contract/dist/managed/edgechain/zkir ./dist/zkir 2>/dev/null || mkdir -p ./dist/zkir)",
     "lint": "eslint .",
     "preview": "vite preview"
   },
