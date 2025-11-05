@@ -1,9 +1,9 @@
 {
   "version": 2,
   "name": "edgechain-midnight",
-  "buildCommand": "yarn workspace edgechain-ui build",
+  "buildCommand": "bash build-vercel.sh",
   "outputDirectory": "packages/ui/dist",
-  "installCommand": "corepack enable && yarn install",
+  "installCommand": "echo 'Skipping root install - handled in build script'",
   "framework": null,
   "rewrites": [
     {
