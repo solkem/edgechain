@@ -6,14 +6,6 @@ EdgeChain is a decentralized federated learning platform that brings AI-powered 
 
 ---
 
-## 🚀 Current Status (Midnight Hackathon)
-
-**Implementation Progress**: 60% Complete
-
-
-
----
-
 ## 🎯 Vision
 
 Traditional agriculture AI solutions require farmers to upload sensitive farm data (soil composition, yield history, financial info) to centralized servers. EdgeChain changes this: farmers train AI models locally on their own data, participate in decentralized model aggregation, and access predictions through simple SMS—all while keeping their data completely private.
