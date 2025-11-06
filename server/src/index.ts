@@ -19,6 +19,20 @@ app.use(express.json({ limit: '50mb' })); // Large limit for model weights
 // Routes
 app.use('/api/fl', aggregationRouter);
 
+// Root route
+app.get('/', (req, res) => {
+  res.json({
+    name: 'EdgeChain FL Aggregation Server',
+    version: '1.0.0',
+    description: 'Federated Learning Aggregation Server for EdgeChain',
+    endpoints: {
+      health: '/health',
+      api: '/api/fl'
+    },
+    status: 'running'
+  });
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'healthy', timestamp: Date.now() });

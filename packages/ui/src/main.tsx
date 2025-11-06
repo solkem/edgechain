@@ -4,7 +4,8 @@ import App from './App';
 import './index.css';
 // Import providers
 import { WalletProvider } from './providers/WalletProvider';
-import { ContractProvider } from './providers/ContractProvider';
+// ContractProvider import disabled - causes Vite WASM bundling error
+// import { ContractProvider } from './providers/ContractProvider';
 
 // Get the root element
 const rootElement = document.getElementById('root');
@@ -31,9 +32,10 @@ if (!rootElement) {
 ReactDOM.createRoot(rootElement).render(
   <StrictMode>
     <WalletProvider>
-      <ContractProvider>
+      {/* ContractProvider disabled - causes Vite WASM bundling error */}
+      {/* <ContractProvider> */}
         <App />
-      </ContractProvider>
+      {/* </ContractProvider> */}
     </WalletProvider>
   </StrictMode>
 );

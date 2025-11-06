@@ -13,6 +13,10 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts",
       "require": "./dist/index.js"
+    },
+    "./dist/managed/edgechain/contract/index.cjs": {
+      "default": "./dist/managed/edgechain/contract/index.cjs",
+      "require": "./dist/managed/edgechain/contract/index.cjs"
     }
   },
   "scripts": {
