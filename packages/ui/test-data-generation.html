@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Data Generation</title>
+</head>
+<body>
+  <h1>EdgeChain Data Generation Test</h1>
+  <button onclick="testDataGen()">Test Data Generation</button>
+  <pre id="output"></pre>
+
+  <script type="module">
+    import { generateMockFarmDataset } from './src/fl/dataCollection.ts';
+
+    window.testDataGen = function() {
+      const output = document.getElementById('output');
+      try {
+        output.textContent = 'Generating dataset...\n';
+
+        const dataset = generateMockFarmDataset(
+          'test-farmer-address',
+          30,
+          'kenya'
+        );
+
+        output.textContent += `✅ Success!\n\n`;
+        output.textContent += `Total samples: ${dataset.totalSamples}\n`;
+        output.textContent += `Crops: ${dataset.crops.join(', ')}\n`;
+        output.textContent += `Data points: ${dataset.dataPoints.length}\n\n`;
+        output.textContent += `First data point:\n`;
+        output.textContent += JSON.stringify(dataset.dataPoints[0], null, 2);
+      } catch (error) {
+        output.textContent += `❌ Error: ${error.message}\n`;
+        output.textContent += `Stack: ${error.stack}`;
+      }
+    };
+  </script>
+</body>
+</html>

@@ -232,26 +232,20 @@ export async function trainLocalModel(
   // Training metrics history
   const metricsHistory: TrainingMetrics[] = [];
 
-  // Early stopping callback
-  const earlyStoppingCallback = config.earlyStopping
-    ? tf.callbacks.earlyStopping({
-        monitor: 'val_loss',
-        patience: config.patience,
-        restoreBestWeights: true,
-      })
-    : undefined;
+  // Custom callback for tracking metrics
+  // Use the callback object format that TensorFlow.js expects
+  const metricsCallback: tf.CustomCallbackArgs = {
+    onEpochEnd: async (epoch: number, logs?: tf.Logs) => {
+      if (!logs) return;
 
-  // Custom callback to track metrics
-  const metricsCallback = {
-    onEpochEnd: async (epoch: number, logs: any) => {
       const metrics: TrainingMetrics = {
         epoch: epoch + 1,
-        loss: logs.loss,
-        mae: logs.mae,
-        mse: logs.mse,
-        valLoss: logs.val_loss,
-        valMae: logs.val_mae,
-        valMse: logs.val_mse,
+        loss: logs.loss as number,
+        mae: logs.mae as number,
+        mse: logs.mse as number,
+        valLoss: logs.val_loss as number,
+        valMae: logs.val_mae as number,
+        valMse: logs.val_mse as number,
         timestamp: Date.now(),
       };
 
@@ -269,17 +263,20 @@ export async function trainLocalModel(
           `val_loss: ${logs.val_loss?.toFixed(4)}, val_mae: ${logs.val_mae?.toFixed(4)}`
         );
       }
-    },
+    }
   };
+
+  // Build callbacks array
+  // NOTE: Early stopping disabled due to TensorFlow.js callback interface issues
+  // The model will train for all epochs (50 by default)
+  const callbacks: tf.CustomCallbackArgs[] = [metricsCallback];
 
   // Train the model
   const history = await model.fit(xs, ys, {
     epochs: config.epochs,
     batchSize: config.batchSize,
     validationSplit: config.validationSplit,
-    callbacks: earlyStoppingCallback
-      ? [earlyStoppingCallback, metricsCallback]
-      : [metricsCallback],
+    callbacks,
     verbose: 0, // Silent mode
   });
 

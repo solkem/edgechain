@@ -1,0 +1,76 @@
+{
+  "hash": "793fc669",
+  "configHash": "a7229801",
+  "lockfileHash": "4238fe09",
+  "browserHash": "b68b4eb9",
+  "optimized": {
+    "util": {
+      "src": "../../../../node_modules/util/util.js",
+      "file": "util.js",
+      "fileHash": "5117c1f4",
+      "needsInterop": true
+    },
+    "react": {
+      "src": "../../../../node_modules/react/index.js",
+      "file": "react.js",
+      "fileHash": "cad39be5",
+      "needsInterop": true
+    },
+    "react-dom": {
+      "src": "../../../../node_modules/react-dom/index.js",
+      "file": "react-dom.js",
+      "fileHash": "c51a1e6f",
+      "needsInterop": true
+    },
+    "react/jsx-dev-runtime": {
+      "src": "../../../../node_modules/react/jsx-dev-runtime.js",
+      "file": "react_jsx-dev-runtime.js",
+      "fileHash": "1d536c8a",
+      "needsInterop": true
+    },
+    "react/jsx-runtime": {
+      "src": "../../../../node_modules/react/jsx-runtime.js",
+      "file": "react_jsx-runtime.js",
+      "fileHash": "02d93471",
+      "needsInterop": true
+    },
+    "@tensorflow/tfjs": {
+      "src": "../../../../node_modules/@tensorflow/tfjs/dist/index.js",
+      "file": "@tensorflow_tfjs.js",
+      "fileHash": "9f393275",
+      "needsInterop": false
+    },
+    "buffer": {
+      "src": "../../../../node_modules/buffer/index.js",
+      "file": "buffer.js",
+      "fileHash": "fb7615dc",
+      "needsInterop": true
+    },
+    "react-dom/client": {
+      "src": "../../../../node_modules/react-dom/client.js",
+      "file": "react-dom_client.js",
+      "fileHash": "82ec6f10",
+      "needsInterop": true
+    },
+    "react-router-dom": {
+      "src": "../../../../node_modules/react-router-dom/dist/index.mjs",
+      "file": "react-router-dom.js",
+      "fileHash": "638688b1",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "chunk-UQQ5ADEX": {
+      "file": "chunk-UQQ5ADEX.js"
+    },
+    "chunk-XPUXLDOD": {
+      "file": "chunk-XPUXLDOD.js"
+    },
+    "chunk-FG6ULWAI": {
+      "file": "chunk-FG6ULWAI.js"
+    },
+    "chunk-G3PMV62Z": {
+      "file": "chunk-G3PMV62Z.js"
+    }
+  }
+}

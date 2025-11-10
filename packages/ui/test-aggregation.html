@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Aggregation Flow</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #1a1a1a;
+      color: #fff;
+    }
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 10px 5px;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    #output {
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 20px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    .success { color: #4ade80; }
+    .warning { color: #fbbf24; }
+    .error { color: #f87171; }
+    .info { color: #60a5fa; }
+  </style>
+</head>
+<body>
+  <h1>🧪 EdgeChain Aggregation Test</h1>
+  <p>Test the full federated learning aggregation flow without needing multiple wallets</p>
+
+  <div>
+    <button onclick="clearStorage()">🗑️ Clear All Data</button>
+    <button onclick="addFarmer1()">👨‍🌾 Add Farmer 1 Submission</button>
+    <button onclick="addFarmer2()">👨‍🌾 Add Farmer 2 Submission</button>
+    <button onclick="checkStatus()">📊 Check Status</button>
+    <button onclick="triggerAggregation()">⚡ Trigger Aggregation</button>
+  </div>
+
+  <div id="output"></div>
+
+  <script type="module">
+    import {
+      storeSubmission,
+      checkAggregationReadiness,
+      runAggregation,
+      loadPendingSubmissions,
+      getAggregationStats
+    } from './src/fl/aggregationService.ts';
+
+    window.log = function(message, type = 'info') {
+      const output = document.getElementById('output');
+      const timestamp = new Date().toLocaleTimeString();
+      const className = type;
+      output.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+      output.scrollTop = output.scrollHeight;
+    };
+
+    window.clearStorage = function() {
+      localStorage.removeItem('edgechain_pending_submissions');
+      localStorage.removeItem('edgechain_current_round');
+      localStorage.removeItem('edgechain_global_model');
+      localStorage.removeItem('edgechain_aggregation_history');
+      window.log('🗑️ All data cleared', 'warning');
+      checkStatus();
+    };
+
+    window.addFarmer1 = function() {
+      const submission = {
+        farmerId: "farmer_kenya_0x1234",
+        modelWeights: generateMockWeights(),
+        weightsHash: generateHash(),
+        datasetSize: 30,
+        metrics: {
+          loss: 0.18,
+          mae: 0.14,
+          accuracy: 0.89
+        },
+        round: 1,
+        modelVersion: 1,
+        timestamp: Date.now(),
+        signature: "sig_farmer1_" + Math.random().toString(36).substring(7),
+        txHash: "0x" + Math.random().toString(16).substring(2, 34)
+      };
+
+      storeSubmission(submission);
+      window.log('✅ Farmer 1 (Kenya) submission added!', 'success');
+      window.log(`   - Dataset: 30 samples`, 'info');
+      window.log(`   - Accuracy: 89%`, 'info');
+      checkStatus();
+    };
+
+    window.addFarmer2 = function() {
+      const submission = {
+        farmerId: "farmer_ghana_0x5678",
+        modelWeights: generateMockWeights(),
+        weightsHash: generateHash(),
+        datasetSize: 30,
+        metrics: {
+          loss: 0.16,
+          mae: 0.12,
+          accuracy: 0.91
+        },
+        round: 1,
+        modelVersion: 1,
+        timestamp: Date.now(),
+        signature: "sig_farmer2_" + Math.random().toString(36).substring(7),
+        txHash: "0x" + Math.random().toString(16).substring(2, 34)
+      };
+
+      storeSubmission(submission);
+      window.log('✅ Farmer 2 (Ghana) submission added!', 'success');
+      window.log(`   - Dataset: 30 samples`, 'info');
+      window.log(`   - Accuracy: 91%`, 'info');
+      checkStatus();
+    };
+
+    window.checkStatus = function() {
+      const status = checkAggregationReadiness();
+      window.log('📊 Current Status:', 'info');
+      window.log(`   - Submissions: ${status.currentSubmissions}/${status.requiredSubmissions}`, 'info');
+      window.log(`   - Can Aggregate: ${status.canAggregate ? 'YES ✅' : 'NO ❌'}`,
+                  status.canAggregate ? 'success' : 'warning');
+
+      if (status.canAggregate) {
+        window.log('🚀 Ready to run aggregation!', 'success');
+      }
+
+      const stats = getAggregationStats();
+      window.log(`   - Total Rounds: ${stats.totalRounds}`, 'info');
+      window.log(`   - Current Round: ${stats.currentRound}`, 'info');
+    };
+
+    window.triggerAggregation = async function() {
+      const status = checkAggregationReadiness();
+      if (!status.canAggregate) {
+        window.log('❌ Not enough submissions! Need 2, have ' + status.currentSubmissions, 'error');
+        return;
+      }
+
+      window.log('🚀 Starting Federated Averaging...', 'success');
+      window.log('', 'info');
+
+      try {
+        const globalModel = await runAggregation(
+          undefined,
+          (progress, message) => {
+            window.log(`   ${progress}% - ${message}`, 'info');
+          }
+        );
+
+        window.log('', 'info');
+        window.log('✅ AGGREGATION COMPLETE!', 'success');
+        window.log('🌐 Global Model Details:', 'success');
+        window.log(`   - Version: ${globalModel.version}`, 'info');
+        window.log(`   - Trained By: ${globalModel.metadata.trainedBy} farmers`, 'info');
+        window.log(`   - Total Samples: ${globalModel.metadata.totalSamples}`, 'info');
+        window.log(`   - Average Accuracy: ${(globalModel.metadata.averageAccuracy * 100).toFixed(2)}%`, 'info');
+        window.log(`   - Global MAE: ${globalModel.performanceMetrics.globalMae.toFixed(4)}`, 'info');
+
+        checkStatus();
+      } catch (error) {
+        window.log('❌ Aggregation failed: ' + error.message, 'error');
+        console.error(error);
+      }
+    };
+
+    function generateMockWeights() {
+      // Generate realistic model weights (simplified)
+      return [
+        [Math.random() - 0.5, Math.random() - 0.5],
+        [Math.random() - 0.5, Math.random() - 0.5]
+      ];
+    }
+
+    function generateHash() {
+      return "0x" + Array.from({length: 32}, () =>
+        Math.floor(Math.random() * 16).toString(16)
+      ).join('');
+    }
+
+    // Initial status check
+    window.addEventListener('load', () => {
+      window.log('🧪 Aggregation Test Ready', 'success');
+      window.log('Click buttons above to simulate farmers submitting models', 'info');
+      window.log('', 'info');
+      checkStatus();
+    });
+  </script>
+</body>
+</html>
