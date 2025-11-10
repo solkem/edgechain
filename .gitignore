@@ -28,6 +28,7 @@ coverage
 .next/
 out/
 build
+packages/ui/.vite/*
 dist
 .cache
 .yarn/*
@@ -40,3 +41,4 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+

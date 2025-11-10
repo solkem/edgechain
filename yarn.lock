@@ -1872,7 +1872,7 @@ __metadata:
     ts-node: "npm:^10.9.2"
     typescript: "npm:^5.2.2"
   bin:
-    run-compact: src/run-compact.cjs
+    run-compact: src/run-compactc.cjs
   languageName: unknown
   linkType: soft
 
