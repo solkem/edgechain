@@ -4,6 +4,17 @@
 
 EdgeChain is a decentralized federated learning platform that brings AI-powered agricultural predictions to farmers while protecting sensitive farm data through zero-knowledge proofs.
 
+## 🚀 Live Demo
+
+**Try it now:** https://edgechain-midnight-ui.fly.dev/
+
+- Train ML models locally on African agricultural data
+- See zero-knowledge proofs generated in real-time
+- Participate in multi-device federated learning
+- View privacy-preserving model aggregation
+
+**API Backend:** https://edgechain-api.fly.dev/health
+
 ---
 
 ## 🎯 Vision
