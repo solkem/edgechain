@@ -43,3 +43,5 @@ yarn-error.log*
 
 # Private documentation
 private-docs/
+packages/ui/.vite/
+packages/ui/dist/
