@@ -22,6 +22,13 @@ import { loadGlobalModel } from '../fl/aggregation';
 import { hashModelWeights } from '../fl/training';
 import type { TransactionData } from '../providers/WalletProvider';
 import {
+  loadArduinoSensorData,
+  convertArduinoDataToFLDataset,
+  hasValidArduinoData,
+  getArduinoDataSummary,
+  clearArduinoSensorData,
+} from '../fl/arduinoIntegration';
+import {
   storeSubmission,
   checkAggregationReadiness,
   runAggregation,
@@ -138,11 +145,31 @@ export function FLDashboard() {
     try {
       console.log('🚀 Starting local model training...');
 
-      // Generate mock farm dataset (in production: use real IoT data)
-      const dataset: FarmDataset = generateMockFarmDataset(
-        wallet.address || 'unknown',
-        30 // 30 seasons of historical data
-      );
+      // Check if Arduino sensor data is available
+      const arduinoData = loadArduinoSensorData();
+      let dataset: FarmDataset;
+
+      if (arduinoData && hasValidArduinoData()) {
+        console.log('📡 Using Arduino sensor data for training!');
+        const summary = getArduinoDataSummary(arduinoData);
+        console.log(`   Temperature: ${summary.temperature}`);
+        console.log(`   Humidity: ${summary.humidity}`);
+        console.log(`   Estimated Rainfall: ${summary.estimatedRainfall}`);
+        console.log(`   Data Quality: ${summary.dataQuality}`);
+
+        // Convert Arduino sensor data to training dataset
+        dataset = convertArduinoDataToFLDataset(arduinoData, wallet.address || 'unknown', 30);
+
+        // Clear Arduino data after use
+        clearArduinoSensorData();
+      } else {
+        console.log('📊 Using simulated farm dataset (no Arduino data available)');
+        // Generate mock farm dataset (fallback when no Arduino data)
+        dataset = generateMockFarmDataset(
+          wallet.address || 'unknown',
+          30 // 30 seasons of historical data
+        );
+      }
 
       // Train model locally
       const result = await trainLocalModel(

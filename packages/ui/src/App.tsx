@@ -6,6 +6,8 @@ import { useWallet } from './providers/WalletProvider';
 import { useContract } from './providers/ContractProvider';
 // Import the real FL Dashboard component with working training functionality
 import { FLDashboard as FLDashboardComponent } from './components/FLDashboard';
+// Import the Arduino IoT Dashboard component
+import { ArduinoDashboard } from './components/ArduinoDashboard';
 
 // Types
 interface Wallet {
@@ -135,6 +137,7 @@ export default function EdgeChainApp() {
           <Route path="/" element={<LoginRoute />} />
           <Route path="/register" element={<RegisterRoute />} />
           <Route path="/selection" element={<SelectionRoute />} />
+          <Route path="/arduino" element={<ArduinoRoute />} />
           <Route path="/train" element={<TrainRoute />} />
           <Route path="/aggregation" element={<AggregationRoute />} />
           <Route path="/predictions" element={<PredictionsRoute />} />
@@ -271,6 +274,16 @@ function SelectionRoute() {
       }}
     />
   );
+}
+
+function ArduinoRoute() {
+  const { farmer } = useAppContext();
+
+  if (!farmer) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <ArduinoDashboard />;
 }
 
 function TrainRoute() {
@@ -779,6 +792,8 @@ function Register({ address, onRegister, onSkip }: { address: string; onRegister
 }
 
 function Selection({ farmer, onFL, onAI, onDisconnect }: { farmer: Farmer; onFL: () => void; onAI: () => void; onDisconnect: () => void }) {
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-4">
       <div className="max-w-4xl mx-auto">
@@ -792,7 +807,12 @@ function Selection({ farmer, onFL, onAI, onDisconnect }: { farmer: Farmer; onFL:
         <div className="text-center mb-12">
           <h2 className="text-2xl font-bold text-white mb-3">What would you like to do today?</h2>
         </div>
-        <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          <button onClick={() => navigate('/arduino')} className="bg-slate-800/60 border-2 border-teal-500/30 hover:border-teal-500 rounded-2xl p-8 text-left transition-all transform hover:scale-105">
+            <div className="w-16 h-16 bg-teal-600/40 rounded-full mb-4 flex items-center justify-center text-4xl">🌡️</div>
+            <h3 className="text-2xl font-bold text-white mb-2">Arduino IoT</h3>
+            <p className="text-purple-200 text-sm">Collect sensor data from your farm for training</p>
+          </button>
           <button onClick={onFL} className="bg-slate-800/60 border-2 border-purple-500/30 hover:border-purple-500 rounded-2xl p-8 text-left transition-all transform hover:scale-105">
             <div className="w-16 h-16 bg-purple-600/40 rounded-full mb-4 flex items-center justify-center text-4xl">⚙️</div>
             <h3 className="text-2xl font-bold text-white mb-2">FL Training</h3>
