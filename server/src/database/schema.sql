@@ -4,17 +4,20 @@
 -- Device Registry
 CREATE TABLE IF NOT EXISTS devices (
   device_pubkey TEXT PRIMARY KEY,
+  owner_wallet TEXT NOT NULL, -- Lace wallet address that owns this device
   collection_mode TEXT NOT NULL CHECK (collection_mode IN ('auto', 'manual')),
   registration_epoch INTEGER NOT NULL,
   expiry_epoch INTEGER NOT NULL,
   device_id TEXT,
   metadata TEXT, -- JSON
   merkle_leaf_hash TEXT NOT NULL,
+  authorization_reward_paid INTEGER DEFAULT 0, -- Boolean: 0.02 tDUST paid for device registration
   created_at INTEGER DEFAULT (strftime('%s', 'now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_devices_collection_mode ON devices(collection_mode);
 CREATE INDEX IF NOT EXISTS idx_devices_expiry ON devices(expiry_epoch);
+CREATE INDEX IF NOT EXISTS idx_devices_owner ON devices(owner_wallet);
 
 -- Sensor Readings
 CREATE TABLE IF NOT EXISTS sensor_readings (

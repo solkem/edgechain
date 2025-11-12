@@ -7,6 +7,7 @@
 import { Router } from 'express';
 import { DeviceRegistryService } from '../services/deviceRegistry';
 import { BLEReceiverService } from '../services/bleReceiver';
+import { DatabasePersistenceService } from '../services/databasePersistence';
 import { SignedReading } from '../types/arduino';
 // TODO: Re-enable in Phase 3 (Midnight SDK integration)
 // import { deploymentWalletService } from '../services/deploymentWallet';
@@ -14,23 +15,30 @@ import { SignedReading } from '../types/arduino';
 const router = Router();
 const registryService = new DeviceRegistryService();
 const bleService = new BLEReceiverService();
+const dbService = new DatabasePersistenceService();
 
 /**
  * POST /api/arduino/registry/register
  * Register a new IoT device with collection mode
+ * REQUIRES: owner_wallet (Lace wallet address)
  */
 router.post('/registry/register', (req, res) => {
   try {
-    const { device_pubkey, collection_mode = 'auto', device_id, metadata } = req.body;
+    const { device_pubkey, owner_wallet, collection_mode = 'auto', device_id, metadata } = req.body;
 
     if (!device_pubkey) {
       return res.status(400).json({ error: 'device_pubkey required' });
+    }
+
+    if (!owner_wallet) {
+      return res.status(400).json({ error: 'owner_wallet required (Lace wallet address)' });
     }
 
     if (!['auto', 'manual'].includes(collection_mode)) {
       return res.status(400).json({ error: 'collection_mode must be "auto" or "manual"' });
     }
 
+    // Register in memory (for merkle tree)
     const registration = registryService.registerDevice(
       device_pubkey,
       collection_mode,
@@ -38,11 +46,26 @@ router.post('/registry/register', (req, res) => {
       metadata
     );
 
+    // Compute merkle leaf hash (simple hash of pubkey for now)
+    const crypto = require('crypto');
+    const merkle_leaf_hash = crypto.createHash('sha256').update(device_pubkey).digest('hex');
+
+    // Persist to database with owner_wallet
+    dbService.registerDevice(
+      device_pubkey,
+      owner_wallet,
+      collection_mode,
+      device_id || 'iot-kit-001',
+      metadata || {},
+      merkle_leaf_hash
+    );
+
     const status = registryService.getStatus();
 
     res.json({
       success: true,
       registration,
+      owner_wallet,
       global_auto_collection_root: status.global_auto_collection_root,
       global_manual_entry_root: status.global_manual_entry_root,
     });
@@ -311,6 +334,7 @@ router.post('/submit-proof', async (req, res) => {
 /**
  * POST /api/arduino/simulate
  * Simulate receiving Arduino data (for testing without hardware)
+ * Persists reading to database
  */
 router.post('/simulate', (req, res) => {
   try {
@@ -325,6 +349,17 @@ router.post('/simulate', (req, res) => {
       humidity,
       device_pubkey
     );
+
+    // Persist reading to database
+    if (device_pubkey) {
+      try {
+        const readingId = dbService.saveReading(reading);
+        console.log(`✅ Reading persisted: ID ${readingId}`);
+      } catch (dbError: any) {
+        console.error('⚠️  Failed to persist reading:', dbError.message);
+        // Don't fail the request if persistence fails
+      }
+    }
 
     res.json({
       success: true,
@@ -379,6 +414,90 @@ router.get('/wallet-balance', async (_req, res) => {
       balance: 1000.0,
       unit: 'tDUST',
       message: 'Mock balance - will be real in Phase 3'
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/arduino/my-device/:wallet
+ * Get device information for a specific wallet address
+ */
+router.get('/my-device/:wallet', (req, res) => {
+  try {
+    const { wallet } = req.params;
+
+    if (!wallet) {
+      return res.status(400).json({ error: 'wallet parameter required' });
+    }
+
+    const device = dbService.getDeviceByWallet(wallet);
+
+    if (!device) {
+      return res.status(404).json({
+        error: 'No device found for this wallet',
+        wallet,
+      });
+    }
+
+    // Get consistency metrics
+    const consistency = dbService.getConsistencyMetrics(device.device_pubkey);
+    const incentives = dbService.getIncentiveSummary(device.device_pubkey);
+
+    res.json({
+      device,
+      consistency,
+      incentives,
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/arduino/my-readings/:wallet
+ * Get sensor readings for a specific wallet's device
+ */
+router.get('/my-readings/:wallet', (req, res) => {
+  try {
+    const { wallet } = req.params;
+    const limit = parseInt(req.query.limit as string) || 100;
+
+    if (!wallet) {
+      return res.status(400).json({ error: 'wallet parameter required' });
+    }
+
+    const readings = dbService.getReadingsByWallet(wallet, limit);
+
+    res.json({
+      wallet,
+      readings,
+      count: readings.length,
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/arduino/registry
+ * Get registry status with dual merkle roots
+ */
+router.get('/registry', (_req, res) => {
+  try {
+    const devices = registryService.getAllDevices();
+    const status = registryService.getStatus();
+
+    res.json({
+      devices,
+      count: devices.length,
+      dual_roots: {
+        auto_root: status.global_auto_collection_root,
+        manual_root: status.global_manual_entry_root,
+      },
+      auto_devices: status.auto_devices,
+      manual_devices: status.manual_devices,
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message });

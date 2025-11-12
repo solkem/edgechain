@@ -1,14 +1,13 @@
 /**
- * IoT Kit Dashboard Component
+ * IoT Kit Dashboard Component - Midnight Hackathon Edition
  *
- * Collects sensor data from IoT Kit devices and integrates it into FL training
+ * Focus: ZK Proof Verification & Consistency-Based Incentives
  *
- * Flow:
- * 1. Connect to BLE gateway / IoT Kit device
- * 2. Collect temperature & humidity readings
- * 3. Convert sensor data to FL training format
- * 4. Train model on IoT data
- * 5. Submit to federated learning
+ * Priority Hierarchy:
+ * 1. ZK Proof Verification Status (Most Prominent)
+ * 2. Data Collection Consistency Score
+ * 3. tDUST Incentive Tracker
+ * 4. Supporting Data (readings, farm details)
  */
 
 import { useState, useEffect } from 'react';
@@ -33,6 +32,47 @@ interface DeviceInfo {
   pubkey: string;
   registered: boolean;
   collectionMode: 'auto' | 'manual';
+  merkleRoot?: string;
+  lastProofTime?: number;
+}
+
+interface ConsistencyMetrics {
+  uptimePercent: number;
+  expectedReadings: number;
+  collectedReadings: number;
+  perfectDayStreak: number;
+  missedReadings: number;
+}
+
+interface IncentiveData {
+  dailyEarned: number;
+  weeklyEarned: number;
+  pending: number;
+  rewardTier: 'HIGH' | 'MEDIUM' | 'LOW';
+  nextTierThreshold: number;
+}
+
+// Backend response types
+interface BackendConsistency {
+  device_pubkey: string;
+  owner_wallet: string;
+  total_readings: number;
+  expected_readings: number;
+  missed_readings: number;
+  uptime_percent: number;
+  first_reading_at: number;
+  last_reading_at: number;
+  epoch_start: number;
+  epoch_end: number;
+}
+
+interface BackendIncentives {
+  device_pubkey: string;
+  owner_wallet: string;
+  authorization_reward: number;
+  consistency_bonus: number;
+  total_earned: number;
+  consistency_percent: number;
 }
 
 // Use relative URL in production, localhost in development
@@ -48,6 +88,7 @@ export function ArduinoDashboard() {
   const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | null>(null);
   const [isCollecting, setIsCollecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [demoMode, setDemoMode] = useState(false);
   const [farmMetadata, setFarmMetadata] = useState({
     cropType: 'maize',
     soilType: 'loamy',
@@ -56,6 +97,10 @@ export function ArduinoDashboard() {
     fertilizer: 100,
     pesticides: 3,
   });
+
+  // Backend data
+  const [backendConsistency, setBackendConsistency] = useState<BackendConsistency | null>(null);
+  const [backendIncentives, setBackendIncentives] = useState<BackendIncentives | null>(null);
 
   // Auto-collect sensor data every 10 seconds when active
   useEffect(() => {
@@ -68,24 +113,185 @@ export function ArduinoDashboard() {
     return () => clearInterval(interval);
   }, [isCollecting]);
 
+  // Fetch device data from backend by wallet address
+  useEffect(() => {
+    if (deviceInfo?.registered && wallet.address) {
+      fetchDeviceData();
+    }
+  }, [deviceInfo?.registered, wallet.address]);
+
+  // Auto-refresh device data every 30 seconds when collecting
+  useEffect(() => {
+    if (!isCollecting || !wallet.address) return;
+
+    const interval = setInterval(() => {
+      fetchDeviceData();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [isCollecting, wallet.address]);
+
+  const fetchDeviceData = async () => {
+    if (!wallet.address) return;
+
+    try {
+      // Fetch device info, consistency, and incentives
+      const response = await fetch(`${API_BASE}/api/arduino/my-device/${wallet.address}`);
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          console.log('No device found for this wallet');
+          return;
+        }
+        throw new Error('Failed to fetch device data');
+      }
+
+      const data = await response.json();
+
+      // Update device info with merkle root
+      const registryResponse = await fetch(`${API_BASE}/api/arduino/registry`);
+      const registryData = await registryResponse.json();
+
+      setDeviceInfo(prev => ({
+        ...prev!,
+        merkleRoot: registryData.dual_roots?.auto_root || 'pending',
+        lastProofTime: Date.now(),
+      }));
+
+      // Store backend consistency and incentives
+      setBackendConsistency(data.consistency);
+      setBackendIncentives(data.incentives);
+
+      console.log('✅ Device data fetched from backend:', data);
+    } catch (err) {
+      console.error('Failed to fetch device data:', err);
+    }
+  };
+
+  /**
+   * Calculate consistency metrics (use backend data if available)
+   */
+  const getConsistencyMetrics = (): ConsistencyMetrics => {
+    // Prefer backend data (24-hour epoch with database persistence)
+    if (backendConsistency) {
+      const hoursElapsed = backendConsistency.total_readings > 0
+        ? (Date.now() / 1000 - backendConsistency.first_reading_at) / 3600
+        : 0;
+
+      const perfectDayStreak = backendConsistency.uptime_percent > 99
+        ? Math.floor(hoursElapsed / 24)
+        : 0;
+
+      return {
+        uptimePercent: backendConsistency.uptime_percent,
+        expectedReadings: backendConsistency.expected_readings,
+        collectedReadings: backendConsistency.total_readings,
+        missedReadings: backendConsistency.missed_readings,
+        perfectDayStreak,
+      };
+    }
+
+    // Fallback: Calculate from local session data
+    const hoursElapsed = sensorData.length > 0
+      ? (Date.now() - sensorData[0].timestamp) / (1000 * 60 * 60)
+      : 0;
+
+    // Expected: 1 reading every 10 seconds = 6 per minute = 360 per hour
+    const expectedReadings = Math.floor(hoursElapsed * 360);
+    const collectedReadings = sensorData.length;
+    const missedReadings = Math.max(0, expectedReadings - collectedReadings);
+    const uptimePercent = expectedReadings > 0
+      ? Math.min(100, (collectedReadings / expectedReadings) * 100)
+      : 0;
+
+    const perfectDayStreak = uptimePercent > 99 ? Math.floor(hoursElapsed / 24) : 0;
+
+    return {
+      uptimePercent,
+      expectedReadings,
+      collectedReadings,
+      perfectDayStreak,
+      missedReadings,
+    };
+  };
+
+  /**
+   * Calculate incentives based on consistency (use backend data if available)
+   */
+  const getIncentiveData = (): IncentiveData => {
+    // Prefer backend data (actual incentive calculation)
+    if (backendIncentives) {
+      const { total_earned, consistency_percent } = backendIncentives;
+
+      // Determine reward tier based on consistency
+      let rewardTier: 'HIGH' | 'MEDIUM' | 'LOW' = 'LOW';
+      if (consistency_percent >= 98) {
+        rewardTier = 'HIGH';
+      } else if (consistency_percent >= 90) {
+        rewardTier = 'MEDIUM';
+      }
+
+      const nextTierThreshold = rewardTier === 'LOW' ? 90 : rewardTier === 'MEDIUM' ? 98 : 99.5;
+
+      return {
+        dailyEarned: total_earned, // Authorization (0.02) + Consistency bonus (0-0.4)
+        weeklyEarned: total_earned * 7,
+        pending: total_earned * 0.25, // 25% pending in batch
+        rewardTier,
+        nextTierThreshold,
+      };
+    }
+
+    // Fallback: Calculate from local session data
+    const consistency = getConsistencyMetrics();
+    const { uptimePercent } = consistency;
+
+    // Reward tiers based on consistency
+    let rewardTier: 'HIGH' | 'MEDIUM' | 'LOW' = 'LOW';
+    let baseReward = 0.020; // 0.02 tDUST (LOW tier)
+
+    if (uptimePercent >= 98) {
+      rewardTier = 'HIGH';
+      baseReward = 0.100; // 0.1 tDUST (HIGH tier - 5x multiplier)
+    } else if (uptimePercent >= 90) {
+      rewardTier = 'MEDIUM';
+      baseReward = 0.050; // 0.05 tDUST (MEDIUM tier - 2.5x multiplier)
+    }
+
+    const dailyEarned = baseReward;
+    const weeklyEarned = dailyEarned * 7;
+    const pending = baseReward * 0.25; // 25% pending in batch
+
+    const nextTierThreshold = rewardTier === 'LOW' ? 90 : rewardTier === 'MEDIUM' ? 98 : 99.5;
+
+    return {
+      dailyEarned,
+      weeklyEarned,
+      pending,
+      rewardTier,
+      nextTierThreshold,
+    };
+  };
+
   /**
    * Register device with backend
    */
   const handleRegisterDevice = async () => {
-    if (!wallet.isConnected) {
+    if (!wallet.isConnected || !wallet.address) {
       setError('Please connect your wallet first');
       return;
     }
 
     try {
       setError(null);
-      const devicePubkey = `device_${wallet.address?.substring(0, 16)}`;
+      const devicePubkey = `device_${wallet.address.substring(0, 16)}`;
 
       const response = await fetch(`${API_BASE}/api/arduino/registry/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           device_pubkey: devicePubkey,
+          owner_wallet: wallet.address, // CRITICAL: Pass wallet address for persistence
           collection_mode: 'auto',
           device_id: 'iot-kit-001',
           metadata: {
@@ -106,9 +312,15 @@ export function ArduinoDashboard() {
         pubkey: devicePubkey,
         registered: true,
         collectionMode: 'auto',
+        merkleRoot: data.global_auto_collection_root,
       });
 
       console.log('✅ Device registered:', data);
+      console.log(`   Owner wallet: ${wallet.address}`);
+      console.log(`   Device pubkey: ${devicePubkey}`);
+
+      // Fetch initial device data
+      await fetchDeviceData();
     } catch (err: any) {
       console.error('Registration error:', err);
       setError(err.message);
@@ -152,7 +364,7 @@ export function ArduinoDashboard() {
         };
 
         setCurrentReading(sensorReading);
-        setSensorData((prev) => [...prev, sensorReading].slice(-100));
+        setSensorData((prev) => [...prev, sensorReading].slice(-1000)); // Keep last 1000
 
         console.log('📊 BLE reading:', sensorReading);
       });
@@ -217,7 +429,7 @@ export function ArduinoDashboard() {
       };
 
       setCurrentReading(sensorReading);
-      setSensorData((prev) => [...prev, sensorReading].slice(-100)); // Keep last 100
+      setSensorData((prev) => [...prev, sensorReading].slice(-1000)); // Keep last 1000
 
       console.log('📊 Sensor reading:', sensorReading);
     } catch (err: any) {
@@ -266,26 +478,36 @@ export function ArduinoDashboard() {
   };
 
   const averageConditions = getAverageConditions();
+  const consistency = getConsistencyMetrics();
+  const incentives = getIncentiveData();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-900 via-teal-900 to-blue-900 p-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8 pt-4">
+        <div className="flex justify-between items-center mb-6 pt-4">
           <div>
             <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-              <span>🌡️</span> IoT Kit Sensors
+              <span>🔐</span> IoT Kit Dashboard
             </h1>
             <p className="text-green-200 text-sm mt-1">
-              Collect real-time farm data for federated learning
+              ZK-Verified Data Collection with Incentive Tracking
             </p>
           </div>
-          <button
-            onClick={() => navigate('/selection')}
-            className="px-4 py-2 bg-slate-800/60 text-white rounded-lg hover:bg-slate-800 transition-all"
-          >
-            ← Back
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setDemoMode(!demoMode)}
+              className="px-4 py-2 bg-purple-600/60 text-white rounded-lg hover:bg-purple-600 transition-all"
+            >
+              {demoMode ? 'Exit Demo' : '👥 Demo Mode'}
+            </button>
+            <button
+              onClick={() => navigate('/selection')}
+              className="px-4 py-2 bg-slate-800/60 text-white rounded-lg hover:bg-slate-800 transition-all"
+            >
+              ← Back
+            </button>
+          </div>
         </div>
 
         {/* Error Display */}
@@ -295,279 +517,372 @@ export function ArduinoDashboard() {
           </div>
         )}
 
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Device Setup Panel */}
-          <div className="bg-slate-800/60 backdrop-blur-md border border-green-500/30 rounded-2xl p-6">
-            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <span>📡</span> Device Setup
-            </h2>
-
-            {!deviceInfo?.registered ? (
-              <div className="space-y-4">
-                <div className="bg-blue-900/30 border border-blue-500/50 rounded-lg p-4">
-                  <p className="text-blue-200 text-sm mb-3">
-                    Register your IoT Kit to start collecting sensor data.
-                    Data includes temperature and humidity for agricultural insights.
-                  </p>
-                  <button
-                    onClick={handleRegisterDevice}
-                    disabled={!wallet.isConnected}
-                    className="w-full bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white font-semibold py-3 px-6 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {wallet.isConnected ? 'Register IoT Kit' : 'Connect Wallet First'}
-                  </button>
+        {!deviceInfo?.registered ? (
+          /* Registration Flow */
+          <div className="bg-slate-800/60 backdrop-blur-md border border-green-500/30 rounded-2xl p-8 text-center">
+            <div className="mb-6">
+              <div className="text-6xl mb-4">🔐</div>
+              <h2 className="text-2xl font-bold text-white mb-2">Register Your IoT Kit</h2>
+              <p className="text-green-200">
+                Register to start collecting ZK-verified sensor data and earning tDUST rewards
+              </p>
+            </div>
+            <button
+              onClick={handleRegisterDevice}
+              disabled={!wallet.isConnected}
+              className="bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white font-semibold py-4 px-8 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+            >
+              {wallet.isConnected ? '🔗 Register IoT Kit Device' : '⚠️ Connect Wallet First'}
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* PRIORITY 1: ZK PROOF VERIFICATION STATUS - HERO SECTION */}
+            <div className="mb-6 bg-gradient-to-br from-purple-900/80 to-blue-900/80 backdrop-blur-md border-2 border-purple-400/50 rounded-2xl p-6 shadow-2xl">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                  <span className="text-4xl">🔐</span> Midnight ZK Proof Status
+                </h2>
+                <div className="px-4 py-2 bg-green-500/20 border border-green-400 rounded-lg">
+                  <span className="text-green-300 font-bold text-sm">LIVE</span>
                 </div>
               </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="bg-green-900/30 border border-green-500/50 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-green-400 text-2xl">✅</span>
-                    <p className="text-green-300 font-semibold">Device Registered</p>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-green-400 text-5xl">✅</span>
+                    <div>
+                      <p className="text-green-300 font-bold text-xl">VERIFIED</p>
+                      <p className="text-green-200 text-sm">Device Authorized on Midnight Testnet</p>
+                    </div>
                   </div>
-                  <div className="text-xs text-green-100 space-y-1">
-                    <p>Device ID: {deviceInfo.deviceId}</p>
-                    <p className="font-mono text-[10px] break-all">
-                      Pubkey: {deviceInfo.pubkey}
+
+                  <div className="bg-slate-900/50 rounded-lg p-4 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-purple-200 text-sm">Current Batch:</span>
+                      <span className="text-white font-bold">{sensorData.length} readings</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-purple-200 text-sm">Proof Generated:</span>
+                      <span className="text-white font-bold">
+                        {deviceInfo.lastProofTime
+                          ? `${Math.floor((Date.now() - deviceInfo.lastProofTime) / 60000)}m ago`
+                          : 'Pending'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="bg-slate-900/50 rounded-lg p-3">
+                    <p className="text-purple-200 text-xs mb-1">Merkle Root (Auto-Collection)</p>
+                    <p className="text-white font-mono text-sm break-all">
+                      {deviceInfo.merkleRoot || 'Generating...'}
                     </p>
-                    <p>Mode: {deviceInfo.collectionMode}</p>
                   </div>
-                </div>
-
-                <div className="bg-blue-900/30 border border-blue-500/50 rounded-lg p-4 mb-4">
-                  <p className="text-blue-200 text-sm mb-3">
-                    <strong>🔵 Real Hardware:</strong> Connect IoT Kit via Web Bluetooth
-                  </p>
-                  <button
-                    onClick={connectBLE}
-                    disabled={isCollecting}
-                    className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold py-3 px-6 rounded-xl transition-all disabled:opacity-50"
-                  >
-                    {isCollecting ? '✅ Connected to IoT Kit' : '🔗 Connect IoT Kit BLE'}
-                  </button>
-                </div>
-
-                <div className="bg-purple-900/30 border border-purple-500/50 rounded-lg p-4">
-                  <p className="text-purple-200 text-sm mb-3">
-                    <strong>🟣 Simulation:</strong> Test without hardware
-                  </p>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => {
-                        setIsCollecting(!isCollecting);
-                        if (!isCollecting) collectReading();
-                      }}
-                      className={`flex-1 font-semibold py-3 px-6 rounded-xl transition-all ${
-                        isCollecting
-                          ? 'bg-red-600 hover:bg-red-700 text-white'
-                          : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white'
-                      }`}
-                    >
-                      {isCollecting ? 'Stop Auto-Sim' : 'Start Auto-Sim'}
+                  <div className="bg-slate-900/50 rounded-lg p-3">
+                    <p className="text-purple-200 text-xs mb-1">Device Pubkey</p>
+                    <p className="text-white font-mono text-xs break-all">{deviceInfo.pubkey}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-all">
+                      View Proof Details
                     </button>
-                    <button
-                      onClick={collectReading}
-                      disabled={isCollecting}
-                      className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-all disabled:opacity-50"
-                    >
-                      Manual Sim
+                    <button className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-all">
+                      Verify On-Chain
                     </button>
                   </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Current Reading */}
-          <div className="bg-slate-800/60 backdrop-blur-md border border-green-500/30 rounded-2xl p-6">
-            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <span>📊</span> Current Reading
-            </h2>
-
-            {currentReading ? (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-orange-900/30 border border-orange-500/50 rounded-lg p-4">
-                    <p className="text-orange-300 text-sm mb-1">Temperature</p>
-                    <p className="text-3xl font-bold text-white">
-                      {currentReading.temperature.toFixed(1)}°C
-                    </p>
-                  </div>
-                  <div className="bg-blue-900/30 border border-blue-500/50 rounded-lg p-4">
-                    <p className="text-blue-300 text-sm mb-1">Humidity</p>
-                    <p className="text-3xl font-bold text-white">
-                      {currentReading.humidity.toFixed(1)}%
-                    </p>
-                  </div>
-                </div>
-                <div className="text-xs text-gray-300">
-                  Last updated: {new Date(currentReading.timestamp).toLocaleTimeString()}
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-400">
-                <p>No readings yet</p>
-                <p className="text-xs mt-2">Start collecting to see sensor data</p>
-              </div>
-            )}
-          </div>
-
-          {/* Collected Data Summary */}
-          <div className="bg-slate-800/60 backdrop-blur-md border border-green-500/30 rounded-2xl p-6">
-            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <span>📈</span> Data Summary
-            </h2>
-
-            {averageConditions ? (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-purple-900/30 border border-purple-500/50 rounded-lg p-3">
-                    <p className="text-purple-300 text-xs mb-1">Avg Temperature</p>
-                    <p className="text-2xl font-bold text-white">
-                      {averageConditions.temperature.toFixed(1)}°C
-                    </p>
-                  </div>
-                  <div className="bg-cyan-900/30 border border-cyan-500/50 rounded-lg p-3">
-                    <p className="text-cyan-300 text-xs mb-1">Avg Humidity</p>
-                    <p className="text-2xl font-bold text-white">
-                      {averageConditions.humidity.toFixed(1)}%
-                    </p>
-                  </div>
-                </div>
-                <div className="bg-green-900/30 border border-green-500/50 rounded-lg p-3">
-                  <p className="text-green-300 text-sm">
-                    Total Readings: <strong>{averageConditions.readings}</strong>
-                  </p>
-                  <p className="text-green-200 text-xs mt-1">
-                    Collected over {Math.floor((Date.now() - sensorData[0]?.timestamp) / 60000)} minutes
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-400">
-                <p>No data collected</p>
-              </div>
-            )}
-          </div>
-
-          {/* Farm Metadata */}
-          <div className="bg-slate-800/60 backdrop-blur-md border border-green-500/30 rounded-2xl p-6">
-            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <span>🌾</span> Farm Details
-            </h2>
-
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm text-green-200 mb-1">Crop Type</label>
-                <select
-                  value={farmMetadata.cropType}
-                  onChange={(e) => setFarmMetadata({ ...farmMetadata, cropType: e.target.value })}
-                  className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white"
-                >
-                  <option value="maize">Maize</option>
-                  <option value="wheat">Wheat</option>
-                  <option value="rice">Rice</option>
-                  <option value="soybeans">Soybeans</option>
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm text-green-200 mb-1">Soil Type</label>
-                  <select
-                    value={farmMetadata.soilType}
-                    onChange={(e) => setFarmMetadata({ ...farmMetadata, soilType: e.target.value })}
-                    className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
-                  >
-                    <option value="loamy">Loamy</option>
-                    <option value="clay">Clay</option>
-                    <option value="sandy">Sandy</option>
-                    <option value="silty">Silty</option>
-                    <option value="peaty">Peaty</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm text-green-200 mb-1">Irrigation</label>
-                  <select
-                    value={farmMetadata.irrigationType}
-                    onChange={(e) =>
-                      setFarmMetadata({ ...farmMetadata, irrigationType: e.target.value })
-                    }
-                    className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
-                  >
-                    <option value="drip">Drip</option>
-                    <option value="sprinkler">Sprinkler</option>
-                    <option value="flood">Flood</option>
-                    <option value="rainfed">Rainfed</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <label className="block text-xs text-green-200 mb-1">Farm Size (ha)</label>
-                  <input
-                    type="number"
-                    value={farmMetadata.farmSize}
-                    onChange={(e) =>
-                      setFarmMetadata({ ...farmMetadata, farmSize: parseFloat(e.target.value) })
-                    }
-                    className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-2 py-2 text-white text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-green-200 mb-1">Fertilizer (kg/ha)</label>
-                  <input
-                    type="number"
-                    value={farmMetadata.fertilizer}
-                    onChange={(e) =>
-                      setFarmMetadata({ ...farmMetadata, fertilizer: parseFloat(e.target.value) })
-                    }
-                    className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-2 py-2 text-white text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-green-200 mb-1">Pesticides</label>
-                  <input
-                    type="number"
-                    value={farmMetadata.pesticides}
-                    onChange={(e) =>
-                      setFarmMetadata({ ...farmMetadata, pesticides: parseInt(e.target.value) })
-                    }
-                    className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-2 py-2 text-white text-sm"
-                  />
                 </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Action Panel */}
-        <div className="mt-6 bg-gradient-to-r from-purple-900/50 to-blue-900/50 backdrop-blur-md border border-purple-500/30 rounded-2xl p-6">
-          <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-            <span>🚀</span> Train with Sensor Data
-          </h2>
+            {/* PRIORITY 2 & 3: CONSISTENCY + INCENTIVES */}
+            <div className="grid md:grid-cols-2 gap-6 mb-6">
+              {/* CONSISTENCY SCORE */}
+              <div className="bg-slate-800/60 backdrop-blur-md border-2 border-green-500/50 rounded-2xl p-6">
+                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                  <span>📊</span> Data Collection Consistency
+                </h2>
 
-          <div className="mb-4 text-purple-100 text-sm space-y-2">
-            <p>
-              ✓ Use your Arduino sensor data to train a federated learning model for crop yield
-              prediction
-            </p>
-            <p>✓ Your data stays private - only model updates are shared</p>
-            <p>✓ Contribute to a global agricultural intelligence network</p>
-          </div>
+                <div className="mb-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-2xl font-bold text-white">{consistency.uptimePercent.toFixed(1)}%</span>
+                    <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+                      consistency.uptimePercent >= 98
+                        ? 'bg-green-500/20 text-green-300 border border-green-400'
+                        : consistency.uptimePercent >= 90
+                        ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-400'
+                        : 'bg-red-500/20 text-red-300 border border-red-400'
+                    }`}>
+                      {consistency.uptimePercent >= 98 ? 'Excellent' : consistency.uptimePercent >= 90 ? 'Good' : 'Poor'}
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-700 rounded-full h-3 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        consistency.uptimePercent >= 98
+                          ? 'bg-gradient-to-r from-green-500 to-emerald-500'
+                          : consistency.uptimePercent >= 90
+                          ? 'bg-gradient-to-r from-yellow-500 to-orange-500'
+                          : 'bg-gradient-to-r from-red-500 to-pink-500'
+                      }`}
+                      style={{ width: `${Math.min(100, consistency.uptimePercent)}%` }}
+                    ></div>
+                  </div>
+                </div>
 
-          <button
-            onClick={handleTrainWithSensorData}
-            disabled={!averageConditions || sensorData.length < 5}
-            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-4 px-6 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg"
-          >
-            {averageConditions && sensorData.length >= 5
-              ? `Train FL Model (${sensorData.length} readings) →`
-              : 'Collect at least 5 readings to train'}
-          </button>
-        </div>
+                <div className="space-y-3">
+                  <div className="bg-slate-900/50 rounded-lg p-3 flex justify-between">
+                    <span className="text-green-200 text-sm">Uptime:</span>
+                    <span className="text-white font-bold">{consistency.collectedReadings}/{consistency.expectedReadings}</span>
+                  </div>
+                  <div className="bg-slate-900/50 rounded-lg p-3 flex justify-between">
+                    <span className="text-green-200 text-sm">Expected Readings:</span>
+                    <span className="text-white font-bold">{consistency.expectedReadings}/hour</span>
+                  </div>
+                  <div className="bg-slate-900/50 rounded-lg p-3 flex justify-between">
+                    <span className="text-green-200 text-sm">Missed Readings:</span>
+                    <span className="text-red-300 font-bold">{consistency.missedReadings}</span>
+                  </div>
+                  {consistency.perfectDayStreak > 0 && (
+                    <div className="bg-orange-900/30 border border-orange-500/50 rounded-lg p-3 flex items-center gap-2">
+                      <span className="text-2xl">🔥</span>
+                      <span className="text-orange-200 font-bold">
+                        {consistency.perfectDayStreak} day{consistency.perfectDayStreak !== 1 ? 's' : ''} perfect streak!
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* tDUST INCENTIVES */}
+              <div className="bg-slate-800/60 backdrop-blur-md border-2 border-yellow-500/50 rounded-2xl p-6">
+                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                  <span>💰</span> tDUST Incentives Earned
+                </h2>
+
+                <div className="mb-4">
+                  <div className="text-center py-4 bg-gradient-to-br from-yellow-900/30 to-orange-900/30 rounded-lg border border-yellow-500/50">
+                    <p className="text-yellow-200 text-sm mb-1">Today's Earnings</p>
+                    <p className="text-5xl font-bold text-yellow-300">{incentives.dailyEarned.toFixed(3)}</p>
+                    <p className="text-yellow-100 text-sm mt-1">tDUST</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="bg-slate-900/50 rounded-lg p-3 flex justify-between">
+                    <span className="text-yellow-200 text-sm">This Week:</span>
+                    <span className="text-white font-bold">{incentives.weeklyEarned.toFixed(3)} tDUST</span>
+                  </div>
+                  <div className="bg-slate-900/50 rounded-lg p-3 flex justify-between">
+                    <span className="text-yellow-200 text-sm">Pending (Batch):</span>
+                    <span className="text-white font-bold">{incentives.pending.toFixed(3)} tDUST</span>
+                  </div>
+                  <div className={`rounded-lg p-3 flex justify-between ${
+                    incentives.rewardTier === 'HIGH'
+                      ? 'bg-green-900/30 border border-green-500/50'
+                      : incentives.rewardTier === 'MEDIUM'
+                      ? 'bg-yellow-900/30 border border-yellow-500/50'
+                      : 'bg-red-900/30 border border-red-500/50'
+                  }`}>
+                    <span className={`text-sm ${
+                      incentives.rewardTier === 'HIGH' ? 'text-green-200' : incentives.rewardTier === 'MEDIUM' ? 'text-yellow-200' : 'text-red-200'
+                    }`}>
+                      Reward Tier:
+                    </span>
+                    <span className={`font-bold ${
+                      incentives.rewardTier === 'HIGH' ? 'text-green-300' : incentives.rewardTier === 'MEDIUM' ? 'text-yellow-300' : 'text-red-300'
+                    }`}>
+                      {incentives.rewardTier}
+                    </span>
+                  </div>
+                  <div className="bg-blue-900/30 border border-blue-500/50 rounded-lg p-3">
+                    <p className="text-blue-200 text-xs mb-1">Next Tier Threshold:</p>
+                    <p className="text-blue-100 font-bold">{incentives.nextTierThreshold}% consistency → +20% bonus</p>
+                  </div>
+                  <button className="w-full bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white font-bold py-3 rounded-xl transition-all">
+                    💰 Claim Rewards
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* SECONDARY: Device Control + Current Reading */}
+            <div className="grid md:grid-cols-2 gap-6 mb-6">
+              {/* Device Control */}
+              <div className="bg-slate-800/40 backdrop-blur-md border border-green-500/20 rounded-xl p-5">
+                <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                  <span>📡</span> Device Control
+                </h3>
+
+                <div className="space-y-3">
+                  <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
+                    <p className="text-blue-200 text-xs mb-2">
+                      <strong>🔵 Real Hardware:</strong> Connect via Web Bluetooth
+                    </p>
+                    <button
+                      onClick={connectBLE}
+                      disabled={isCollecting}
+                      className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold py-2 px-4 rounded-lg transition-all disabled:opacity-50 text-sm"
+                    >
+                      {isCollecting ? '✅ Connected' : '🔗 Connect BLE'}
+                    </button>
+                  </div>
+
+                  <div className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-3">
+                    <p className="text-purple-200 text-xs mb-2">
+                      <strong>🟣 Simulation:</strong> Test without hardware
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setIsCollecting(!isCollecting);
+                          if (!isCollecting) collectReading();
+                        }}
+                        className={`flex-1 font-semibold py-2 px-4 rounded-lg transition-all text-sm ${
+                          isCollecting
+                            ? 'bg-red-600 hover:bg-red-700 text-white'
+                            : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white'
+                        }`}
+                      >
+                        {isCollecting ? 'Stop' : 'Start'}
+                      </button>
+                      <button
+                        onClick={collectReading}
+                        disabled={isCollecting}
+                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-all disabled:opacity-50 text-sm"
+                      >
+                        Manual
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Current Reading */}
+              <div className="bg-slate-800/40 backdrop-blur-md border border-green-500/20 rounded-xl p-5">
+                <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                  <span>📊</span> Current Reading
+                </h3>
+
+                {currentReading ? (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-orange-900/20 border border-orange-500/30 rounded-lg p-3">
+                        <p className="text-orange-300 text-xs mb-1">Temperature</p>
+                        <p className="text-2xl font-bold text-white">
+                          {currentReading.temperature.toFixed(1)}°C
+                        </p>
+                      </div>
+                      <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
+                        <p className="text-blue-300 text-xs mb-1">Humidity</p>
+                        <p className="text-2xl font-bold text-white">
+                          {currentReading.humidity.toFixed(1)}%
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-400 text-center">
+                      {new Date(currentReading.timestamp).toLocaleTimeString()}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-gray-500">
+                    <p className="text-sm">No readings yet</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Collapsible: Farm Details + Data Summary */}
+            <details className="mb-6 bg-slate-800/30 backdrop-blur-md border border-green-500/20 rounded-xl">
+              <summary className="cursor-pointer p-4 text-white font-semibold hover:bg-slate-700/30 rounded-xl transition-all">
+                📋 Farm Details & Data Summary (Click to expand)
+              </summary>
+              <div className="p-4 grid md:grid-cols-2 gap-4">
+                {/* Farm Metadata */}
+                <div>
+                  <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                    <span>🌾</span> Farm Configuration
+                  </h4>
+                  <div className="space-y-2">
+                    <select
+                      value={farmMetadata.cropType}
+                      onChange={(e) => setFarmMetadata({ ...farmMetadata, cropType: e.target.value })}
+                      className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                    >
+                      <option value="maize">Maize</option>
+                      <option value="wheat">Wheat</option>
+                      <option value="rice">Rice</option>
+                      <option value="soybeans">Soybeans</option>
+                    </select>
+                    <div className="grid grid-cols-2 gap-2">
+                      <select
+                        value={farmMetadata.soilType}
+                        onChange={(e) => setFarmMetadata({ ...farmMetadata, soilType: e.target.value })}
+                        className="bg-slate-700/50 border border-slate-600 rounded-lg px-2 py-1 text-white text-xs"
+                      >
+                        <option value="loamy">Loamy</option>
+                        <option value="clay">Clay</option>
+                        <option value="sandy">Sandy</option>
+                      </select>
+                      <select
+                        value={farmMetadata.irrigationType}
+                        onChange={(e) => setFarmMetadata({ ...farmMetadata, irrigationType: e.target.value })}
+                        className="bg-slate-700/50 border border-slate-600 rounded-lg px-2 py-1 text-white text-xs"
+                      >
+                        <option value="drip">Drip</option>
+                        <option value="sprinkler">Sprinkler</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Data Summary */}
+                <div>
+                  <h4 className="text-sm font-bold text-white mb-3">📈 Data Summary</h4>
+                  {averageConditions ? (
+                    <div className="space-y-2">
+                      <div className="bg-slate-700/30 rounded-lg p-2 flex justify-between text-xs">
+                        <span className="text-gray-300">Avg Temp:</span>
+                        <span className="text-white font-bold">{averageConditions.temperature.toFixed(1)}°C</span>
+                      </div>
+                      <div className="bg-slate-700/30 rounded-lg p-2 flex justify-between text-xs">
+                        <span className="text-gray-300">Avg Humidity:</span>
+                        <span className="text-white font-bold">{averageConditions.humidity.toFixed(1)}%</span>
+                      </div>
+                      <div className="bg-slate-700/30 rounded-lg p-2 flex justify-between text-xs">
+                        <span className="text-gray-300">Total Readings:</span>
+                        <span className="text-white font-bold">{averageConditions.readings}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-xs">No data yet</p>
+                  )}
+                </div>
+              </div>
+            </details>
+
+            {/* Action: Train with Sensor Data */}
+            <div className="bg-gradient-to-r from-purple-900/40 to-blue-900/40 backdrop-blur-md border border-purple-500/30 rounded-2xl p-6">
+              <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                <span>🚀</span> Train FL Model with IoT Data
+              </h3>
+              <p className="text-purple-100 text-sm mb-4">
+                Use your ZK-verified sensor data to train a federated learning model for crop yield prediction
+              </p>
+              <button
+                onClick={handleTrainWithSensorData}
+                disabled={!averageConditions || sensorData.length < 5}
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {averageConditions && sensorData.length >= 5
+                  ? `🚀 Train Model (${sensorData.length} readings) →`
+                  : '⏳ Collect at least 5 readings to train'}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -319,3 +319,10 @@ export function getDatabaseStats() {
 
 // Export database instance for raw queries if needed
 export { db };
+
+/**
+ * Get raw database instance for advanced operations
+ */
+export function getDatabase() {
+  return db;
+}
