@@ -24,12 +24,16 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' })); // Large limit for model weights
 
 // Serve gateway HTML from the gateway directory
-const gatewayPath = path.join(__dirname, '../../gateway');
+// __dirname in production: /app/dist
+// Gateway location in Docker: /app/gateway
+const gatewayPath = path.join(__dirname, '../gateway');
 console.log(`📁 Serving gateway files from: ${gatewayPath}`);
 app.use('/gateway', express.static(gatewayPath));
 
 // Serve frontend static files from packages/ui/dist
-const frontendPath = path.join(__dirname, '../../packages/ui/dist');
+// __dirname in production: /app/dist
+// Frontend location in Docker: /app/packages/ui/dist
+const frontendPath = path.join(__dirname, '../packages/ui/dist');
 console.log(`📁 Serving frontend from: ${frontendPath}`);
 app.use(express.static(frontendPath));
 

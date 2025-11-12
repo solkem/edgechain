@@ -7,7 +7,7 @@ app = 'edgechain-midnight'
 primary_region = 'iad'
 
 [build]
-  dockerfile = 'Dockerfile'
+  dockerfile = '../Dockerfile.unified'
 
 [env]
   NODE_ENV = 'production'

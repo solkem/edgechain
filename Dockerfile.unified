@@ -1,3 +1,7 @@
+# Unified Dockerfile for EdgeChain Backend + Frontend
+# Build context: project root
+# This allows access to both server/ and packages/ui/dist/
+
 # Build stage
 FROM node:20-alpine AS builder
 
@@ -13,10 +17,8 @@ COPY server/package.json server/package-lock.json ./
 RUN npm ci
 
 # Copy server source files
-COPY server/ ./
-
-# Copy frontend build from monorepo
-COPY packages/ui/dist ./frontend-build
+COPY server/src ./src
+COPY server/tsconfig.json ./
 
 # Build TypeScript
 RUN npm run build
@@ -39,10 +41,13 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
 
 # Copy database schema files (SQL files are not compiled by TypeScript)
-COPY --from=builder /app/src/database/schema.sql ./dist/database/schema.sql
+COPY server/src/database/schema.sql ./dist/database/schema.sql
+
+# Copy gateway files
+COPY gateway ./gateway
 
 # Copy frontend build
-COPY --from=builder /app/frontend-build ./packages/ui/dist
+COPY packages/ui/dist ./packages/ui/dist
 
 # Create data directory for SQLite database
 RUN mkdir -p /app/data
