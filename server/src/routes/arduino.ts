@@ -11,6 +11,7 @@ import { DatabasePersistenceService } from '../services/databasePersistence';
 import { DeviceAuthService } from '../services/deviceAuth';
 import { NullifierTrackingService } from '../services/nullifierTracking';
 import { ZKProofService } from '../services/zkProofService';
+import { ipfsStorage } from '../services/ipfsStorage';
 import { SignedReading } from '../types/arduino';
 // TODO: Re-enable in Phase 3 (Midnight SDK integration)
 // import { deploymentWalletService } from '../services/deploymentWallet';
@@ -631,7 +632,7 @@ router.post('/zk/submit-private-reading', async (req, res) => {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
-    stmt.run(
+    const result = stmt.run(
       public_inputs.nullifier,
       public_inputs.epoch,
       proof,
@@ -644,9 +645,49 @@ router.post('/zk/submit-private-reading', async (req, res) => {
       1 // verified = true
     );
 
-    console.log('✅ VERIFIED AND STORED!');
+    const submissionId = result.lastInsertRowid;
+
+    console.log('✅ VERIFIED AND STORED IN DATABASE!');
     console.log(`💰 Reward: ${reward} tDUST`);
-    console.log(`📊 Reading stored anonymously`);
+    console.log(`📊 Reading stored anonymously (ID: ${submissionId})`);
+
+    // 7. Upload to IPFS for decentralized storage
+    let ipfsCid: string | null = null;
+    try {
+      console.log('📤 Uploading ZK proof to IPFS...');
+
+      const ipfsData = {
+        proof,
+        public_inputs,
+        reading: {
+          temperature,
+          humidity,
+          timestamp,
+        },
+        collection_mode: collectionMode,
+        reward,
+        verified: true,
+        submitted_at: Math.floor(Date.now() / 1000),
+      };
+
+      ipfsCid = await ipfsStorage.uploadZKProof(ipfsData);
+
+      // Update database record with IPFS CID
+      const updateStmt = db.prepare(`
+        UPDATE zk_proof_submissions
+        SET ipfs_cid = ?
+        WHERE id = ?
+      `);
+      updateStmt.run(ipfsCid, submissionId);
+
+      console.log('✅ UPLOADED TO IPFS!');
+      console.log(`🌐 CID: ${ipfsCid}`);
+      console.log(`🔗 Gateway: ${ipfsStorage.getGatewayUrl(ipfsCid)}`);
+    } catch (ipfsError: any) {
+      console.warn('⚠️  IPFS upload failed (continuing without):', ipfsError.message);
+      // Continue even if IPFS fails - database storage is the primary concern
+    }
+
     console.log('═══════════════════════════════════════\n');
 
     res.json({
@@ -656,6 +697,8 @@ router.post('/zk/submit-private-reading', async (req, res) => {
       collection_mode: collectionMode,
       nullifier: public_inputs.nullifier,
       epoch: public_inputs.epoch,
+      ipfs_cid: ipfsCid,
+      ipfs_gateway_url: ipfsCid ? ipfsStorage.getGatewayUrl(ipfsCid) : null,
     });
   } catch (error: any) {
     console.error('Private reading submission error:', error);
@@ -672,6 +715,14 @@ router.get('/zk/stats', (_req, res) => {
     const proofStats = zkProofService.getStats();
     const nullifierStats = nullifierService.getNullifierStats();
 
+    // Get IPFS stats from database
+    const db = dbService['db'];
+    const ipfsStmt = db.prepare(`
+      SELECT COUNT(*) as total, COUNT(ipfs_cid) as with_ipfs
+      FROM zk_proof_submissions
+    `);
+    const ipfsStats = ipfsStmt.get() as { total: number; with_ipfs: number };
+
     res.json({
       proof_generation: proofStats,
       nullifiers: nullifierStats,
@@ -680,6 +731,94 @@ router.get('/zk/stats', (_req, res) => {
         current_epoch: nullifierService.getCurrentEpoch(),
         anonymity_set_size: registryService.getAllDevices().length,
       },
+      ipfs: {
+        total_submissions: ipfsStats.total,
+        stored_on_ipfs: ipfsStats.with_ipfs,
+        percentage: ipfsStats.total > 0
+          ? Math.round((ipfsStats.with_ipfs / ipfsStats.total) * 100)
+          : 0,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/arduino/zk/ipfs/:cid
+ * Retrieve ZK proof from IPFS by CID
+ * Demonstrates public verifiability while maintaining privacy!
+ */
+router.get('/zk/ipfs/:cid', async (req, res) => {
+  try {
+    const { cid } = req.params;
+
+    console.log(`\n🔍 RETRIEVING ZK PROOF FROM IPFS`);
+    console.log(`📦 CID: ${cid}`);
+
+    const proofData = await ipfsStorage.getZKProof(cid);
+
+    if (!proofData) {
+      return res.status(404).json({ error: 'Proof not found on IPFS' });
+    }
+
+    // Verify the proof is valid
+    const isValid = await ipfsStorage.verifyProofFromIPFS(cid);
+
+    console.log(`✅ Retrieved and verified from IPFS`);
+    console.log(`   Nullifier: ${proofData.public_inputs.nullifier.slice(0, 16)}...`);
+    console.log(`   Temperature: ${proofData.reading.temperature}°C`);
+    console.log(`   Verified: ${isValid}`);
+
+    res.json({
+      success: true,
+      proof_data: proofData,
+      verified: isValid,
+      gateway_url: ipfsStorage.getGatewayUrl(cid),
+    });
+  } catch (error: any) {
+    console.error('IPFS retrieval error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/arduino/zk/submissions
+ * Get recent ZK proof submissions with IPFS links
+ */
+router.get('/zk/submissions', (_req, res) => {
+  try {
+    const db = dbService['db'];
+    const stmt = db.prepare(`
+      SELECT
+        id,
+        nullifier,
+        epoch,
+        temperature,
+        humidity,
+        timestamp_device,
+        collection_mode,
+        reward,
+        ipfs_cid,
+        verified,
+        created_at
+      FROM zk_proof_submissions
+      ORDER BY created_at DESC
+      LIMIT 50
+    `);
+
+    const submissions = stmt.all() as any[];
+
+    // Add IPFS gateway URLs
+    const submissionsWithUrls = submissions.map((sub) => ({
+      ...sub,
+      ipfs_gateway_url: sub.ipfs_cid ? ipfsStorage.getGatewayUrl(sub.ipfs_cid) : null,
+    }));
+
+    res.json({
+      success: true,
+      count: submissions.length,
+      submissions: submissionsWithUrls,
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message });

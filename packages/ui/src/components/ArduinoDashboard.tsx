@@ -461,6 +461,12 @@ export function ArduinoDashboard() {
       console.log(`   Your identity: ANONYMOUS`);
       console.log(`   Nullifier: ${data.nullifier.slice(0, 16)}...`);
 
+      if (data.ipfs_cid) {
+        console.log(`   📦 IPFS CID: ${data.ipfs_cid}`);
+        console.log(`   🌐 Gateway: ${data.ipfs_gateway_url}`);
+        console.log('   ✅ Proof stored on decentralized IPFS!');
+      }
+
       return data;
     } catch (err: any) {
       console.error('❌ Private submission failed:', err);
@@ -783,6 +789,20 @@ export function ArduinoDashboard() {
                         <div className="flex justify-between text-xs">
                           <span className="text-purple-300">Last Proof:</span>
                           <span className="text-white font-bold">{lastProofGenTime}ms</span>
+                        </div>
+                      )}
+                      {zkProofStats?.ipfs && (
+                        <div className="border-t border-purple-700/30 pt-2 mt-2">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-purple-300">IPFS Storage:</span>
+                            <span className="text-white font-bold">
+                              {zkProofStats.ipfs.stored_on_ipfs}/{zkProofStats.ipfs.total_submissions}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-purple-300">Decentralized:</span>
+                            <span className="text-green-400 font-bold">{zkProofStats.ipfs.percentage}%</span>
+                          </div>
                         </div>
                       )}
                     </div>
