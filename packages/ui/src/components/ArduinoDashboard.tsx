@@ -913,7 +913,16 @@ export function ArduinoDashboard() {
                 {wallet.isConnected ? '📡 Connect IoT Kit via BLE' : '⚠️ Connect Wallet First'}
               </button>
               <p className="text-gray-400 text-sm mt-4">
-                Need firmware? Check <code className="bg-gray-800 px-2 py-1 rounded">arduino/edgechain_iot/</code>
+                Need EdgeChain firmware? Download it{' '}
+                <a
+                  href="https://github.com/solkem/edgechain-midnight-hackathon/blob/main/arduino/edgechain_iot/edgechain_iot.ino"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 underline font-semibold"
+                >
+                  here
+                </a>
+                {' '}and flash to your Arduino Nano 33 BLE Sense.
               </p>
             </div>
           </div>
