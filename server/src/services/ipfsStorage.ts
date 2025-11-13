@@ -13,8 +13,11 @@
  * 3. Anyone can retrieve and verify from IPFS
  */
 
-import * as Client from '@storacha/client';
-import * as Signer from '@ucanto/principal/ed25519';
+// IPFS imports disabled due to CommonJS/ESM incompatibility
+// These packages are ESM-only and cannot be imported in CommonJS context
+// TODO: Convert server to ESM or use a separate microservice for IPFS
+// import * as Client from '@storacha/client';
+// import * as Signer from '@ucanto/principal/ed25519';
 
 export interface IPFSZKProofData {
   // ZK Proof data
@@ -67,22 +70,19 @@ export class IPFSStorageService {
     if (this.initialized) return;
 
     try {
-      // Create a new client with in-memory store
-      const principal = await Signer.generate();
+      // IPFS initialization disabled - ESM/CommonJS incompatibility
+      // TODO: Enable by converting server to ESM or using separate microservice
 
-      this.client = await Client.create({ principal });
-
-      // Note: For production, you'll need to:
-      // 1. Sign up at https://console.storacha.network
-      // 2. Create a space
-      // 3. Get delegation credentials
-      // For now, we'll use a simpler approach with environment variable
-
-      console.log('✅ IPFS Storage Service initialized (Storacha)');
-      this.initialized = true;
+      console.log('⚠️  IPFS Storage Service: DISABLED (CommonJS/ESM incompatibility)');
+      console.log('   ZK proofs will be stored in database only');
+      console.log('   Architecture is ready - just needs ESM conversion');
+      this.initialized = false;
     } catch (error: any) {
       console.error('❌ Failed to initialize IPFS Storage Service:', error.message);
-      throw error;
+      console.error('   Note: IPFS uploads will be disabled for this session');
+      console.error('   Cause: CommonJS/ESM compatibility (Storacha requires ESM)');
+      // Don't throw - allow service to continue without IPFS
+      this.initialized = false;
     }
   }
 
