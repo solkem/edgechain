@@ -643,7 +643,25 @@ export function ArduinoDashboard() {
       console.log('✓ Connected to IoT Kit, listening for readings...');
     } catch (err: any) {
       console.error('BLE connection error:', err);
-      setError(err.message || 'Failed to connect to IoT Kit via BLE');
+
+      // Provide friendly, helpful error messages
+      let friendlyMessage = 'Failed to connect to IoT Kit via BLE';
+
+      if (err.message?.includes('cancelled') || err.message?.includes('chooser')) {
+        friendlyMessage = '🔍 No device selected. Please click "Connect IoT Kit via BLE" again and select "EdgeChain-Demo" from the list.';
+      } else if (err.message?.includes('not found') || err.message?.includes('No device')) {
+        friendlyMessage = '📡 No Arduino found nearby. Make sure your Arduino is powered on, has EdgeChain firmware flashed, and is within 10 meters.';
+      } else if (err.message?.includes('permission') || err.message?.includes('denied')) {
+        friendlyMessage = '🔒 Bluetooth permission denied. Please enable Bluetooth in your browser settings and try again.';
+      } else if (err.message?.includes('not supported')) {
+        friendlyMessage = '⚠️ Web Bluetooth not supported. Please use Chrome, Edge, or Opera browser.';
+      } else if (err.message?.includes('GATT') || err.message?.includes('connect')) {
+        friendlyMessage = '⚡ Connection failed. Make sure the Arduino is not already connected to another device, then try again.';
+      } else if (err.message) {
+        friendlyMessage = `❌ Connection error: ${err.message}`;
+      }
+
+      setError(friendlyMessage);
     }
   };
 
