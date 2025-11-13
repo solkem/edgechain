@@ -145,14 +145,6 @@ router.post('/registry/register', async (req, res) => {
       return res.status(400).json({ error: 'collection_mode must be "auto" or "manual"' });
     }
 
-    // Register in memory (for merkle tree)
-    const registration = registryService.registerDevice(
-      device_pubkey,
-      collection_mode,
-      device_id,
-      metadata
-    );
-
     // Compute merkle leaf hash (simple hash of pubkey for now)
     const crypto = require('crypto');
     const merkle_leaf_hash = crypto.createHash('sha256').update(device_pubkey).digest('hex');
@@ -166,6 +158,34 @@ router.post('/registry/register', async (req, res) => {
       metadata || {},
       merkle_leaf_hash
     );
+
+    // Register in memory (for merkle tree) - only if not already registered
+    let registration;
+    if (!dbResult.alreadyRegistered) {
+      registration = registryService.registerDevice(
+        device_pubkey,
+        collection_mode,
+        device_id,
+        metadata
+      );
+    } else {
+      // Device already registered, get existing registration from memory
+      const status = registryService.getStatus();
+      const existingDevice = Array.from((registryService as any).devices.values())
+        .find((d: any) => d.device_pubkey === device_pubkey);
+
+      if (!existingDevice) {
+        // Not in memory yet (server restarted), register now
+        registration = registryService.registerDevice(
+          device_pubkey,
+          collection_mode,
+          device_id,
+          metadata
+        );
+      } else {
+        registration = existingDevice;
+      }
+    }
 
     const status = registryService.getStatus();
 
