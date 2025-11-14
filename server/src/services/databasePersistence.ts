@@ -255,10 +255,11 @@ export class DatabasePersistenceService {
     const first_reading_at = readings[0].created_at;
     const last_reading_at = readings[readings.length - 1].created_at;
 
-    // Expected: 1 reading every 10 seconds = 6 per minute = 360 per hour = 8640 per 24 hours
+    // Expected: 1 reading every 30 seconds = 2 per minute = 120 per hour = 2880 per 24 hours
+    // Balanced for demo (visible progress in 3 min) + realistic for agriculture IoT
     // But only count from first reading to now (in case they just registered)
     const seconds_elapsed = now - first_reading_at;
-    const expected_readings = Math.floor(seconds_elapsed / 10);
+    const expected_readings = Math.floor(seconds_elapsed / 30);
 
     const total_readings = readings.length;
     const missed_readings = Math.max(0, expected_readings - total_readings);

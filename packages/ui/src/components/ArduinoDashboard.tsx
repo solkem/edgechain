@@ -112,13 +112,13 @@ export function ArduinoDashboard() {
   const [lastProofGenTime, setLastProofGenTime] = useState<number>(0);
   const [anonymitySetSize, setAnonymitySetSize] = useState<number>(0);
 
-  // Auto-collect sensor data every 10 seconds when active
+  // Auto-collect sensor data every 30 seconds when active
   useEffect(() => {
     if (!isCollecting) return;
 
     const interval = setInterval(async () => {
       await collectReading();
-    }, 10000); // 10 seconds
+    }, 30000); // 30 seconds (2 per minute, 120 per hour)
 
     return () => clearInterval(interval);
   }, [isCollecting]);
@@ -206,8 +206,9 @@ export function ArduinoDashboard() {
       ? (Date.now() - sensorData[0].timestamp) / (1000 * 60 * 60)
       : 0;
 
-    // Expected: 1 reading every 10 seconds = 6 per minute = 360 per hour
-    const expectedReadings = Math.floor(hoursElapsed * 360);
+    // Expected: 1 reading every 30 seconds = 2 per minute = 120 per hour
+    // Balanced for demo (visible progress in 3 min) + realistic for agriculture IoT
+    const expectedReadings = Math.floor(hoursElapsed * 120);
     const collectedReadings = sensorData.length;
     const missedReadings = Math.max(0, expectedReadings - collectedReadings);
     const uptimePercent = expectedReadings > 0
@@ -1137,8 +1138,8 @@ export function ArduinoDashboard() {
                     <span className="text-white font-bold">{consistency.collectedReadings}/{consistency.expectedReadings}</span>
                   </div>
                   <div className="bg-slate-900/50 rounded-lg p-3 flex justify-between">
-                    <span className="text-green-200 text-sm">Expected Readings:</span>
-                    <span className="text-white font-bold">{consistency.expectedReadings}/hour</span>
+                    <span className="text-green-200 text-sm">Reading Interval:</span>
+                    <span className="text-white font-bold">30 seconds</span>
                   </div>
                   <div className="bg-slate-900/50 rounded-lg p-3 flex justify-between">
                     <span className="text-green-200 text-sm">Missed Readings:</span>
