@@ -24,47 +24,104 @@ Traditional agriculture AI solutions require farmers to upload sensitive farm da
 ## ✨ Features
 
 - **🔐 Privacy-First** - Uses Midnight Network's zero-knowledge proofs. Sensitive farm data never leaves the farmer's device
+- **📡 IoT Sensor Integration** - Arduino Nano 33 BLE Sense collects real-time environmental data (temperature, humidity) with cryptographic authentication
+- **🔑 Unique Device Identity** - Each Arduino generates unique Ed25519 keypairs from hardware serial numbers for secure device authentication
 - **📱 SMS Predictions** - Works on any phone, no app download needed. Farmers text commands to get crop predictions instantly
-- **🤝 Decentralized Aggregation** - Multiple aggregators can submit, system picks the best one by historical accuracy 
-- **💰 Incentive System** - Farmers and honest aggregators earn rewards for participation and verification
+- **🤝 Decentralized Aggregation** - Multiple aggregators can submit, system picks the best one by historical accuracy
+- **💰 Incentive System** - Farmers and honest aggregators earn rewards for participation (0.1 DUST per verified IoT reading)
 - **⚡ Federated Learning** - Train models locally, aggregate globally. Each farmer's data stays on-device
 - **🌐 Accessible** - Designed for smallholder farmers with limited tech literacy and connectivity
+- **☁️ Decentralized Storage** - ZK proofs and sensor data stored on IPFS for transparency and immutability
 
 ## 🏗️ Architecture
 
-### Current Implementation (Midnight Smart Contract)
+### System Overview
 
 ```
-┌──────────────────────────────────────────────────────────────────────┐
-│                         EdgeChain FL System                          │
-│                    (Federated Learning on Midnight)                  │
-└──────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────┐
+│                            EdgeChain Ecosystem                                 │
+│         Privacy-Preserving AI + IoT Data Collection + Federated Learning       │
+└────────────────────────────────────────────────────────────────────────────────┘
 
-┌─────────────────┐                    ┌──────────────────────────┐
-│  Farmer #1 UI   │                    │   Midnight Smart         │
-│  (Browser)      │                    │   Contract (Compact)     │
-│                 │                    │                          │
-│ ┌─────────────┐ │    submitModel()   │ Ledger State:            │
-│ │TensorFlow.js│ │───────────────────>│ - currentRound           │
-│ │Local Train  │ │    ZK-Proof        │ - submissionCount        │
-│ └─────────────┘ │                    │ - globalModelHash        │
-│                 │                    │ - isAggregating          │
-│ ┌─────────────┐ │                    │                          │
-│ │ Lace Wallet │ │                    │ Circuits:                │
-│ │ (Sign Tx)   │ │                    │ - submitModel()          │
-│ └─────────────┘ │                    │ - completeAggregation()  │
-└─────────────────┘                    │ - getGlobalModelHash()   │
-                                       │ - checkAggregating()     │
-┌─────────────────┐                    └────────────┬─────────────┘
-│  Farmer #2 UI   │                                 │
-│  (Browser)      │    submitModel()                │
-│                 │────────────────────>            │
-│ ┌─────────────┐ │    ZK-Proof                     │
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                            IoT DATA COLLECTION LAYER                            │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────┐         BLE (Web Bluetooth)        ┌──────────────────┐
+│  Arduino Nano 33 BLE │ ──────────────────────────────────>│  Gateway (Web)   │
+│      Sense (Rev2)    │     Encrypted + Signed Payload     │   Browser UI     │
+│                      │                                     │                  │
+│ ┌──────────────────┐ │                                     │ ┌──────────────┐ │
+│ │ HS300x Sensor    │ │                                     │ │Auto-Register │ │
+│ │ • Temperature    │ │    Payload Format:                 │ │ Device       │ │
+│ │ • Humidity       │ │    ┌─────────────────────┐         │ └──────────────┘ │
+│ └──────────────────┘ │    │ [JSON: temp, humid] │         │                  │
+│                      │    │ [EdDSA Signature]   │         │ ┌──────────────┐ │
+│ ┌──────────────────┐ │    │ [Device Public Key] │         │ │Parse Payload │ │
+│ │ Unique Device ID │ │    └─────────────────────┘         │ │Verify Sig    │ │
+│ │ (from HW Serial) │ │                                     │ └──────────────┘ │
+│ │                  │ │    Every 5 seconds                 └─────────┬────────┘
+│ │ Ed25519 Keypair: │ │                                              │
+│ │ • Public Key     │ │                                              │
+│ │ • Private Key    │ │                                              ↓
+│ │   (Derived from  │ │                              ┌───────────────────────┐
+│ │    NRF_FICR)     │ │                              │ Backend API (Node.js) │
+│ └──────────────────┘ │                              │                       │
+│                      │                              │ • Device Registry     │
+│ BLE Name:            │                              │ • Merkle Tree         │
+│ "EdgeChain-XXXX"     │                              │ • Reward Tracking     │
+└──────────────────────┘                              │ • ZK Proof Service    │
+                                                      └───────────┬───────────┘
+                                                                  │
+                                                                  ↓
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                        DECENTRALIZED STORAGE LAYER (IPFS)                       │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+                              ┌─────────────────────────────────┐
+                              │   IPFS Microservice (Storacha)  │
+                              │   https://edgechain-ipfs.fly.dev│
+                              │                                 │
+                              │  Stores:                        │
+                              │  • ZK Proofs (CID: bafybei...)  │
+                              │  • Sensor Readings (immutable)  │
+                              │  • Device Metadata              │
+                              │                                 │
+                              │  Mock Mode: Works without creds │
+                              └─────────────────────────────────┘
+                                             │
+                                             ↓
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                         FEDERATED LEARNING LAYER                                │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────┐                     ┌──────────────────────────┐
+│  Farmer #1 UI   │                     │   Midnight Smart         │
+│  (Browser)      │                     │   Contract (Compact)     │
+│                 │                     │                          │
+│ ┌─────────────┐ │   submitModel()     │ Ledger State:            │
+│ │TensorFlow.js│ │────────────────────>│ - currentRound           │
+│ │Local Train  │ │   ZK-Proof          │ - submissionCount        │
+│ │ (on IoT +   │ │                     │ - globalModelHash        │
+│ │  Manual)    │ │                     │ - deviceRegistry         │
+│ └─────────────┘ │                     │ - rewardPool             │
+│                 │                     │                          │
+│ ┌─────────────┐ │                     │ Circuits:                │
+│ │ Lace Wallet │ │                     │ - submitModel()          │
+│ │ (Sign Tx)   │ │                     │ - completeAggregation()  │
+│ └─────────────┘ │                     │ - claimRewards()         │
+└─────────────────┘                     │ - verifyDeviceProof()    │
+                                        └────────────┬─────────────┘
+┌─────────────────┐                                 │
+│  Farmer #2 UI   │   submitModel()                 │ Watch Events
+│  (Browser)      │────────────────────>            │
+│                 │   ZK-Proof                      │
+│ ┌─────────────┐ │                                 │
 │ │TensorFlow.js│ │                                 │
 │ │Local Train  │ │                                 │
 │ └─────────────┘ │                                 │
 └─────────────────┘                                 │
-                                                    │ Watch Events
+                                                    │
         ┌───────────────────────────────────────────┘
         │
         ↓
@@ -75,7 +132,8 @@ Traditional agriculture AI solutions require farmers to upload sensitive farm da
 │  2. Retrieves model weights from farmers                 │
 │  3. Runs FedAvg algorithm (weighted averaging)           │
 │  4. Calls contract.completeAggregation(newModelHash)     │
-│  5. Stores global model on IPFS/distributed storage      │
+│  5. Stores global model on IPFS                          │
+│  6. Distributes rewards (0.1 DUST per verified reading)  │
 └──────────────────────────────────────────────────────────┘
         │
         │ Global model available
@@ -87,9 +145,21 @@ Traditional agriculture AI solutions require farmers to upload sensitive farm da
 │       ↓                                                   │
 │  1. Query contract.getGlobalModelHash()                  │
 │  2. Download model from IPFS                             │
-│  3. Run TensorFlow.js inference                          │
+│  3. Run TensorFlow.js inference (IoT + manual data)      │
 │  4. SMS response: "Yield: 4.1 tons/ha..."                │
 └──────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                         PRIVACY & SECURITY GUARANTEES                           │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+✅ Device Identity:  Unique per Arduino (derived from hardware serial)
+✅ Data Authenticity: EdDSA signatures verify sensor readings
+✅ Replay Protection: Nullifiers prevent double-claiming rewards
+✅ Privacy-Preserving: ZK proofs hide device identity (reveal only Merkle root)
+✅ Decentralized:    IPFS storage for immutability and transparency
+✅ Incentive-Aligned: 0.1 DUST reward for automatic collection (IoT devices)
+                      0.02 DUST reward for manual data entry
 ```
 
 ### Data Flow (Privacy-Preserving)
@@ -164,10 +234,21 @@ Predictions available via simple text messages. Farmers don't need smartphones o
 
 ### Prerequisites
 
+**For Web Application:**
 - Node.js >= 22.0.0
 - Yarn >= 4.9.2
 - Git >= 2.0.0
 - Lace Midnight wallet (for on-chain participation)
+- Chrome, Edge, or Opera browser (for Web Bluetooth)
+
+**For Arduino IoT Devices (Optional):**
+- Arduino Nano 33 BLE Sense or Sense Rev2
+- Arduino IDE 2.x or PlatformIO
+- USB cable for programming
+- Required libraries:
+  - Arduino_HS300x (by Arduino)
+  - ArduinoBLE (by Arduino)
+  - Crypto (by Rhys Weatherley)
 
 ### Installation
 
@@ -213,10 +294,70 @@ cd packages/cli
 docker compose -f standalone.yml up -d
 ```
 
+### Arduino IoT Setup (Optional)
+
+**Setup Your Arduino Nano 33 BLE Sense:**
+
+```bash
+# 1. Install Arduino IDE 2.x
+# Download from: https://www.arduino.cc/en/software
+
+# 2. Install Board Support
+# Arduino IDE → Board Manager → Search "Arduino Mbed OS Nano Boards" → Install
+
+# 3. Install Required Libraries
+# Arduino IDE → Library Manager → Install:
+#   - Arduino_HS300x
+#   - ArduinoBLE
+#   - Crypto (by Rhys Weatherley)
+
+# 4. Flash EdgeChain Firmware
+# Open: arduino/edgechain_iot/edgechain_iot.ino
+# Select: Tools → Board → Arduino Nano 33 BLE
+# Select: Tools → Port → [Your Arduino Port]
+# Click: Upload
+
+# 5. Verify Operation
+# Open: Tools → Serial Monitor (115200 baud)
+# You should see:
+#   [1/4] Generating UNIQUE device identity...
+#   Hardware Serial: XXXXXXXXXXXXXXXX
+#   Device ID: EDGECHAIN_XXXXXXXX
+#   [4/4] BLE advertising as: EdgeChain-XXXX
+```
+
+**Connect Arduino to EdgeChain:**
+
+1. Visit: https://edgechain-midnight.fly.dev/arduino (use Chrome/Edge/Opera)
+2. Connect your wallet
+3. Click "Connect IoT Kit via BLE"
+4. Select your Arduino from the list (named "EdgeChain-XXXX")
+5. Device auto-registers on first reading
+6. Start earning 0.1 DUST per verified sensor reading!
+
+**Troubleshooting:**
+- Arduino not appearing? Check Serial Monitor for "BLE advertising" message
+- Browser issues? Make sure you're using Chrome/Edge/Opera (not Safari/Firefox)
+- See [private-docs/ARDUINO_RAW_BOARD_ONBOARDING.md](private-docs/ARDUINO_RAW_BOARD_ONBOARDING.md) for detailed guide
+```
+
 ## 📁 Project Structure
 
 ```
 edgechain-midnight-hackathon/
+├── arduino/                         # ✅ IMPLEMENTED - IoT Device Firmware
+│   └── edgechain_iot/
+│       └── edgechain_iot.ino        # Arduino Nano 33 BLE Sense firmware
+│                                    # - Unique device identity from HW serial
+│                                    # - Ed25519 signing of sensor readings
+│                                    # - BLE transmission (Web Bluetooth)
+│                                    # - HS300x temp/humidity sensors
+│
+├── ipfs-service/                    # ✅ IMPLEMENTED - Decentralized Storage
+│   ├── index.mjs                    # Express microservice (ESM)
+│   ├── fly.toml                     # Deployed to edgechain-ipfs.fly.dev
+│   └── package.json                 # Storacha IPFS client
+│
 ├── packages/
 │   ├── contract/                    # ✅ IMPLEMENTED - Midnight Smart Contract
 │   │   ├── src/
@@ -239,11 +380,17 @@ edgechain-midnight-hackathon/
 │   │   │   │   └── ContractProvider.tsx    # Smart contract integration
 │   │   │   ├── components/
 │   │   │   │   ├── FLDashboard.tsx         # FL training interface
+│   │   │   │   ├── ArduinoDashboard.tsx    # ✅ IoT device dashboard
+│   │   │   │   │                           # - Web Bluetooth integration
+│   │   │   │   │                           # - Auto-registration flow
+│   │   │   │   │                           # - Real-time sensor charts
+│   │   │   │   │                           # - Reward tracking
 │   │   │   │   └── (other UI components)
 │   │   │   ├── fl/
 │   │   │   │   ├── types.ts                # FL type definitions
 │   │   │   │   ├── training.ts             # TensorFlow.js local training
 │   │   │   │   ├── dataCollection.ts       # Mock farm data generation
+│   │   │   │   ├── arduinoIntegration.ts   # ✅ BLE device integration
 │   │   │   │   └── aggregation.ts          # FedAvg algorithm
 │   │   │   ├── main.tsx                    # App entry (providers setup)
 │   │   │   └── App.tsx                     # Main application
@@ -260,18 +407,39 @@ edgechain-midnight-hackathon/
 │   ├── src/
 │   │   ├── index.ts                 # Express server
 │   │   ├── routes/
-│   │   │   └── aggregation.ts       # Submission & download endpoints
+│   │   │   ├── aggregation.ts       # Submission & download endpoints
+│   │   │   └── arduino.ts           # ✅ IoT device registry & rewards
+│   │   │                            # - Device registration
+│   │   │                            # - Merkle tree maintenance
+│   │   │                            # - ZK proof submission
+│   │   │                            # - Reward distribution
 │   │   ├── services/
-│   │   │   └── aggregation.ts       # FedAvg implementation
+│   │   │   ├── aggregation.ts       # FedAvg implementation
+│   │   │   ├── ipfsStorage.ts       # ✅ IPFS microservice client
+│   │   │   ├── zkProofService.ts    # ✅ Mock ZK proof generation
+│   │   │   ├── deviceAuth.ts        # ✅ EdDSA signature verification
+│   │   │   ├── nullifierTracking.ts # ✅ Replay protection
+│   │   │   └── databasePersistence.ts # ✅ SQLite persistence
+│   │   ├── database/
+│   │   │   ├── index.ts             # Database connection
+│   │   │   └── schema.sql           # Production schema
 │   │   └── types/
 │   │       └── fl.ts                # Backend FL types
+│   ├── data/
+│   │   └── edgechain.db             # SQLite database
 │   ├── package.json
 │   └── tsconfig.json
 │
+├── gateway/                         # ✅ IMPLEMENTED - Standalone BLE Gateway
+│   └── ble_receiver.html            # Test page for Arduino BLE connection
+│
 ├── 📄 DOCUMENTATION
-│   ├── README.md                    # This file (main overview)
-│   ├── MIDNIGHT_INTEGRATION_STATUS.md    # Implementation status & roadmap
-│   └── SMS_VIABILITY_ANALYSIS.md         # SMS approach justification
+│   ├── README.md                          # This file (main overview)
+│   └── private-docs/                      # Internal documentation
+│       ├── IMPLEMENTATION_STATUS.md       # Complete architecture overview
+│       ├── ARDUINO_RAW_BOARD_ONBOARDING.md # Arduino setup guide
+│       ├── ARDUINO_DEVICE_REGISTRATION.md  # Device registry documentation
+│       └── ARDUINO_TOOLCHAIN_FIX.md       # Troubleshooting guide
 │
 ├── turbo.json                       # Monorepo configuration
 ├── tsconfig.json                    # Root TypeScript config
@@ -546,8 +714,10 @@ yarn start:production
 ## 📚 Resources
 
 ### Project Documentation
-- ⭐ **[SMS Viability Analysis](SMS_VIABILITY_ANALYSIS.md)** - Why SMS is the right choice for agricultural AI (with case studies, academic validation, and responses to common objections)
-- 📊 **[Midnight Integration Status](MIDNIGHT_INTEGRATION_STATUS.md)** - Current implementation status, architecture, and roadmap
+- 🏗️ **[Implementation Status](private-docs/IMPLEMENTATION_STATUS.md)** - Complete architecture overview, ZK privacy system, and deployment status
+- 📡 **[Arduino Onboarding Guide](private-docs/ARDUINO_RAW_BOARD_ONBOARDING.md)** - End-to-end setup from raw Arduino board to earning rewards
+- 🔐 **[Device Registration System](private-docs/ARDUINO_DEVICE_REGISTRATION.md)** - Merkle tree registry and reward distribution
+- 🔧 **[Arduino Troubleshooting](private-docs/ARDUINO_TOOLCHAIN_FIX.md)** - Common issues and fixes for Arduino IDE
 
 ### External Resources
 - [Midnight Network Docs](https://docs.midnight.network/)
@@ -555,6 +725,8 @@ yarn start:production
 - [Lace Wallet Integration](https://docs.midnight.network/wallet/lace/)
 - [Zero-Knowledge Proofs](https://docs.midnight.network/learn/zk-proofs/)
 - [Federated Learning Basics](https://ai.google/education/federated-learning/)
+- [Arduino Nano 33 BLE Sense](https://docs.arduino.cc/hardware/nano-33-ble-sense/)
+- [Web Bluetooth API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Bluetooth_API)
 
 
 ## 📄 License

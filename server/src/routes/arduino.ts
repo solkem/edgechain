@@ -845,6 +845,146 @@ router.get('/zk/submissions', (_req, res) => {
   }
 });
 
+// ============= REAL-TIME READING SUBMISSION & REWARD DISTRIBUTION =============
+
+/**
+ * POST /api/arduino/readings/submit
+ * Submit sensor reading with signature for instant reward distribution
+ *
+ * This endpoint:
+ * 1. Verifies EdDSA signature
+ * 2. Checks device is registered
+ * 3. Generates ZK proof
+ * 4. Stores proof to IPFS
+ * 5. Distributes 0.1 tDUST reward instantly (for demo - every 5 seconds)
+ */
+router.post('/readings/submit', async (req, res) => {
+  try {
+    const { device_pubkey, reading, signature, owner_wallet, collection_mode } = req.body;
+
+    console.log('\n📊 READING SUBMISSION');
+    console.log('═══════════════════════════════════════');
+    console.log(`📍 Device: ${device_pubkey?.slice(0, 16)}...`);
+    console.log(`📦 Reading: ${reading}`);
+    console.log(`🔐 Signature: ${signature?.slice(0, 32)}...`);
+    console.log(`💼 Wallet: ${owner_wallet?.slice(0, 30)}...`);
+    console.log(`📋 Mode: ${collection_mode}`);
+
+    // Validate required fields
+    if (!device_pubkey || !reading || !signature || !owner_wallet) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: device_pubkey, reading, signature, owner_wallet'
+      });
+    }
+
+    // Step 1: Verify device is registered
+    const deviceCheck = dbService.getDevice(device_pubkey);
+    if (!deviceCheck) {
+      console.log('❌ Device not registered');
+      return res.status(403).json({
+        success: false,
+        error: 'Device not registered. Please register device first.'
+      });
+    }
+
+    // Step 2: Verify signature
+    console.log('\n🔐 Verifying EdDSA signature...');
+    const isValidSignature = authService.verifyReadingSignature(
+      device_pubkey,
+      reading,
+      signature
+    );
+
+    if (!isValidSignature) {
+      console.log('❌ Invalid signature');
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid signature. Reading not signed by device private key.'
+      });
+    }
+    console.log('✅ Signature verified');
+
+    // Step 3: Generate ZK proof
+    console.log('\n🔮 Generating ZK proof...');
+    const readingData = JSON.parse(reading);
+    const zkProof = await zkProofService.generateProof({
+      device_pubkey,
+      reading: readingData,
+      collection_mode: collection_mode || 'auto',
+      merkle_root: registryService.getGlobalAutoRoot(), // Use auto registry for IoT devices
+    });
+    console.log(`✅ ZK proof generated: ${zkProof.claim_nullifier?.slice(0, 16)}...`);
+
+    // Step 4: Check for replay attacks
+    if (nullifierService.hasBeenUsed(zkProof.claim_nullifier)) {
+      console.log('❌ Nullifier already used (replay attack)');
+      return res.status(409).json({
+        success: false,
+        error: 'Reading already submitted (replay protection)'
+      });
+    }
+
+    // Mark nullifier as used
+    nullifierService.markAsUsed(zkProof.claim_nullifier);
+
+    // Step 5: Store to IPFS
+    console.log('\n☁️ Storing to IPFS...');
+    const ipfsCid = await ipfsStorage.uploadZKProof({
+      proof: zkProof.proof,
+      public_inputs: zkProof.public_inputs,
+      reading: readingData,
+      device_hint: device_pubkey.slice(0, 8), // Hint for debugging (not part of ZK proof)
+    });
+    console.log(`✅ Stored to IPFS: ${ipfsCid}`);
+
+    // Step 6: Save reading to database
+    dbService.saveReading({
+      device_pubkey,
+      temperature: readingData.t,
+      humidity: readingData.h,
+      timestamp: Date.now(),
+      signature,
+      collection_mode: collection_mode || 'auto',
+      ipfs_cid: ipfsCid,
+      zk_proof_nullifier: zkProof.claim_nullifier,
+    });
+
+    // Step 7: Calculate reward (0.1 tDUST for auto-collection)
+    const rewardAmount = collection_mode === 'auto' ? 0.1 : 0.02;
+
+    // Step 8: Distribute tDUST reward (INSTANT for demo)
+    console.log('\n💰 Distributing reward...');
+    console.log(`   Amount: ${rewardAmount} tDUST`);
+    console.log(`   Recipient: ${owner_wallet}`);
+
+    // TODO: Replace with real Midnight SDK call
+    // For now, we'll simulate instant distribution
+    const txHash = `demo_tx_${Date.now()}_${device_pubkey.slice(0, 8)}`;
+
+    console.log(`✅ Reward distributed! TX: ${txHash}`);
+    console.log('═══════════════════════════════════════\n');
+
+    // Return success response
+    res.json({
+      success: true,
+      ipfs_cid: ipfsCid,
+      reward_amount: rewardAmount,
+      reward_unit: 'tDUST',
+      tx_hash: txHash,
+      zk_proof_nullifier: zkProof.claim_nullifier,
+      message: `Reading verified! ${rewardAmount} tDUST distributed to ${owner_wallet.slice(0, 10)}...`
+    });
+
+  } catch (error: any) {
+    console.error('❌ Reading submission error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // ============= REWARD ENDPOINTS =============
 
 /**

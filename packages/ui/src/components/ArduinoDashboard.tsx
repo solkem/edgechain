@@ -88,6 +88,7 @@ export function ArduinoDashboard() {
   const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | null>(null);
   const [isCollecting, setIsCollecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [demoMode, setDemoMode] = useState(false);
   const [farmMetadata, setFarmMetadata] = useState({
     cropType: 'maize',
@@ -635,8 +636,41 @@ export function ArduinoDashboard() {
         setCurrentReading(sensorReading);
         setSensorData((prev) => [...prev, sensorReading].slice(-1000)); // Keep last 1000
 
-        // TODO: Submit reading to backend with signature verification
-        // TODO: Generate ZK proof if privacy mode enabled
+        // Submit reading to backend for real-time reward distribution
+        try {
+          const submitResponse = await fetch(`${API_BASE}/api/arduino/readings/submit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              device_pubkey: reading.device_pubkey,
+              reading: reading.reading_json,
+              signature: reading.signature,
+              owner_wallet: wallet.address,
+              collection_mode: 'auto',
+            }),
+          });
+
+          const submitResult = await submitResponse.json();
+
+          if (submitResult.success) {
+            console.log('✅ Reading submitted successfully');
+            console.log(`   IPFS CID: ${submitResult.ipfs_cid}`);
+            console.log(`   Reward distributed: ${submitResult.reward_amount} tDUST`);
+            console.log(`   Transaction: ${submitResult.tx_hash || 'pending'}`);
+
+            // Show success notification with reward amount
+            setError(null);
+            setSuccess(`🎉 +${submitResult.reward_amount} tDUST earned! Reading verified & stored on IPFS.`);
+
+            // Clear success message after 3 seconds
+            setTimeout(() => setSuccess(null), 3000);
+          } else {
+            console.warn('⚠️ Reading submission failed:', submitResult.error);
+            setError(`Failed to submit reading: ${submitResult.error}`);
+          }
+        } catch (err) {
+          console.error('❌ Failed to submit reading:', err);
+        }
       });
 
       setIsCollecting(true);
@@ -864,6 +898,13 @@ export function ArduinoDashboard() {
         {error && (
           <div className="mb-6 p-4 bg-red-900/50 border border-red-500/50 rounded-lg">
             <p className="text-red-200">❌ {error}</p>
+          </div>
+        )}
+
+        {/* Success/Reward Notification */}
+        {success && (
+          <div className="mb-6 p-4 bg-green-900/50 border border-green-500/50 rounded-lg animate-pulse">
+            <p className="text-green-200 font-semibold">{success}</p>
           </div>
         )}
 
