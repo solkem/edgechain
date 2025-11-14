@@ -667,14 +667,22 @@ export function ArduinoDashboard() {
             const newAccumulated = accumulatedRewards + (submitResult.reward_amount || 0);
             setAccumulatedRewards(newAccumulated);
 
+            console.log(`⏱️  Reward notification throttling:`);
+            console.log(`   Time since last: ${(timeSinceLastNotification / 1000).toFixed(1)}s`);
+            console.log(`   Accumulated: ${newAccumulated.toFixed(2)} tDUST`);
+            console.log(`   Threshold: 60s`);
+
             if (timeSinceLastNotification >= 60000) { // 60 seconds
               setError(null);
               setSuccess(`🎉 +${newAccumulated.toFixed(2)} tDUST earned! Readings verified & stored on IPFS.`);
               setLastRewardNotification(now);
               setAccumulatedRewards(0); // Reset accumulator
+              console.log(`   ✅ SHOWING NOTIFICATION`);
 
               // Clear success message after 3 seconds
               setTimeout(() => setSuccess(null), 3000);
+            } else {
+              console.log(`   ⏳ Skipping (${(60 - timeSinceLastNotification / 1000).toFixed(1)}s remaining)`);
             }
           } else {
             console.warn('⚠️ Reading submission failed:', submitResult.error);
