@@ -970,15 +970,18 @@ export function ArduinoDashboard() {
         ) : (
           <>
             {/* PRIORITY 1: ZK PROOF VERIFICATION STATUS - HERO SECTION */}
-            <div className="mb-6 bg-gradient-to-br from-purple-900/80 to-blue-900/80 backdrop-blur-md border-2 border-purple-400/50 rounded-2xl p-6 shadow-2xl">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-                  <span className="text-4xl">🔐</span> Midnight ZK Proof Status
-                </h2>
-                <div className="px-4 py-2 bg-green-500/20 border border-green-400 rounded-lg">
-                  <span className="text-green-300 font-bold text-sm">LIVE</span>
+            <details className="mb-6 bg-gradient-to-br from-purple-900/80 to-blue-900/80 backdrop-blur-md border-2 border-purple-400/50 rounded-2xl shadow-2xl">
+              <summary className="cursor-pointer p-6 hover:bg-purple-900/60 rounded-2xl transition-all">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                    <span className="text-4xl">🔐</span> Midnight ZK Proof Status
+                  </h2>
+                  <div className="px-4 py-2 bg-green-500/20 border border-green-400 rounded-lg">
+                    <span className="text-green-300 font-bold text-sm">LIVE</span>
+                  </div>
                 </div>
-              </div>
+              </summary>
+              <div className="px-6 pb-6">
 
               <div className="grid md:grid-cols-3 gap-6">
                 {/* Privacy Mode Toggle */}
@@ -1090,7 +1093,8 @@ export function ArduinoDashboard() {
                   </div>
                 </div>
               </div>
-            </div>
+              </div>
+            </details>
 
             {/* PRIORITY 2 & 3: CONSISTENCY + INCENTIVES */}
             <div className="grid md:grid-cols-2 gap-6 mb-6">
