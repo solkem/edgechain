@@ -143,22 +143,22 @@ export function ContractProvider({ children }: { children: ReactNode }) {
   }, [wallet.isConnected, wallet.address, contractAddress]);
 
   /**
-   * Get DApp Connector API from Lace Midnight Preview wallet
+   * Get DApp Connector API from WalletProvider
+   *
+   * WalletProvider already handles detecting and enabling the Midnight API
+   * from the Lace Midnight Preview extension. We reuse that instead of
+   * duplicating the detection logic.
    */
   const getDAppConnectorAPI = async (): Promise<DAppConnectorAPI | null> => {
-    // Check multiple possible locations for the Midnight API
-    if (window.cardano?.midnight?.mnLace) {
-      console.log('Found Midnight API at window.cardano.midnight.mnLace');
-      return window.cardano.midnight.mnLace;
+    try {
+      // Use WalletProvider's getMidnightApi() which already found and enabled the API
+      const api = await wallet.getMidnightApi();
+      console.log('✅ Got Midnight API from WalletProvider');
+      return api;
+    } catch (error: any) {
+      console.warn('⚠️  Failed to get Midnight API:', error.message);
+      return null;
     }
-
-    if (window.cardano?.lace?.mnLace) {
-      console.log('Found Midnight API at window.cardano.lace.mnLace');
-      return window.cardano.lace.mnLace;
-    }
-
-    console.warn('Midnight DApp Connector API not found');
-    return null;
   };
 
   /**
