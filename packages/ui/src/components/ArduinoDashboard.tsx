@@ -283,9 +283,14 @@ export function ArduinoDashboard() {
   };
 
   /**
-   * Register device with backend
+   * @deprecated DO NOT USE - Creates fake device without actual hardware
+   * Device registration now happens automatically via checkAndRegisterDevice()
+   * when a real Arduino connects via BLE and sends its first reading.
+   *
+   * This function was used for demo/testing but creates misleading UX where
+   * users think they have a device registered when they don't have hardware.
    */
-  const handleRegisterDevice = async () => {
+  const handleRegisterDevice_DEPRECATED = async () => {
     if (!wallet.isConnected || !wallet.address) {
       setError('Please connect your wallet first');
       return;
@@ -484,6 +489,93 @@ export function ArduinoDashboard() {
   }, [deviceInfo?.registered]);
 
   /**
+   * Check if device is registered, and auto-register if not
+   */
+  const checkAndRegisterDevice = async (device_pubkey: string): Promise<boolean> => {
+    try {
+      if (!wallet.address) {
+        console.error('❌ Wallet not connected');
+        setError('Please connect your wallet first');
+        return false;
+      }
+
+      console.log(`🔍 Checking registration for device: ${device_pubkey.slice(0, 16)}...`);
+
+      // 1. Check if device is already registered
+      const checkResponse = await fetch(`${API_BASE}/api/arduino/registry/check`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ device_pubkey }),
+      });
+
+      const checkResult = await checkResponse.json();
+
+      if (checkResult.approved) {
+        console.log('✅ Device already registered');
+
+        // Update device info state
+        setDeviceInfo({
+          deviceId: `arduino-${device_pubkey.slice(0, 8)}`,
+          pubkey: device_pubkey,
+          registered: true,
+          collectionMode: 'auto',
+        });
+
+        return true;
+      }
+
+      // 2. Device not registered → auto-register it
+      console.log('📝 Auto-registering new Arduino device...');
+      console.log(`   Wallet: ${wallet.address}`);
+      console.log(`   Device: ${device_pubkey.slice(0, 16)}...`);
+
+      const registerResponse = await fetch(`${API_BASE}/api/arduino/registry/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          device_pubkey,
+          owner_wallet: wallet.address,
+          collection_mode: 'auto',
+          device_id: `arduino-${Date.now()}`,
+          metadata: {
+            registered_via: 'ble',
+            first_seen: Date.now(),
+            device_type: 'Arduino Nano 33 BLE Sense',
+          },
+        }),
+      });
+
+      const registerResult = await registerResponse.json();
+
+      if (registerResult.success) {
+        console.log('✅ Device registered successfully!');
+        console.log(`   Device ID: ${registerResult.registration.device_pubkey.slice(0, 16)}...`);
+        console.log(`   Owner: ${wallet.address}`);
+        console.log(`   Mode: auto (0.1 DUST per reading)`);
+
+        // Update device info state
+        setDeviceInfo({
+          deviceId: registerResult.registration.device_id || `arduino-${device_pubkey.slice(0, 8)}`,
+          pubkey: device_pubkey,
+          registered: true,
+          collectionMode: 'auto',
+          merkleRoot: registerResult.global_auto_collection_root,
+        });
+
+        return true;
+      } else {
+        console.error('❌ Registration failed:', registerResult);
+        setError(`Device registration failed: ${registerResult.error || 'Unknown error'}`);
+        return false;
+      }
+    } catch (error: any) {
+      console.error('❌ Error checking/registering device:', error);
+      setError(`Device registration error: ${error.message}`);
+      return false;
+    }
+  };
+
+  /**
    * Connect to IoT Kit via Web Bluetooth API
    */
   const connectBLE = async () => {
@@ -507,11 +599,32 @@ export function ArduinoDashboard() {
 
       await characteristic.startNotifications();
 
+      // Track if we've registered the device yet
+      let deviceRegistered = false;
+
       // Listen for sensor readings
-      characteristic.addEventListener('characteristicvaluechanged', (event: any) => {
+      characteristic.addEventListener('characteristicvaluechanged', async (event: any) => {
         const buffer = event.target.value.buffer;
         const reading = parseIoTPayload(buffer);
 
+        console.log('📊 BLE reading received:', {
+          temperature: reading.t,
+          humidity: reading.h,
+          device: reading.device_pubkey?.slice(0, 16) + '...',
+        });
+
+        // Auto-register device on first reading
+        if (!deviceRegistered && reading.device_pubkey) {
+          console.log('🔐 First reading from device, checking registration...');
+          deviceRegistered = await checkAndRegisterDevice(reading.device_pubkey);
+
+          if (!deviceRegistered) {
+            console.error('❌ Failed to register device, skipping reading');
+            return;
+          }
+        }
+
+        // Store reading in local state
         const sensorReading: SensorData = {
           timestamp: Date.now(),
           temperature: reading.t,
@@ -522,19 +635,39 @@ export function ArduinoDashboard() {
         setCurrentReading(sensorReading);
         setSensorData((prev) => [...prev, sensorReading].slice(-1000)); // Keep last 1000
 
-        console.log('📊 BLE reading:', sensorReading);
+        // TODO: Submit reading to backend with signature verification
+        // TODO: Generate ZK proof if privacy mode enabled
       });
 
       setIsCollecting(true);
       console.log('✓ Connected to IoT Kit, listening for readings...');
     } catch (err: any) {
       console.error('BLE connection error:', err);
-      setError(err.message || 'Failed to connect to IoT Kit via BLE');
+
+      // Provide friendly, helpful error messages
+      let friendlyMessage = 'Failed to connect to IoT Kit via BLE';
+
+      if (err.message?.includes('cancelled') || err.message?.includes('chooser')) {
+        friendlyMessage = '🔍 No device selected. Please click "Connect IoT Kit via BLE" again and select "EdgeChain-Demo" from the list.';
+      } else if (err.message?.includes('not found') || err.message?.includes('No device')) {
+        friendlyMessage = '📡 No Arduino found nearby. Make sure your Arduino is powered on, has EdgeChain firmware flashed, and is within 10 meters.';
+      } else if (err.message?.includes('permission') || err.message?.includes('denied')) {
+        friendlyMessage = '🔒 Bluetooth permission denied. Please enable Bluetooth in your browser settings and try again.';
+      } else if (err.message?.includes('not supported')) {
+        friendlyMessage = '⚠️ Web Bluetooth not supported. Please use Chrome, Edge, or Opera browser.';
+      } else if (err.message?.includes('GATT') || err.message?.includes('connect')) {
+        friendlyMessage = '⚡ Connection failed. Make sure the Arduino is not already connected to another device, then try again.';
+      } else if (err.message) {
+        friendlyMessage = `❌ Connection error: ${err.message}`;
+      }
+
+      setError(friendlyMessage);
     }
   };
 
   /**
    * Parse IoT Kit BLE payload
+   * Format: [1 byte: JSON length][N bytes: JSON][64 bytes: signature][32 bytes: device pubkey]
    */
   const parseIoTPayload = (buffer: ArrayBuffer) => {
     const view = new Uint8Array(buffer);
@@ -547,8 +680,27 @@ export function ArduinoDashboard() {
     const json_bytes = view.slice(idx, idx + json_len);
     const reading_json = new TextDecoder().decode(json_bytes);
     const reading = JSON.parse(reading_json);
+    idx += json_len;
 
-    return reading;
+    // Read signature (64 bytes)
+    const signature_bytes = view.slice(idx, idx + 64);
+    const signature = Array.from(signature_bytes)
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+    idx += 64;
+
+    // Read device public key (32 bytes)
+    const pubkey_bytes = view.slice(idx, idx + 32);
+    const device_pubkey = Array.from(pubkey_bytes)
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+
+    return {
+      ...reading,
+      signature,
+      device_pubkey,
+      reading_json,
+    };
   };
 
   /**
@@ -716,22 +868,63 @@ export function ArduinoDashboard() {
         )}
 
         {!deviceInfo?.registered ? (
-          /* Registration Flow */
-          <div className="bg-slate-800/60 backdrop-blur-md border border-green-500/30 rounded-2xl p-8 text-center">
-            <div className="mb-6">
-              <div className="text-6xl mb-4">🔐</div>
-              <h2 className="text-2xl font-bold text-white mb-2">Register Your IoT Kit</h2>
-              <p className="text-green-200">
-                Register to start collecting ZK-verified sensor data and earning tDUST rewards
+          /* BLE Connection Flow */
+          <div className="bg-slate-800/60 backdrop-blur-md border border-blue-500/30 rounded-2xl p-8">
+            <div className="mb-6 text-center">
+              <div className="text-6xl mb-4">📡</div>
+              <h2 className="text-2xl font-bold text-white mb-2">Connect Your Arduino IoT Kit</h2>
+              <p className="text-blue-200 mb-6">
+                Connect your Arduino Nano 33 BLE Sense via Bluetooth to start earning rewards
               </p>
             </div>
-            <button
-              onClick={handleRegisterDevice}
-              disabled={!wallet.isConnected}
-              className="bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white font-semibold py-4 px-8 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg"
-            >
-              {wallet.isConnected ? '🔗 Register IoT Kit Device' : '⚠️ Connect Wallet First'}
-            </button>
+
+            {/* Requirements */}
+            <div className="bg-yellow-500/20 border border-yellow-400/50 rounded-lg p-4 mb-4">
+              <p className="text-yellow-200 text-sm font-semibold mb-2">
+                ⚠️ Requirements:
+              </p>
+              <ul className="text-yellow-100 text-sm space-y-1 list-disc list-inside">
+                <li>Arduino Nano 33 BLE Sense with EdgeChain firmware flashed</li>
+                <li>Wallet connected (for device ownership)</li>
+                <li>Browser with Web Bluetooth support (Chrome, Edge, Opera)</li>
+                <li>Arduino powered on and within BLE range (~10 meters)</li>
+              </ul>
+            </div>
+
+            {/* How it works */}
+            <div className="bg-blue-500/10 border border-blue-400/30 rounded-lg p-4 mb-6">
+              <p className="text-blue-200 text-sm font-semibold mb-2">
+                📝 How it works:
+              </p>
+              <ol className="text-blue-100 text-sm space-y-1 list-decimal list-inside">
+                <li>Click "Connect IoT Kit" below</li>
+                <li>Select your Arduino from BLE picker (named "EdgeChain-XXXX" with unique ID)</li>
+                <li>Device will auto-register to your wallet on first reading</li>
+                <li>Start earning 0.1 DUST per verified reading!</li>
+              </ol>
+            </div>
+
+            <div className="text-center">
+              <button
+                onClick={connectBLE}
+                disabled={!wallet.isConnected}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-4 px-8 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+              >
+                {wallet.isConnected ? '📡 Connect IoT Kit via BLE' : '⚠️ Connect Wallet First'}
+              </button>
+              <p className="text-gray-400 text-sm mt-4">
+                Need EdgeChain firmware? Download it{' '}
+                <a
+                  href="https://github.com/solkem/edgechain-midnight-hackathon/blob/main/arduino/edgechain_iot/edgechain_iot.ino"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 underline font-semibold"
+                >
+                  here
+                </a>
+                {' '}and flash to your Arduino Nano 33 BLE Sense.
+              </p>
+            </div>
           </div>
         ) : (
           <>

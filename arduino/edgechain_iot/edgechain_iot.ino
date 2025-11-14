@@ -1,12 +1,12 @@
 /**
- * EdgeChain IoT Demo - Arduino Nano BLE Sense / Sense Rev2
+ * EdgeChain IoT - Arduino Nano BLE Sense / Sense Rev2
  *
  * Collects temperature/humidity data, signs with EdDSA, broadcasts via BLE
- * For live demo with real hardware + ZK proofs
+ * Each Arduino automatically generates UNIQUE cryptographic identity from hardware serial
  *
- * Compatible with both:
- * - Original Sense (HTS221 sensor)
- * - Sense Rev2 (HS300x sensor)
+ * Compatible with:
+ * - Arduino Nano 33 BLE Sense (HTS221 sensor)
+ * - Arduino Nano 33 BLE Sense Rev2 (HS300x sensor)
  */
 
 #include <Arduino_HS300x.h>  // Temperature + Humidity sensor (Rev2)
@@ -15,20 +15,16 @@
 #include <SHA256.h>          // Hash function
 
 // ===== CONFIGURATION =====
-const char* DEVICE_ID = "EDGECHAIN_DEMO_001";
+// BLE Service UUID - SHARED across all EdgeChain devices (brand identifier)
 const char* BLE_SERVICE_UUID = "12345678-1234-5678-1234-56789abcdef0";
 const char* DATA_CHAR_UUID = "87654321-4321-8765-4321-fedcba987654";
 
-// Device keypair (pre-loaded at firmware flash time)
-// In production: secure enclave / flash storage
-const uint8_t device_secret_key[32] = {
-  0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
-  0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10,
-  0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
-  0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20,
-};
+// Device ID - will be generated from hardware serial number (UNIQUE per device)
+char DEVICE_ID[32];
 
-uint8_t device_public_key[32]; // Derived from secret_key
+// Cryptographic keys - UNIQUE per device, derived from hardware serial
+uint8_t device_secret_key[32];
+uint8_t device_public_key[32];
 
 // ===== STATE =====
 unsigned long last_reading_time = 0;
@@ -37,31 +33,91 @@ const unsigned long READING_INTERVAL = 5000; // 5 seconds between readings
 BLEService edgechainService(BLE_SERVICE_UUID);
 BLECharacteristic dataCharacteristic(DATA_CHAR_UUID, BLERead | BLENotify, 256);
 
+/**
+ * Get Arduino's unique hardware serial number
+ * This is burned into the nRF52840 chip at manufacturing - CANNOT be changed
+ */
+void getHardwareSerial(uint8_t* serialBytes) {
+  // nRF52840 has unique 64-bit device identifier at fixed address
+  // This is different for every chip ever manufactured
+  uint32_t deviceId0 = NRF_FICR->DEVICEID[0];
+  uint32_t deviceId1 = NRF_FICR->DEVICEID[1];
+
+  // Pack into byte array
+  memcpy(serialBytes, &deviceId0, 4);
+  memcpy(serialBytes + 4, &deviceId1, 4);
+}
+
+/**
+ * Generate UNIQUE device keypair from hardware serial
+ * Same Arduino = same keys (deterministic)
+ * Different Arduino = different keys (unique)
+ */
+void generateDeviceKeys() {
+  Serial.println("\n[KEY GENERATION]");
+  Serial.println("Deriving UNIQUE device identity from hardware serial...");
+
+  // Get unique hardware serial number (8 bytes)
+  uint8_t hwSerial[8];
+  getHardwareSerial(hwSerial);
+
+  Serial.print("Hardware Serial: ");
+  for (int i = 0; i < 8; i++) {
+    if (hwSerial[i] < 0x10) Serial.print("0");
+    Serial.print(hwSerial[i], HEX);
+  }
+  Serial.println();
+
+  // Derive 32-byte seed from hardware serial using SHA-256
+  // This ensures we get a cryptographically strong seed
+  SHA256 hasher;
+  hasher.reset();
+  hasher.update(hwSerial, 8);
+  hasher.update((const uint8_t*)"EdgeChain-Device-Seed-v1", 24); // Salt for domain separation
+  hasher.finalize(device_secret_key, 32);
+
+  // Derive public key from secret key (Ed25519)
+  Ed25519::derivePublicKey(device_public_key, device_secret_key);
+
+  Serial.println("✓ Keys generated successfully!");
+  Serial.print("Device Public Key: ");
+  for (int i = 0; i < 32; i++) {
+    if (device_public_key[i] < 0x10) Serial.print("0");
+    Serial.print(device_public_key[i], HEX);
+  }
+  Serial.println();
+
+  // Generate human-readable device ID from first 8 bytes of public key
+  snprintf(DEVICE_ID, sizeof(DEVICE_ID), "EDGECHAIN_%02X%02X%02X%02X",
+           device_public_key[0], device_public_key[1],
+           device_public_key[2], device_public_key[3]);
+
+  Serial.print("Device ID: ");
+  Serial.println(DEVICE_ID);
+  Serial.println();
+}
+
 void setup() {
   Serial.begin(115200);
-  while (!Serial);  // CRITICAL: Wait for Serial port to connect (like reference code)
+  while (!Serial);  // Wait for Serial port to connect
 
   Serial.println();
   Serial.println("===========================================");
-  Serial.println("=== EdgeChain Arduino IoT Demo ===");
+  Serial.println("=== EdgeChain Arduino IoT ===");
   Serial.println("===========================================");
   Serial.println();
-  Serial.flush(); // Ensure this prints
-
-  Serial.println("[1/4] Deriving device keys...");
   Serial.flush();
 
-  // 1. Derive device public key FIRST (doesn't depend on hardware)
-  Ed25519::derivePublicKey(device_public_key, device_secret_key);
-  Serial.println("✓ Device keys derived");
-  printHex("Device Public Key: ", device_public_key, 32);
-  Serial.println();
+  // STEP 1: Generate unique device identity from hardware
+  Serial.println("[1/4] Generating UNIQUE device identity...");
+  Serial.flush();
+  generateDeviceKeys();
   Serial.flush();
 
+  // STEP 2: Initialize sensors
   Serial.println("[2/4] Initializing HS300x sensor (Rev2)...");
   Serial.flush();
 
-  // 2. Initialize sensors (with multiple retry attempts)
   bool sensor_ok = false;
   for (int i = 0; i < 3; i++) {
     Serial.print("   Attempt ");
@@ -101,10 +157,10 @@ void setup() {
   Serial.flush();
   Serial.println();
 
+  // STEP 3: Initialize BLE
   Serial.println("[3/4] Initializing BLE...");
   Serial.flush();
 
-  // 3. Initialize BLE
   if (!BLE.begin()) {
     Serial.println("ERROR: BLE initialization failed");
     Serial.println("Cannot continue without BLE");
@@ -114,7 +170,11 @@ void setup() {
     }
   }
 
-  BLE.setLocalName("EdgeChain-Demo");
+  // Set BLE device name to include unique ID
+  char bleName[32];
+  snprintf(bleName, sizeof(bleName), "EdgeChain-%02X%02X",
+           device_public_key[0], device_public_key[1]);
+  BLE.setLocalName(bleName);
   BLE.setAdvertisedService(edgechainService);
   edgechainService.addCharacteristic(dataCharacteristic);
   BLE.addService(edgechainService);
@@ -124,11 +184,23 @@ void setup() {
   Serial.println();
   Serial.flush();
 
+  // STEP 4: Ready!
   Serial.println("[4/4] Starting BLE advertising...");
   Serial.println("===========================================");
   Serial.println("✓ Setup complete!");
-  Serial.println("✓ BLE advertising as 'EdgeChain-Demo'");
+  Serial.print("✓ BLE advertising as: ");
+  Serial.println(bleName);
   Serial.println("✓ Waiting for gateway connection...");
+  Serial.println();
+  Serial.println("🔐 UNIQUE DEVICE IDENTITY:");
+  Serial.print("   Device ID: ");
+  Serial.println(DEVICE_ID);
+  Serial.print("   Public Key: ");
+  for (int i = 0; i < 16; i++) {  // Show first 16 bytes
+    if (device_public_key[i] < 0x10) Serial.print("0");
+    Serial.print(device_public_key[i], HEX);
+  }
+  Serial.println("...");
   Serial.println("===========================================");
   Serial.println();
   Serial.flush();
@@ -175,7 +247,6 @@ void collectAndSignReading() {
   // 2. Package reading as JSON with collection_mode
   // Format: { "t": temp, "h": humidity, "ts": timestamp, "mode": "auto" }
   // CRITICAL: "mode":"auto" proves automatic collection (higher reward: 0.1 DUST)
-  // Example: {"t":25.3,"h":65,"ts":1234567,"mode":"auto"}
   char reading_json[80];
   snprintf(reading_json, sizeof(reading_json),
            "{\"t\":%.1f,\"h\":%.0f,\"ts\":%lu,\"mode\":\"auto\"}",
@@ -191,7 +262,7 @@ void collectAndSignReading() {
   Serial.print("Reading Hash: ");
   printHex("", reading_hash, 32);
 
-  // 4. Sign the hash with EdDSA
+  // 4. Sign the hash with EdDSA using THIS device's unique private key
   uint8_t signature[64]; // EdDSA signature is 64 bytes (r + s)
   Ed25519::sign(signature, device_secret_key, device_public_key, reading_hash, 32);
   Serial.print("Signature: ");
@@ -199,7 +270,7 @@ void collectAndSignReading() {
 
   // 5. Package for transmission: reading_json + signature + pubkey
   // Format: [1 byte length] [reading_json] [64-byte signature] [32-byte pubkey]
-  uint8_t tx_payload[1 + 80 + 64 + 32]; // Increased for longer JSON with mode field
+  uint8_t tx_payload[1 + 80 + 64 + 32];
   int idx = 0;
 
   // Reading length
@@ -214,7 +285,7 @@ void collectAndSignReading() {
   memcpy(&tx_payload[idx], signature, 64);
   idx += 64;
 
-  // Device public key
+  // Device public key (UNIQUE to this device!)
   memcpy(&tx_payload[idx], device_public_key, 32);
   idx += 32;
 
