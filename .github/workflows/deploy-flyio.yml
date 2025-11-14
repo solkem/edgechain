@@ -29,6 +29,14 @@ jobs:
         run: yarn workspace edgechain-ui build
         env:
           NODE_ENV: production
+          # Deployed contract address (set in GitHub Secrets)
+          # To set: GitHub → Settings → Secrets and variables → Actions → New repository secret
+          # Name: VITE_CONTRACT_ADDRESS
+          # Value: 02002f44e466b8c8a1422e269156a6bb4e098cde1007203adf7181eb6659211dbe39
+          VITE_CONTRACT_ADDRESS: ${{ secrets.VITE_CONTRACT_ADDRESS }}
+          VITE_MIDNIGHT_INDEXER_URL: https://indexer.testnet-02.midnight.network/api/v1/graphql
+          VITE_MIDNIGHT_INDEXER_WS: wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws
+          VITE_MIDNIGHT_NODE_URL: https://rpc.testnet-02.midnight.network
 
       - name: Setup Fly CLI
         uses: superfly/flyctl-actions/setup-flyctl@master
