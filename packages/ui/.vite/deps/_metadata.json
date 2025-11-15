@@ -1,61 +1,73 @@
 {
-  "hash": "72c1325e",
+  "hash": "aea36a9b",
   "configHash": "8ceba40f",
-  "lockfileHash": "744ac3f8",
-  "browserHash": "6cf0aabc",
+  "lockfileHash": "cd91bdc1",
+  "browserHash": "a2ef1893",
   "optimized": {
     "util": {
       "src": "../../../../node_modules/util/util.js",
       "file": "util.js",
-      "fileHash": "5019d0c6",
+      "fileHash": "b4d8e4c5",
       "needsInterop": true
     },
     "react": {
       "src": "../../../../node_modules/react/index.js",
       "file": "react.js",
-      "fileHash": "190f73a1",
+      "fileHash": "dcb7f00b",
       "needsInterop": true
     },
     "react-dom": {
       "src": "../../../../node_modules/react-dom/index.js",
       "file": "react-dom.js",
-      "fileHash": "c668453a",
+      "fileHash": "8fbd9fcb",
       "needsInterop": true
     },
     "react/jsx-dev-runtime": {
       "src": "../../../../node_modules/react/jsx-dev-runtime.js",
       "file": "react_jsx-dev-runtime.js",
-      "fileHash": "9ee14101",
+      "fileHash": "553c3d98",
       "needsInterop": true
     },
     "react/jsx-runtime": {
       "src": "../../../../node_modules/react/jsx-runtime.js",
       "file": "react_jsx-runtime.js",
-      "fileHash": "4aee6e85",
+      "fileHash": "65f27a01",
       "needsInterop": true
     },
     "@tensorflow/tfjs": {
       "src": "../../../../node_modules/@tensorflow/tfjs/dist/index.js",
       "file": "@tensorflow_tfjs.js",
-      "fileHash": "6c93cf1f",
+      "fileHash": "2c3f3e9e",
       "needsInterop": false
     },
     "buffer": {
       "src": "../../../../node_modules/buffer/index.js",
       "file": "buffer.js",
-      "fileHash": "c2c359d2",
+      "fileHash": "ef794abb",
       "needsInterop": true
     },
     "react-dom/client": {
       "src": "../../../../node_modules/react-dom/client.js",
       "file": "react-dom_client.js",
-      "fileHash": "6752ae29",
+      "fileHash": "a7cc6bc6",
       "needsInterop": true
     },
     "react-router-dom": {
       "src": "../../../../node_modules/react-router-dom/dist/index.mjs",
       "file": "react-router-dom.js",
-      "fileHash": "cc0fc6c3",
+      "fileHash": "bf73dfe1",
+      "needsInterop": false
+    },
+    "three": {
+      "src": "../../../../node_modules/three/build/three.module.js",
+      "file": "three.js",
+      "fileHash": "7fa5db2a",
+      "needsInterop": false
+    },
+    "lucide-react": {
+      "src": "../../../../node_modules/lucide-react/dist/esm/lucide-react.js",
+      "file": "lucide-react.js",
+      "fileHash": "9113ef26",
       "needsInterop": false
     }
   },
