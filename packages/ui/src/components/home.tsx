@@ -23,7 +23,6 @@ const Home = () => {
 
           <Hero />
 
-
           <div className="relative w-full overflow-hidden p-12">
             <div className="relative z-10 flex flex-col items-center justify-center h-full gap-8">
               <h1 className="text-center uppercase text-7xl font-extrabold tracking-[-2px] group">
@@ -31,13 +30,13 @@ const Home = () => {
                 <span className="text-[#0000ff] relative before:content-['#@&^'] group-hover:before:content-['data'] transition-all"></span>{" "}
                 <br /> belongs to you
               </h1>
-              <h6 className=" bg-white px-1">Take control of what's truly yours.</h6>
+              <h6 className=" bg-white px-1">
+                Take control of what's truly yours.
+              </h6>
             </div>
           </div>
 
-          <div className="w-[300px] h-[300px]">
-            
-          </div>
+          <div className="w-[300px] h-[300px]"></div>
         </div>
       </div>
     </>

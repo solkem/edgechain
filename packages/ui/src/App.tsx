@@ -9,6 +9,7 @@ import { PrivacyTrainRoute } from "./routes/PrivacyTrainRoute";
 import { AggregationRoute } from "./routes/AggregationRoute";
 import { PredictionsRoute } from "./routes/PredictionsRoute";
 import Navbar from "./components/Navbar";
+import "./app.css";
 
 // Main App Component with Router
 export default function EdgeChainApp() {

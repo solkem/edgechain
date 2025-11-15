@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 
-const MenuItem = ({ label, href }: { label: String; href: String }) => {
+const MenuItem = ({ label, href }: { label: string; href: string }) => {
   return (
     <Link className=" relative group " to={href}>
       <span className="group-hover:text-white transition-all duration-300 text-black z-20 relative">
@@ -18,9 +18,9 @@ const MobileMenuItem = ({
   href,
   activeView,
 }: {
-  label: String;
-  href: String;
-  activeView: String;
+  label: string;
+  href: string;
+  activeView: string;
 }) => {
   return (
     <Link className={`relative group overflow-hidden`} to={href}>
@@ -52,13 +52,28 @@ const Navbar = () => {
       href: "/",
     },
     {
-      label: "About",
-      href: "/about",
+      label: "Selection",
+      href: "/selection",
     },
-
     {
-      label: "Contact",
-      href: "/contact",
+      label: "Arduino",
+      href: "/arduino",
+    },
+    {
+      label: "Train",
+      href: "/train",
+    },
+    {
+      label: "Privacy Train",
+      href: "/train-privacy",
+    },
+    {
+      label: "Aggregation",
+      href: "/aggregation",
+    },
+    {
+      label: "Predictions",
+      href: "/predictions",
     },
   ];
 
@@ -77,7 +92,7 @@ const Navbar = () => {
               <Menu strokeWidth={1} color="black" />
             </div>
           </button>
-          <div className="nav-middle md:flex flex-1 justify-center items-center border-t border-b border-gray-300 px-3 py-2 gap-3 uppercase text-xs hidden">
+          <div className="nav-middle md:flex flex-1 justify-center items-center border-t border-b border-gray-300 px-3 py-2 gap-7 uppercase text-xs hidden">
             {menuItems.map((item, index) => (
               <MenuItem key={index} label={item.label} href={item.href} />
             ))}
@@ -93,8 +108,10 @@ const Navbar = () => {
       >
         <div className="w-full h-full px-7 py-4">
           <div className="nav-mobile-content grid grid-cols-12 gap-2 justify-center bg-white h-full rounded-xl rounded-tl-none border-[0.6px] border-gray-300">
-            <div className="col-span-2 p-4 hidden md:block"></div>
-            <div className="nav-mobile-content-item flex flex-col gap-2 text-black text-3xl md:text-5xl uppercase w-fit h-full col-span-10 md:col-span-8 p-4 overflow-hidden">
+            <div className="col-span-2 p-4 h-full items-center justify-center hidden md:block">
+              {/* <h1 className="text-3xl md:text-8xl uppercase -rotate-90 text-[#0000ff]">EdgeChain</h1> */}
+            </div>
+            <div className="nav-mobile-content-item flex flex-col gap-7 text-black text-3xl md:text-5xl uppercase w-fit h-full col-span-10 md:col-span-8 p-4 overflow-hidden">
               {menuItems.map((item, index) => (
                 <MobileMenuItem
                   key={index}
