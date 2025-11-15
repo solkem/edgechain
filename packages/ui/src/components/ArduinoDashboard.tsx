@@ -972,8 +972,8 @@ export function ArduinoDashboard() {
           </div>
         )}
 
-        {/* Success/Reward Notification */}
-        {success && (
+        {/* Success/Reward Notification - DISABLED */}
+        {false && success && (
           <div className="mb-6 p-4 bg-green-900/50 border border-green-500/50 rounded-lg animate-pulse">
             <p className="text-green-200 font-semibold">{success}</p>
           </div>
