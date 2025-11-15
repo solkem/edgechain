@@ -73,7 +73,7 @@ void generateDeviceKeys() {
   SHA256 hasher;
   hasher.reset();
   hasher.update(hwSerial, 8);
-  hasher.update((const uint8_t*)"EdgeChain-Device-Seed-v1", 24); // Salt for domain separation
+  hasher.update((const uint8_t*)"EdgeChain-Device-Seed-v2", 24); // Salt for domain separation (v2 = new identity!)
   hasher.finalize(device_secret_key, 32);
 
   // Derive public key from secret key (Ed25519)

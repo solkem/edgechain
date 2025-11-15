@@ -45,3 +45,8 @@ yarn-error.log*
 private-docs/
 packages/ui/.vite/
 packages/ui/dist/
+
+# SQLite database files
+*.db
+*.db-shm
+*.db-wal
