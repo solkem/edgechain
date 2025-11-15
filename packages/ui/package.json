@@ -49,6 +49,7 @@
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4.1.11",
     "textarea": "^0.3.0",
+    "three": "^0.181.1",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
@@ -58,6 +59,7 @@
     "@types/progress": "^2",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
+    "@types/three": "^0",
     "@vitejs/plugin-react": "^4.5.2",
     "assert": "^2.0.0",
     "browserify-fs": "^1.0.0",
