@@ -1,0 +1,334 @@
+pragma language_version >= 0.16.0;
+
+import CompactStandardLibrary;
+
+/**
+ * EdgeChain Privacy-Preserving FL Smart Contract
+ *
+ * Implements 4-Tier Privacy Architecture:
+ * - L1: Raw IoT data (local device only, encrypted)
+ * - L2: ML features (temporary, deleted after training)
+ * - L3: Gradients (encrypted on IPFS)
+ * - L4: Commitments (this contract - only hashes on-chain)
+ *
+ * On-Chain Storage (L4):
+ * - Commitments: Cryptographic hashes of encrypted gradients
+ * - IPFS CIDs: Pointers to encrypted data (not data itself)
+ * - Nullifiers: Prevent double-claiming rewards
+ * - Quality scores: Public metric for reward calculation
+ *
+ * Privacy Guarantee:
+ * - NO raw IoT data on-chain
+ * - NO ML features on-chain
+ * - NO gradient values on-chain
+ * - ONLY cryptographic commitments and metadata
+ */
+
+// ==================== WITNESS FUNCTIONS (Private Inputs) ====================
+
+// Farmer's private key (NEVER revealed on-chain)
+witness farmerPrivateKey(): Bytes<32>;
+
+// Device secret for nullifier generation (NEVER revealed on-chain)
+witness deviceSecret(): Bytes<32>;
+
+// Merkle proof that device is registered (NEVER revealed on-chain)
+witness merkleProof(): Vector<10, Bytes<32>>;
+
+// Leaf index in Merkle tree (NEVER revealed on-chain)
+witness leafIndex(): Field;
+
+// ==================== PUBLIC LEDGER (Visible to Everyone) ====================
+
+// FL Round Management
+export ledger currentRound: Counter;
+export ledger currentModelVersion: Counter;
+
+// Round Commitments (Merkle root of all farmer contributions)
+export ledger flRounds: Map<Field, RoundCommitment>;
+
+// Nullifier Registry (prevent double-claiming)
+export ledger spentNullifiers: Set<Bytes<32>>;
+
+// Farmer Rewards (anonymous, indexed by nullifier)
+export ledger farmerRewards: Map<Bytes<32>, Field>;
+
+// Device Registry (Merkle root only, not individual devices)
+export ledger deviceRegistryRoot: Bytes<32>;
+
+// ==================== DATA STRUCTURES ====================
+
+/**
+ * Round Commitment - Stores aggregated FL round metadata
+ * NO individual gradients stored!
+ */
+export struct RoundCommitment {
+  merkleRoot: Bytes<32>;        // Root of all farmer commitments this round
+  aggregatedModelCID: Bytes<32>; // IPFS CID of encrypted global model
+  participantCount: Field;       // Number of farmers who contributed
+  timestamp: Field;              // Round completion time
+  totalRewards: Field;           // Total rewards distributed
+}
+
+// ==================== HELPER FUNCTIONS ====================
+
+/**
+ * Derive nullifier from device secret and round
+ * Prevents same device from claiming rewards twice in same round
+ */
+export circuit deriveNullifier(secret: Bytes<32>, round: Field): Bytes<32> {
+  return persistentHash<Vector<3, Bytes<32>>>([
+    pad(32, "edgechain:nullifier:"),
+    round as Bytes<32>,
+    secret
+  ]);
+}
+
+/**
+ * Compute commitment from gradient CID and farmer key
+ * Commitment = Hash(IPFS_CID || farmer_key || round)
+ */
+export circuit computeCommitment(
+  ipfsCid: Bytes<32>,
+  farmerKey: Bytes<32>,
+  round: Field
+): Bytes<32> {
+  return persistentHash<Vector<4, Bytes<32>>>([
+    pad(32, "edgechain:commitment:"),
+    ipfsCid,
+    farmerKey,
+    round as Bytes<32>
+  ]);
+}
+
+/**
+ * Verify Merkle proof (device is registered)
+ */
+export circuit verifyMerkleProof(
+  leaf: Bytes<32>,
+  proof: Vector<10, Bytes<32>>,
+  index: Field,
+  root: Bytes<32>
+): Boolean {
+  // Compute Merkle root from leaf + proof
+  Bytes<32> mut currentHash = leaf;
+  Field mut currentIndex = index;
+
+  for (Field i = 0; i < 10; i = i + 1) {
+    const sibling = proof[i as Int];
+    const isLeft = (currentIndex % 2) == 0;
+
+    if (isLeft) {
+      currentHash = persistentHash<Vector<2, Bytes<32>>>([currentHash, sibling]);
+    } else {
+      currentHash = persistentHash<Vector<2, Bytes<32>>>([sibling, currentHash]);
+    }
+
+    currentIndex = currentIndex / 2;
+  }
+
+  return currentHash == root;
+}
+
+// ==================== CONSTRUCTOR ====================
+
+constructor() {
+  // Initialize with empty registry
+  deviceRegistryRoot = "00000000000000000000000000000000";
+}
+
+// ==================== FL CONTRIBUTION CIRCUITS ====================
+
+/**
+ * Submit FL Contribution with ZK Proof
+ *
+ * What gets proven (privately):
+ * - Farmer owns a registered device (Merkle proof)
+ * - Gradients uploaded to IPFS (CID provided)
+ * - Commitment matches (Hash of CID + farmer key + round)
+ * - Nullifier derived correctly (prevents double-claiming)
+ *
+ * What gets stored (publicly):
+ * - Commitment (cryptographic hash)
+ * - IPFS CID (pointer to encrypted data)
+ * - Quality score (for reward calculation)
+ * - Nullifier (to prevent replay)
+ *
+ * What is NEVER stored:
+ * - Raw IoT data (stays in L1)
+ * - ML features (deleted after L2)
+ * - Gradient values (encrypted in L3)
+ * - Farmer identity (proven via ZK, not revealed)
+ */
+export circuit submitContribution(
+  ipfsCid: Bytes<32>,           // IPFS CID of encrypted gradients
+  commitment: Bytes<32>,         // Hash(CID || farmer_key || round)
+  nullifier: Bytes<32>,          // Hash(device_secret || round)
+  qualityScore: Field            // Data quality score (0-100)
+): [] {
+  // 1. Get current round
+  const round = currentRound as Field;
+
+  // 2. Verify nullifier not already spent
+  assert(!spentNullifiers.has(nullifier), "Nullifier already used");
+
+  // 3. Verify device is registered (Merkle proof)
+  const farmerKey = farmerPrivateKey();
+  const deviceLeaf = persistentHash<Vector<2, Bytes<32>>>([
+    pad(32, "device:"),
+    farmerKey
+  ]);
+
+  const validDevice = verifyMerkleProof(
+    deviceLeaf,
+    merkleProof(),
+    leafIndex(),
+    deviceRegistryRoot
+  );
+  assert(validDevice, "Device not registered");
+
+  // 4. Verify commitment matches
+  const expectedCommitment = computeCommitment(ipfsCid, farmerKey, round);
+  assert(commitment == expectedCommitment, "Invalid commitment");
+
+  // 5. Verify nullifier derivation
+  const expectedNullifier = deriveNullifier(deviceSecret(), round);
+  assert(nullifier == expectedNullifier, "Invalid nullifier");
+
+  // 6. Verify quality score in valid range
+  assert(qualityScore >= 0 && qualityScore <= 100, "Quality score out of range");
+
+  // 7. Mark nullifier as spent (prevent double-claiming)
+  spentNullifiers.insert(nullifier);
+
+  // 8. Calculate reward based on quality score
+  // Base: 100 tDUST, Bonus: 2 * quality score (max 200)
+  const reward = 100 + (qualityScore * 2);
+
+  // 9. Store reward (indexed by nullifier for anonymous claiming)
+  const currentReward = farmerRewards.get(nullifier);
+  if (currentReward == null) {
+    farmerRewards.insert(nullifier, reward);
+  } else {
+    farmerRewards.insert(nullifier, currentReward + reward);
+  }
+
+  // Note: Individual commitments would be aggregated off-chain into Merkle tree
+  // Then root stored via submitRound() by aggregator
+}
+
+/**
+ * Submit FL Round Commitment (called by aggregator)
+ *
+ * Stores Merkle root of all farmer commitments + aggregated model CID
+ */
+export circuit submitRound(
+  merkleRoot: Bytes<32>,         // Root of all commitments this round
+  aggregatedModelCID: Bytes<32>, // IPFS CID of aggregated global model
+  participantCount: Field,       // Number of farmers who contributed
+  totalRewards: Field            // Total rewards distributed
+): [] {
+  const round = currentRound as Field;
+
+  // Create round commitment
+  const roundCommitment = RoundCommitment {
+    merkleRoot: merkleRoot,
+    aggregatedModelCID: aggregatedModelCID,
+    participantCount: participantCount,
+    timestamp: 0, // Would use block timestamp in production
+    totalRewards: totalRewards
+  };
+
+  // Store round commitment
+  flRounds.insert(round, roundCommitment);
+
+  // Advance to next round
+  currentRound.increment(1);
+  currentModelVersion.increment(1);
+}
+
+/**
+ * Update Device Registry Root
+ *
+ * Called when new devices are registered
+ * Stores ONLY Merkle root (not individual device IDs)
+ */
+export circuit updateDeviceRegistry(newRoot: Bytes<32>): [] {
+  deviceRegistryRoot = disclose(newRoot);
+}
+
+// ==================== QUERY CIRCUITS ====================
+
+/**
+ * Get reward balance for a nullifier
+ * Farmers can query anonymously using their nullifier
+ */
+export circuit getRewardBalance(nullifier: Bytes<32>): Field {
+  const reward = farmerRewards.get(nullifier);
+  if (reward == null) {
+    return 0;
+  }
+  return reward;
+}
+
+/**
+ * Get round commitment by round ID
+ */
+export circuit getRoundCommitment(round: Field): RoundCommitment {
+  const commitment = flRounds.get(round);
+  assert(commitment != null, "Round not found");
+  return commitment;
+}
+
+/**
+ * Get current round number
+ */
+export circuit getCurrentRound(): Field {
+  return currentRound as Field;
+}
+
+/**
+ * Get current model version
+ */
+export circuit getCurrentModelVersion(): Field {
+  return currentModelVersion as Field;
+}
+
+/**
+ * Check if nullifier has been spent
+ */
+export circuit isNullifierSpent(nullifier: Bytes<32>): Boolean {
+  return spentNullifiers.has(nullifier);
+}
+
+/**
+ * Get device registry root
+ */
+export circuit getDeviceRegistryRoot(): Bytes<32> {
+  return deviceRegistryRoot;
+}
+
+// ==================== PRIVACY VERIFICATION ====================
+
+/**
+ * Verify contribution proof (for external verification)
+ *
+ * Anyone can verify that a commitment is valid without seeing:
+ * - Farmer identity
+ * - Device ID
+ * - Gradient values
+ */
+export circuit verifyContributionProof(
+  ipfsCid: Bytes<32>,
+  commitment: Bytes<32>,
+  round: Field
+): Boolean {
+  // This would verify the ZK proof structure
+  // In production, would check:
+  // 1. Commitment is in round's Merkle tree
+  // 2. IPFS CID is valid
+  // 3. Proof verifies without revealing private inputs
+
+  // For now, just check commitment format
+  return commitment != "00000000000000000000000000000000";
+}

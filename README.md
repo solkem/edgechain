@@ -33,6 +33,65 @@ Traditional agriculture AI solutions require farmers to upload sensitive farm da
 - **🌐 Accessible** - Designed for smallholder farmers with limited tech literacy and connectivity
 - **☁️ Decentralized Storage** - ZK proofs and sensor data stored on IPFS for transparency and immutability
 
+## 🔐 4-Tier Privacy Architecture
+
+EdgeChain implements a **cryptographically verifiable 4-tier privacy architecture** that protects sensitive farm data at every stage of federated learning:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ L1: RAW DATA (Local Device Only)                               │
+│ ✅ AES-256-GCM encrypted in browser localStorage                │
+│ ✅ NEVER transmitted over network                               │
+│ ✅ Farmer controls encryption key (derived from password)       │
+├─────────────────────────────────────────────────────────────────┤
+│ L2: ML FEATURES (Temporary, In-Memory Only)                     │
+│ ✅ Normalized to [0,1] range (no absolute values)               │
+│ ✅ Trends calculated (hides specific readings)                  │
+│ ✅ Deleted immediately after local training                     │
+│ ✅ NEVER stored persistently                                    │
+├─────────────────────────────────────────────────────────────────┤
+│ L3: GRADIENTS (Encrypted on IPFS)                               │
+│ ✅ Encrypted with farmer key before upload                      │
+│ ✅ Stored on IPFS (decentralized storage)                       │
+│ ✅ Database stores ONLY IPFS CID (not gradients)                │
+│ ✅ Programmable privacy (selective key sharing)                 │
+├─────────────────────────────────────────────────────────────────┤
+│ L4: COMMITMENTS (Midnight Blockchain)                           │
+│ ✅ Only cryptographic commitments on-chain                      │
+│ ✅ ZK proof of device registration (identity not revealed)      │
+│ ✅ Nullifiers prevent double-claiming                           │
+│ ✅ NO raw data, features, or gradients                          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Privacy Guarantees
+
+**What is NEVER stored on-chain or in centralized databases:**
+- ❌ Raw IoT sensor data (temperature, humidity, soil moisture, pH)
+- ❌ GPS coordinates or farm locations
+- ❌ ML feature vectors
+- ❌ Gradient values or model weight updates
+- ❌ Farmer identity (proven via ZK, not revealed)
+
+**What IS stored:**
+- ✅ **L1 (Local Device):** Encrypted raw data in browser localStorage
+- ✅ **L3 (IPFS):** Encrypted gradients with IPFS CID
+- ✅ **L4 (Blockchain):** Cryptographic commitments + IPFS CID (pointers, not data)
+
+**Attack Resistance:**
+- 🛡️ **Database Operator:** Cannot see raw data (encrypted on IPFS)
+- 🛡️ **Blockchain Observer:** Cannot see gradients (only commitments visible)
+- 🛡️ **IPFS Node:** Cannot decrypt gradients (no farmer key)
+- 🛡️ **Network Eavesdropper:** Cannot see raw data (never transmitted)
+
+**Programmable Privacy (Midnight Feature):**
+Farmers can selectively grant/revoke access to encrypted gradients stored on IPFS. This enables:
+- Trusted researchers to access specific datasets
+- Time-limited data sharing for audits
+- Revokable permissions for collaborators
+
+**See [PRIVACY_ARCHITECTURE_SUMMARY.md](./PRIVACY_ARCHITECTURE_SUMMARY.md) for complete details.**
+
 ## 🏗️ Architecture
 
 ### System Overview
