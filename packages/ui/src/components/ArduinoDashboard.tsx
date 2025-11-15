@@ -76,8 +76,23 @@ interface BackendIncentives {
 }
 
 // Use relative URL in production, localhost in development
+// In Codespaces, hostname will be a .githubpreview.dev domain
+const isLocalDev = window.location.hostname === 'localhost' ||
+                   window.location.hostname.includes('githubpreview.dev') ||
+                   window.location.hostname.includes('codespaces') ||
+                   window.location.hostname.startsWith('10.') ||
+                   window.location.hostname.startsWith('127.');
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL ||
-  (window.location.hostname === 'localhost' ? 'http://localhost:3001' : '');
+  (isLocalDev ? 'http://localhost:3001' : '');
+
+// Debug: Log API_BASE configuration
+console.log('🔧 API_BASE Configuration:', {
+  VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
+  hostname: window.location.hostname,
+  isLocalDev,
+  resolved_API_BASE: API_BASE,
+});
 
 export function ArduinoDashboard() {
   const wallet = useWallet();
@@ -532,6 +547,8 @@ export function ArduinoDashboard() {
       }
 
       console.log(`🔍 Checking registration for device: ${device_pubkey.slice(0, 16)}...`);
+      console.log(`   API_BASE: ${API_BASE}`);
+      console.log(`   Endpoint: ${API_BASE}/api/arduino/registry/check`);
 
       // 1. Check if device is already registered
       const checkResponse = await fetch(`${API_BASE}/api/arduino/registry/check`, {
