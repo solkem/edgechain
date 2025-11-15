@@ -14,8 +14,8 @@
  * This is L2 in EdgeChain's 4-tier privacy architecture.
  */
 
-import { RawIoTReading } from './localDataVault';
-import { MLFeatures } from './privacyTypes';
+import type { RawIoTReading } from './localDataVault';
+import type { MLFeatures } from './privacyTypes';
 
 /**
  * Normalization ranges for agricultural sensors

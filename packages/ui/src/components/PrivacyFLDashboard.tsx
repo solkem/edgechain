@@ -15,7 +15,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as tf from '@tensorflow/tfjs';
 import { PrivacyOrchestrator } from '../fl/privacyOrchestrator';
-import { RawIoTReading } from '../iot/privacyTypes';
+import type { RawIoTReading } from '../iot/privacyTypes';
 import type { FLTrainingResult } from '../fl/privacyOrchestrator';
 
 export function PrivacyFLDashboard() {

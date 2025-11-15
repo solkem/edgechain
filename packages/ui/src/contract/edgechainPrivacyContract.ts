@@ -13,7 +13,7 @@
  */
 
 import type { DAppConnectorAPI } from '@midnight-ntwrk/dapp-connector-api';
-import { EncryptedGradientMetadata } from '../iot/privacyTypes';
+import type { EncryptedGradientMetadata } from '../iot/privacyTypes';
 
 /**
  * Contract types matching edgechain_privacy.compact

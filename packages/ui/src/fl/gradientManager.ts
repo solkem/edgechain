@@ -14,8 +14,8 @@
  */
 
 import * as tf from '@tensorflow/tfjs';
-import { MLFeatures } from '../iot/privacyTypes';
-import { GradientBundle, EncryptedGradientMetadata } from '../iot/privacyTypes';
+import type { MLFeatures } from '../iot/privacyTypes';
+import type { GradientBundle, EncryptedGradientMetadata } from '../iot/privacyTypes';
 
 /**
  * Gradient Manager - Handles encrypted FL gradient storage on IPFS
