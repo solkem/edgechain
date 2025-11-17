@@ -26,20 +26,16 @@ export function ModelSubmissionPanel({
   onSubmitModel,
 }: ModelSubmissionPanelProps) {
   return (
-    <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-6 space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h3 className="text-xl font-bold text-white mb-1">
-            2️⃣ Submit to Global Model
-          </h3>
-          <p className="text-gray-400 text-sm">
-            Sign with Midnight wallet and contribute to federated learning
-          </p>
+          <h3 className="text-xl font-semibold text-black">2️⃣ Submit to Global Model</h3>
+          <p className="text-sm text-gray-600">Sign with Midnight wallet and contribute securely.</p>
         </div>
         <button
           onClick={onSubmitModel}
           disabled={submitting || !flState.lastTraining || !isWalletConnected}
-          className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          className="rounded-lg border border-gray-900 bg-black px-6 py-3 text-sm font-semibold text-white transition hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {submitting ? '⏳ Submitting...' : '📤 Submit Model'}
         </button>
@@ -47,156 +43,117 @@ export function ModelSubmissionPanel({
 
       {/* ZK Proof Generation Progress */}
       {zkProofState.isGenerating && (
-        <div className="bg-purple-900/30 border border-purple-500/40 rounded-lg p-4">
-          <div className="flex items-center gap-3">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-400"></div>
-            <div>
-              <p className="text-purple-300 font-semibold">Generating Zero-Knowledge Proof...</p>
-              <p className="text-purple-200/70 text-xs mt-1">
-                🔒 Proving model authenticity without revealing data
-              </p>
-            </div>
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+          <div className="flex items-center gap-3 text-sm text-gray-600">
+            <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-gray-800"></div>
+            <span>Generating zero-knowledge proof…</span>
           </div>
+          <p className="text-xs text-gray-500 mt-2">🔒 Proving model authenticity without revealing data.</p>
         </div>
       )}
 
       {/* ZK Proof Success - Detailed Panel */}
       {zkProofState.proofGenerated && zkProofState.proofDetails && (
-        <div className="bg-gradient-to-br from-purple-900/30 to-blue-900/30 border border-purple-500/40 rounded-lg p-5 space-y-4">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-purple-400 text-2xl">🔐</span>
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">🔐</span>
             <div>
-              <p className="text-purple-300 font-bold text-lg">Zero-Knowledge Proof Generated</p>
-              <p className="text-purple-200/70 text-xs">Privacy-preserving cryptographic proof verified</p>
+              <p className="text-base font-semibold text-black">Zero-knowledge proof generated</p>
+              <p className="text-xs text-gray-600">Privacy-preserving proof verified successfully.</p>
             </div>
           </div>
-
-          {/* Proof Details Grid */}
-          <div className="grid grid-cols-2 gap-3 text-xs">
-            <div className="bg-black/30 rounded p-3">
-              <p className="text-purple-300/70 mb-1">Circuit</p>
-              <p className="text-white font-semibold">{zkProofState.proofDetails.circuitName}</p>
+          <div className="grid grid-cols-2 gap-3 text-xs text-gray-600">
+            <div className="rounded-lg border border-gray-200 bg-white p-3">
+              <p className="text-gray-500 uppercase text-[10px]">Circuit</p>
+              <p className="font-semibold text-black">{zkProofState.proofDetails.circuitName}</p>
             </div>
-            <div className="bg-black/30 rounded p-3">
-              <p className="text-purple-300/70 mb-1">Status</p>
-              <p className="text-green-400 font-semibold flex items-center gap-1">
+            <div className="rounded-lg border border-gray-200 bg-white p-3">
+              <p className="text-gray-500 uppercase text-[10px]">Status</p>
+              <p className="font-semibold text-black flex items-center gap-1">
                 <span>✓</span> Verified
               </p>
             </div>
-            <div className="bg-black/30 rounded p-3 col-span-2">
-              <p className="text-purple-300/70 mb-1">Transaction Hash</p>
-              <p className="text-white font-mono text-[10px] break-all">
-                {zkProofState.proofDetails.txHash}
-              </p>
+            <div className="col-span-2 rounded-lg border border-gray-200 bg-white p-3">
+              <p className="text-gray-500 uppercase text-[10px]">Transaction hash</p>
+              <p className="font-mono text-[11px] text-black break-all">{zkProofState.proofDetails.txHash}</p>
             </div>
-            <div className="bg-black/30 rounded p-3">
-              <p className="text-purple-300/70 mb-1">Proof Size</p>
-              <p className="text-white font-semibold">{zkProofState.proofDetails.proofSize} bytes</p>
+            <div className="rounded-lg border border-gray-200 bg-white p-3">
+              <p className="text-gray-500 uppercase text-[10px]">Proof size</p>
+              <p className="font-semibold text-black">{zkProofState.proofDetails.proofSize} bytes</p>
             </div>
-            <div className="bg-black/30 rounded p-3">
-              <p className="text-purple-300/70 mb-1">Timestamp</p>
-              <p className="text-white font-semibold">
+            <div className="rounded-lg border border-gray-200 bg-white p-3">
+              <p className="text-gray-500 uppercase text-[10px]">Timestamp</p>
+              <p className="font-semibold text-black">
                 {zkProofState.proofDetails.timestamp
                   ? new Date(zkProofState.proofDetails.timestamp).toLocaleTimeString()
                   : 'N/A'}
               </p>
             </div>
           </div>
-
-          {/* Privacy Features */}
-          <div className="bg-purple-950/50 rounded-lg p-3 space-y-2">
-            <p className="text-purple-200 font-semibold text-xs mb-2">🛡️ Privacy Guarantees:</p>
-            <div className="space-y-1 text-xs text-purple-100/80">
-              <div className="flex items-start gap-2">
-                <span className="text-green-400">✓</span>
-                <span>Model weights encrypted - only hash revealed</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-green-400">✓</span>
-                <span>Zero-knowledge proof verifies authenticity without exposing data</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-green-400">✓</span>
-                <span>Cryptographic signature prevents tampering</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-green-400">✓</span>
-                <span>Private training data never leaves your device</span>
-              </div>
-            </div>
+          <div className="rounded-lg border border-dashed border-gray-200 bg-white p-3 text-xs text-gray-600 space-y-1">
+            <p className="font-semibold text-black">Privacy guarantees:</p>
+            <ul className="space-y-1">
+              <li>• Model weights encrypted; only hashes shared</li>
+              <li>• ZK proof verifies authenticity without raw data</li>
+              <li>• Signatures prevent tampering</li>
+              <li>• Training data never leaves your hardware</li>
+            </ul>
           </div>
         </div>
       )}
 
       {flState.lastSubmission && !zkProofState.proofGenerated && (
-        <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-blue-400 text-xl">✅</span>
-            <p className="text-blue-300 font-semibold">Model Submitted!</p>
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-2 text-sm text-gray-600">
+          <div className="flex items-center gap-2 font-semibold text-black">
+            <span>✅</span> Model submitted
           </div>
-
-          <div className="space-y-2 text-xs">
-            <div className="flex justify-between">
-              <span className="text-blue-300/70">Transaction Hash:</span>
-              <span className="text-white font-mono">
-                {flState.lastSubmission.txHash?.slice(0, 20)}...
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-blue-300/70">Weights Hash:</span>
-              <span className="text-white font-mono">
-                {flState.lastSubmission.weightsHash.slice(0, 20)}...
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-blue-300/70">Accuracy:</span>
-              <span className="text-white font-semibold">
-                {(flState.lastSubmission.metrics.accuracy * 100).toFixed(1)}%
-              </span>
-            </div>
+          <div className="flex justify-between text-xs">
+            <span>Transaction hash</span>
+            <span className="font-mono">{flState.lastSubmission.txHash?.slice(0, 20)}...</span>
+          </div>
+          <div className="flex justify-between text-xs">
+            <span>Weights hash</span>
+            <span className="font-mono">{flState.lastSubmission.weightsHash.slice(0, 20)}...</span>
+          </div>
+          <div className="flex justify-between text-xs">
+            <span>Accuracy</span>
+            <span className="font-semibold text-black">
+              {(flState.lastSubmission.metrics.accuracy * 100).toFixed(1)}%
+            </span>
           </div>
         </div>
       )}
 
       {/* Aggregation Status */}
       {aggregationStatus.currentSubmissions > 0 && !aggregationProgress.running && (
-        <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-yellow-400 text-xl">⏳</span>
-            <p className="text-yellow-300 font-semibold">Waiting for More Submissions</p>
+        <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600">
+          <div className="flex items-center gap-2 font-semibold text-black">
+            <span>⏳</span> Waiting for additional submissions
           </div>
-          <p className="text-yellow-200 text-sm">
-            {aggregationStatus.currentSubmissions} / {aggregationStatus.requiredSubmissions} submissions received.
-            Need {aggregationStatus.requiredSubmissions - aggregationStatus.currentSubmissions} more to trigger aggregation.
+          <p className="mt-2">
+            {aggregationStatus.currentSubmissions} / {aggregationStatus.requiredSubmissions} submissions received. Need{' '}
+            {aggregationStatus.requiredSubmissions - aggregationStatus.currentSubmissions} more to trigger aggregation.
           </p>
         </div>
       )}
 
       {/* Aggregation Progress */}
       {aggregationProgress.running && (
-        <div className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-4 space-y-3">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-purple-400 text-xl">⚡</span>
-            <p className="text-purple-300 font-semibold">Running Federated Averaging...</p>
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3">
+          <div className="flex items-center gap-2 text-sm font-semibold text-black">
+            <span>⚡</span> Running federated averaging…
           </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-purple-300">{aggregationProgress.message}</span>
-              <span className="text-gray-400">{aggregationProgress.progress}%</span>
-            </div>
-
-            <div className="h-3 bg-gray-800 rounded overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 transition-all duration-500"
-                style={{ width: `${aggregationProgress.progress}%` }}
-              />
-            </div>
+          <div className="flex items-center justify-between text-sm text-gray-600">
+            <span>{aggregationProgress.message}</span>
+            <span>{aggregationProgress.progress}%</span>
           </div>
-
-          <p className="text-purple-200 text-xs">
-            🔐 Privacy-preserving aggregation in progress...
-          </p>
+          <div className="h-2 rounded-full bg-gray-200">
+            <div
+              className="h-full rounded-full bg-blue-600 transition-all duration-500"
+              style={{ width: `${aggregationProgress.progress}%` }}
+            />
+          </div>
+          <p className="text-xs text-gray-500">🔒 Privacy-preserving aggregation in progress…</p>
         </div>
       )}
     </div>

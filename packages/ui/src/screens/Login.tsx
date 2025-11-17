@@ -1,21 +1,7 @@
-import Home from "@/components/home";
+import Hero from "@/components/hero";
 import { useState } from "react";
+import { toast } from "sonner";
 
-/**
- * Login Component - Now with real Lace Midnight Preview wallet integration!
- *
- * Props:
- * - onConnect: Function to connect Lace Midnight Preview wallet
- * - isConnecting: Are we currently connecting to Midnight devnet?
- * - isMidnightPreviewInstalled: Is Lace Midnight Preview extension installed?
- * - error: Any error message to display
- * - contractContext: Contract deployment status and functions
- * - walletContext: Full wallet context including connection status
- * - isDeploying: Parent state tracking deployment
- * - setIsDeploying: Function to update parent deployment state
- *
- * IMPORTANT: This connects to Midnight devnet with tDUST tokens, not Cardano!
- */
 export function Login({
   onConnect,
   isConnecting = false,
@@ -62,8 +48,6 @@ export function Login({
       console.log("🚀 Starting contract deployment...");
       await contractContext.deployContract();
       console.log("✅ Contract deployed successfully!");
-      // Contract deployed successfully! The UI will update automatically
-      // because contractContext.isDeployed will change
       setIsDeploying(false);
     } catch (err: any) {
       console.error("Deployment failed:", err);
@@ -72,156 +56,80 @@ export function Login({
     }
   };
 
+  const connectToWallet = async () => {
+    if (!isMidnightPreviewInstalled) {
+      toast.warning("Please install Lace Midnight Preview first");
+      return;
+    }
+    handleDeploy();
+  };
+
   return (
     <>
-      <Home />
-      <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center p-4">
-        <div className="max-w-md w-full">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-purple-600/40 rounded-full mb-6">
-              <span className="text-5xl">🌾</span>
-            </div>
-            <h1 className="text-5xl font-bold text-white mb-3">EdgeChain</h1>
-            <p className="text-purple-200 text-lg">
-              Federated Learning for Farmers
-            </p>
-            <p className="text-purple-300 text-sm mt-2">
-              Powered by Midnight ZK-Proofs
-            </p>
-          </div>
+      <div className="w-full h-full font-[orbitron] relative min-h-screen">
+        <div className="min-h-screen w-full bg-[#f9fafb] relative justify-around flex flex-col overflow-hidden">
+          {/* Diagonal Fade Center Grid Background */}
+          <div
+            className="absolute inset-0 z-0 skew-y-12 "
+            style={{
+              backgroundImage: `
+        linear-gradient(to right, #d1d5db 1px, transparent 1px),
+        linear-gradient(to bottom, #d1d5db 1px, transparent 1px)
+      `,
+              backgroundSize: "32px 32px",
+              WebkitMaskImage:
+                "radial-gradient(ellipse 60% 60% at 50% 50%, #000 30%, transparent 70%)",
+              maskImage:
+                "radial-gradient(ellipse 60% 60% at 50% 50%, #000 30%, transparent 70%)",
+            }}
+          />
 
-          <div className="bg-slate-800/60 backdrop-blur-md border border-purple-500/30 rounded-2xl p-8">
-            {/* Show contract deployment UI if not deployed */}
-            {!contractContext.isDeployed && (
-              <div className="mb-6 bg-blue-900/30 border border-blue-500/50 rounded-lg p-6 space-y-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="text-blue-400 text-3xl">📦</span>
-                  <div>
-                    <p className="text-blue-300 font-bold text-lg">
-                      Setup Required
-                    </p>
-                    <p className="text-blue-200 text-sm">
-                      Deploy EdgeChain contract to Midnight devnet
-                    </p>
-                  </div>
-                </div>
+          <Hero />
 
-                {deployError && (
-                  <div className="p-3 bg-red-900/50 border border-red-500/50 rounded-lg">
-                    <p className="text-red-200 text-sm">❌ {deployError}</p>
-                  </div>
-                )}
-
-                {contractContext.isProcessing && (
-                  <div className="p-3 bg-purple-900/50 border border-purple-500/50 rounded-lg">
-                    <p className="text-purple-200 text-sm">
-                      ⏳ Deploying contract... This may take 2-5 minutes
-                    </p>
-                    <p className="text-purple-300 text-xs mt-1">
-                      Generating ZK-proofs and submitting to blockchain
-                    </p>
-                  </div>
-                )}
-
-                <div className="text-sm text-blue-100 space-y-2">
-                  <p className="font-semibold">What this does:</p>
-                  <ul className="text-xs text-blue-200 space-y-1 ml-4">
-                    <li>• Connects your Lace wallet</li>
-                    <li>• Deploys smart contract to Midnight testnet</li>
-                    <li>• Enables federated learning for all farmers</li>
-                    <li>• One-time setup (requires ~1 tDUST)</li>
-                  </ul>
-                </div>
-
-                <button
-                  onClick={handleDeploy}
-                  disabled={
-                    isDeploying ||
-                    contractContext.isProcessing ||
-                    !isMidnightPreviewInstalled
-                  }
-                  className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold py-3 px-6 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isDeploying || contractContext.isProcessing ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <span className="animate-spin">⏳</span>
-                      Deploying Contract...
-                    </span>
-                  ) : (
-                    "Deploy Contract"
-                  )}
-                </button>
-
-                {!isMidnightPreviewInstalled && (
-                  <p className="text-yellow-200 text-xs text-center">
-                    ⚠️ Please install Lace Midnight Preview first
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Show error message if connection failed */}
-            {error && (
-              <div className="mb-4 p-4 bg-red-900/50 border border-red-500/50 rounded-lg">
-                <p className="text-red-200 text-sm">⚠️ {error}</p>
-              </div>
-            )}
-
-            {/* Show "Install Midnight Preview" button if not installed */}
-            {!isMidnightPreviewInstalled ? (
-              <div className="mb-6">
-                <div className="mb-4 p-4 bg-yellow-900/50 border border-yellow-500/50 rounded-lg">
-                  <p className="text-yellow-200 text-sm mb-2">
-                    ⚠️ Lace Midnight Preview is not installed
-                  </p>
-                  <p className="text-yellow-100 text-xs mb-2">
-                    You need the Lace Midnight Preview extension for Midnight
-                    devnet.
-                  </p>
-                  <p className="text-yellow-100 text-xs">
-                    This is a specialized extension for privacy-preserving DApps
-                    with tDUST tokens.
-                  </p>
-                </div>
+          <div className="text-xl font-[orbitron] font-bold text-end  absolute bottom-6 right-6 z-20">
+            <button
+              onClick={connectToWallet}
+              disabled={isConnecting}
+              className=" bg-[#0000ff] text-white w-[280px] font-semibold py-4 px-6 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer"
+            >
+              {!isMidnightPreviewInstalled ? (
                 <a
                   href="https://docs.midnight.network/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block w-full bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white font-semibold py-4 px-6 rounded-xl text-center transition-all"
+                  className="block w-full font-semibold py-4 px-6 rounded-xl text-center transition-all"
                 >
-                  Install Lace Midnight Preview →
+                  Install Lace
                 </a>
-              </div>
-            ) : (
-              /* Show connect button if Midnight Preview is installed */
-              <button
-                onClick={onConnect}
-                disabled={isConnecting}
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-4 px-6 rounded-xl mb-8 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isConnecting ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="animate-spin">⏳</span>
-                    Connecting to Midnight...
-                  </span>
-                ) : (
-                  "Connect Midnight Preview"
-                )}
-              </button>
-            )}
+              ) : (
+                <>
+                  {isConnecting ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="animate-spin">⏳</span>
+                      Connecting ...
+                    </span>
+                  ) : (
+                    "Connect Lace"
+                  )}
+                </>
+              )}
+            </button>
+          </div>
 
-            <div className="border-t border-slate-700 pt-6">
-              <h3 className="text-white font-semibold mb-4">
-                What is EdgeChain?
-              </h3>
-              <ul className="space-y-3 text-sm text-slate-300">
-                <li>✓ Get AI crop predictions via SMS ($0.10 each)</li>
-                <li>✓ Vote on accuracy, improve models collectively</li>
-                <li>✓ Earn tokens for participation</li>
-                <li>✓ Private data with zero-knowledge proofs</li>
-              </ul>
+          <div className="relative w-full overflow-hidden p-12">
+            <div className="relative z-10 flex flex-col items-center justify-center h-full gap-8">
+              <h1 className="text-center uppercase text-7xl font-extrabold tracking-[-2px] group">
+                Your{" "}
+                <span className="text-[#0000ff] relative before:content-['#@&^'] group-hover:before:content-['data'] transition-all"></span>{" "}
+                <br /> belongs to you
+              </h1>
+              <h6 className=" bg-white px-1">
+                Take control of what's truly yours.
+              </h6>
             </div>
           </div>
+
+          <div className="w-[300px] h-[300px]"></div>
         </div>
       </div>
     </>

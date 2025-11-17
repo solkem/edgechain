@@ -937,28 +937,24 @@ export function ArduinoDashboard() {
   const incentives = getIncentiveData();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-900 via-teal-900 to-blue-900 p-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-white text-black p-4 pt-[65px]">
+      <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center mb-6 pt-4">
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between pt-4">
           <div>
-            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-              <span>🔐</span> IoT Kit Dashboard
-            </h1>
-            <p className="text-green-200 text-sm mt-1">
-              ZK-Verified Data Collection with Incentive Tracking
-            </p>
+            <h1 className="text-3xl font-bold tracking-tight">IoT Kit Dashboard</h1>
+            <p className="text-sm text-gray-600">ZK-verified data collection with incentive tracking</p>
           </div>
           <div className="flex gap-3">
             <button
               onClick={() => setDemoMode(!demoMode)}
-              className="px-4 py-2 bg-purple-600/60 text-white rounded-lg hover:bg-purple-600 transition-all"
+              className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm font-semibold hover:border-gray-400 hover:cursor-pointer"
             >
               {demoMode ? 'Exit Demo' : '👥 Demo Mode'}
             </button>
             <button
               onClick={() => navigate('/selection')}
-              className="px-4 py-2 bg-slate-800/60 text-white rounded-lg hover:bg-slate-800 transition-all"
+              className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm font-semibold hover:border-gray-400 hover:cursor-pointer"
             >
               ← Back
             </button>
@@ -967,35 +963,33 @@ export function ArduinoDashboard() {
 
         {/* Error Display */}
         {error && (
-          <div className="mb-6 p-4 bg-red-900/50 border border-red-500/50 rounded-lg">
-            <p className="text-red-200">❌ {error}</p>
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-red-600">
+            ❌ {error}
           </div>
         )}
 
-        {/* Success/Reward Notification - DISABLED */}
-        {false && success && (
-          <div className="mb-6 p-4 bg-green-900/50 border border-green-500/50 rounded-lg animate-pulse">
-            <p className="text-green-200 font-semibold">{success}</p>
+        {/* Success/Reward Notification */}
+        {success && (
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm font-semibold text-blue-600">
+            {success}
           </div>
         )}
 
         {!deviceInfo?.registered ? (
           /* BLE Connection Flow */
-          <div className="bg-slate-800/60 backdrop-blur-md border border-blue-500/30 rounded-2xl p-8">
-            <div className="mb-6 text-center">
-              <div className="text-6xl mb-4">📡</div>
-              <h2 className="text-2xl font-bold text-white mb-2">Connect Your Arduino IoT Kit</h2>
-              <p className="text-blue-200 mb-6">
+          <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
+            <div className="mb-6 text-center space-y-3">
+              <div className="text-5xl">📡</div>
+              <h2 className="text-2xl font-semibold">Connect Your Arduino IoT Kit</h2>
+              <p className="text-sm text-gray-600">
                 Connect your Arduino Nano 33 BLE Sense via Bluetooth to start earning rewards
               </p>
             </div>
 
             {/* Requirements */}
-            <div className="bg-yellow-500/20 border border-yellow-400/50 rounded-lg p-4 mb-4">
-              <p className="text-yellow-200 text-sm font-semibold mb-2">
-                ⚠️ Requirements:
-              </p>
-              <ul className="text-yellow-100 text-sm space-y-1 list-disc list-inside">
+            <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Requirements</p>
+              <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
                 <li>Arduino Nano 33 BLE Sense with EdgeChain firmware flashed</li>
                 <li>Wallet connected (for device ownership)</li>
                 <li>Browser with Web Bluetooth support (Chrome, Edge, Opera)</li>
@@ -1004,324 +998,290 @@ export function ArduinoDashboard() {
             </div>
 
             {/* How it works */}
-            <div className="bg-blue-500/10 border border-blue-400/30 rounded-lg p-4 mb-6">
-              <p className="text-blue-200 text-sm font-semibold mb-2">
-                📝 How it works:
-              </p>
-              <ol className="text-blue-100 text-sm space-y-1 list-decimal list-inside">
-                <li>Click "Connect IoT Kit" below</li>
-                <li>Select your Arduino from BLE picker (named "EdgeChain-XXXX" with unique ID)</li>
-                <li>Device will auto-register to your wallet on first reading</li>
-                <li>Start earning 0.1 DUST per verified reading!</li>
+            <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">How it works</p>
+              <ol className="text-sm text-gray-600 space-y-1 list-decimal list-inside">
+                <li>Click “Connect IoT Kit” below</li>
+                <li>Select your Arduino from BLE picker (named “EdgeChain-XXXX”)</li>
+                <li>Device auto-registers to your wallet on first reading</li>
+                <li>Start earning 0.1 DUST per verified reading</li>
               </ol>
             </div>
 
-            <div className="text-center">
+            <div className="text-center space-y-3">
               <button
                 onClick={connectBLE}
                 disabled={!wallet.isConnected}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-4 px-8 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+                className="w-full rounded-lg border border-gray-900 bg-black px-6 py-3 text-white font-semibold transition-all hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {wallet.isConnected ? '📡 Connect IoT Kit via BLE' : '⚠️ Connect Wallet First'}
               </button>
-              <p className="text-gray-400 text-sm mt-4">
+              <p className="text-sm text-gray-600">
                 Need EdgeChain firmware? Download it{' '}
                 <a
                   href="https://github.com/solkem/edgechain-midnight-hackathon/blob/main/arduino/edgechain_iot/edgechain_iot.ino"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-400 hover:text-blue-300 underline font-semibold"
+                  className="font-semibold text-blue-600 hover:text-blue-700"
                 >
                   here
-                </a>
-                {' '}and flash to your Arduino Nano 33 BLE Sense.
+                </a>{' '}
+                and flash to your Arduino Nano 33 BLE Sense.
               </p>
             </div>
           </div>
         ) : (
           <>
             {/* PRIORITY 1: ZK PROOF VERIFICATION STATUS - HERO SECTION */}
-            <details className="mb-6 bg-gradient-to-br from-purple-900/80 to-blue-900/80 backdrop-blur-md border-2 border-purple-400/50 rounded-2xl shadow-2xl">
-              <summary className="cursor-pointer p-6 hover:bg-purple-900/60 rounded-2xl transition-all">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-                    <span className="text-4xl">🔐</span> Midnight ZK Proof Status
-                  </h2>
-                  <div className="px-4 py-2 bg-green-500/20 border border-green-400 rounded-lg">
-                    <span className="text-green-300 font-bold text-sm">LIVE</span>
+            <details className="rounded-xl border border-gray-200 bg-white shadow-sm">
+              <summary className="cursor-pointer select-none rounded-xl px-6 py-5 text-base font-semibold text-black">
+                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                  <div className="flex items-center gap-2 text-lg font-semibold">
+                    <span className="text-2xl">🔐</span>
+                    Midnight ZK Proof Status
+                  </div>
+                  <div className="rounded-full border border-gray-300 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-gray-600">
+                    Live
                   </div>
                 </div>
               </summary>
-              <div className="px-6 pb-6">
-
-              <div className="grid md:grid-cols-3 gap-6">
-                {/* Privacy Mode Toggle */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-purple-200 font-semibold">Privacy Mode</span>
-                    <button
-                      onClick={() => setUsePrivateMode(!usePrivateMode)}
-                      className={`px-4 py-2 rounded-lg font-bold transition-all ${
-                        usePrivateMode
-                          ? 'bg-green-500/20 border-2 border-green-400 text-green-300'
-                          : 'bg-red-500/20 border-2 border-red-400 text-red-300'
-                      }`}
-                    >
-                      {usePrivateMode ? '🔒 PRIVATE' : '⚠️ PUBLIC'}
-                    </button>
-                  </div>
-                  <p className="text-xs text-purple-200">
-                    {usePrivateMode
-                      ? 'Your identity is HIDDEN via ZK proofs. Backend cannot track you.'
-                      : 'Warning: Your device identity is VISIBLE to backend.'}
-                  </p>
-
-                  {/* Privacy Metrics */}
-                  {usePrivateMode && (
-                    <div className="bg-slate-900/50 rounded-lg p-3 space-y-2">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-purple-300">Anonymity Set:</span>
-                        <span className="text-white font-bold">{anonymitySetSize} devices</span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-purple-300">Current Epoch:</span>
-                        <span className="text-white font-mono">{currentEpoch}</span>
-                      </div>
-                      {currentNullifier && (
-                        <div className="flex justify-between text-xs">
-                          <span className="text-purple-300">Nullifier:</span>
-                          <span className="text-white font-mono">{currentNullifier.slice(0, 8)}...</span>
-                        </div>
-                      )}
-                      {lastProofGenTime > 0 && (
-                        <div className="flex justify-between text-xs">
-                          <span className="text-purple-300">Last Proof:</span>
-                          <span className="text-white font-bold">{lastProofGenTime}ms</span>
-                        </div>
-                      )}
-                      {zkProofStats?.ipfs && (
-                        <div className="border-t border-purple-700/30 pt-2 mt-2">
-                          <div className="flex justify-between text-xs">
-                            <span className="text-purple-300">IPFS Storage:</span>
-                            <span className="text-white font-bold">
-                              {zkProofStats.ipfs.stored_on_ipfs}/{zkProofStats.ipfs.total_submissions}
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-xs">
-                            <span className="text-purple-300">Decentralized:</span>
-                            <span className="text-green-400 font-bold">{zkProofStats.ipfs.percentage}%</span>
-                          </div>
-                        </div>
-                      )}
+              <div className="border-t border-gray-200 px-6 py-5">
+                <div className="grid gap-6 md:grid-cols-3">
+                  {/* Privacy Mode Toggle */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-gray-600">Privacy Mode</span>
+                      <button
+                        onClick={() => setUsePrivateMode(!usePrivateMode)}
+                        className={`rounded-lg px-4 py-2 text-sm font-semibold hover:cursor-pointer ${
+                          usePrivateMode
+                            ? 'bg-black text-white'
+                            : 'bg-white text-black border border-gray-300'
+                        }`}
+                      >
+                        {usePrivateMode ? '🔒 Private' : '⚠️ Public'}
+                      </button>
                     </div>
-                  )}
-                </div>
-
-                {/* Verification Status */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-green-400 text-5xl">✅</span>
-                    <div>
-                      <p className="text-green-300 font-bold text-xl">VERIFIED</p>
-                      <p className="text-green-200 text-sm">Device Authorized on Midnight Testnet</p>
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-900/50 rounded-lg p-4 space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-purple-200 text-sm">Current Batch:</span>
-                      <span className="text-white font-bold">{sensorData.length} readings</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-purple-200 text-sm">Proof Generated:</span>
-                      <span className="text-white font-bold">
-                        {deviceInfo.lastProofTime
-                          ? `${Math.floor((Date.now() - deviceInfo.lastProofTime) / 60000)}m ago`
-                          : 'Pending'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="bg-slate-900/50 rounded-lg p-3">
-                    <p className="text-purple-200 text-xs mb-1">Merkle Root (Auto-Collection)</p>
-                    <p className="text-white font-mono text-sm break-all">
-                      {deviceInfo.merkleRoot || 'Generating...'}
+                    <p className="text-xs text-gray-500">
+                      {usePrivateMode
+                        ? 'Your identity stays hidden via ZK proofs.'
+                        : 'Backend can see your device identity.'}
                     </p>
+
+                    {/* Privacy Metrics */}
+                    {usePrivateMode && (
+                      <div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-600">
+                        <div className="flex justify-between">
+                          <span>Anonymity Set</span>
+                          <span className="font-semibold text-black">{anonymitySetSize} devices</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Current Epoch</span>
+                          <span className="font-mono text-black">{currentEpoch}</span>
+                        </div>
+                        {currentNullifier && (
+                          <div className="flex justify-between">
+                            <span>Nullifier</span>
+                            <span className="font-mono text-black">{currentNullifier.slice(0, 8)}...</span>
+                          </div>
+                        )}
+                        {lastProofGenTime > 0 && (
+                          <div className="flex justify-between">
+                            <span>Last Proof</span>
+                            <span className="font-semibold text-black">{lastProofGenTime}ms</span>
+                          </div>
+                        )}
+                        {zkProofStats?.ipfs && (
+                          <div className="border-t border-gray-200 pt-2 mt-2 space-y-1">
+                            <div className="flex justify-between">
+                              <span>IPFS Storage</span>
+                              <span className="font-semibold text-black">
+                                {zkProofStats.ipfs.stored_on_ipfs}/{zkProofStats.ipfs.total_submissions}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Decentralized</span>
+                              <span className="font-semibold text-black">{zkProofStats.ipfs.percentage}%</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <div className="bg-slate-900/50 rounded-lg p-3">
-                    <p className="text-purple-200 text-xs mb-1">Device Pubkey</p>
-                    <p className="text-white font-mono text-xs break-all">{deviceInfo.pubkey}</p>
+
+                  {/* Verification Status */}
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                      <span className="text-3xl">✅</span>
+                      <div>
+                        <p className="text-lg font-semibold">Verified</p>
+                        <p className="text-sm text-gray-600">Device authorized on Midnight Testnet</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600">
+                      <div className="flex justify-between">
+                        <span>Current batch</span>
+                        <span className="font-semibold text-black">{sensorData.length} readings</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Proof generated</span>
+                        <span className="font-semibold text-black">
+                          {deviceInfo.lastProofTime
+                            ? `${Math.floor((Date.now() - deviceInfo.lastProofTime) / 60000)}m ago`
+                            : 'Pending'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-all">
-                      View Proof Details
-                    </button>
-                    <button className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-all">
-                      Verify On-Chain
-                    </button>
+
+                  <div className="space-y-3">
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">
+                        Merkle Root (Auto-Collection)
+                      </p>
+                      <p className="font-mono text-sm text-black break-all">
+                        {deviceInfo.merkleRoot || 'Generating...'}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">
+                        Device Pubkey
+                      </p>
+                      <p className="font-mono text-xs text-black break-all">{deviceInfo.pubkey}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold hover:border-gray-400 hover:cursor-pointer">
+                        View Proof Details
+                      </button>
+                      <button className="flex-1 rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-900">
+                        Verify On-Chain
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
               </div>
             </details>
 
             {/* PRIORITY 2 & 3: CONSISTENCY + INCENTIVES */}
-            <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <div className="grid gap-6 md:grid-cols-2">
               {/* CONSISTENCY SCORE */}
-              <div className="bg-slate-800/60 backdrop-blur-md border-2 border-green-500/50 rounded-2xl p-6">
-                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                <div className="mb-4 flex items-center gap-2 text-lg font-semibold">
                   <span>📊</span> Data Collection Consistency
-                </h2>
+                </div>
 
-                <div className="mb-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-2xl font-bold text-white">{consistency.uptimePercent.toFixed(1)}%</span>
-                    <span className={`px-3 py-1 rounded-full text-sm font-bold ${
-                      consistency.uptimePercent >= 98
-                        ? 'bg-green-500/20 text-green-300 border border-green-400'
-                        : consistency.uptimePercent >= 90
-                        ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-400'
-                        : 'bg-red-500/20 text-red-300 border border-red-400'
-                    }`}>
-                      {consistency.uptimePercent >= 98 ? 'Excellent' : consistency.uptimePercent >= 90 ? 'Good' : 'Poor'}
+                <div className="mb-5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-3xl font-bold">
+                      {consistency.uptimePercent.toFixed(1)}%
+                    </span>
+                    <span className="rounded-full border border-gray-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gray-600">
+                      {consistency.uptimePercent >= 98 ? 'Excellent' : consistency.uptimePercent >= 90 ? 'Good' : 'Needs attention'}
                     </span>
                   </div>
-                  <div className="w-full bg-slate-700 rounded-full h-3 overflow-hidden">
+                  <div className="h-2 w-full rounded-full bg-gray-100">
                     <div
-                      className={`h-full rounded-full transition-all ${
-                        consistency.uptimePercent >= 98
-                          ? 'bg-gradient-to-r from-green-500 to-emerald-500'
-                          : consistency.uptimePercent >= 90
-                          ? 'bg-gradient-to-r from-yellow-500 to-orange-500'
-                          : 'bg-gradient-to-r from-red-500 to-pink-500'
-                      }`}
+                      className="h-full rounded-full bg-black transition-all"
                       style={{ width: `${Math.min(100, consistency.uptimePercent)}%` }}
                     ></div>
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  <div className="bg-slate-900/50 rounded-lg p-3 flex justify-between">
-                    <span className="text-green-200 text-sm">Uptime:</span>
-                    <span className="text-white font-bold">{consistency.collectedReadings}/{consistency.expectedReadings}</span>
+                <div className="space-y-3 text-sm text-gray-600">
+                  <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3">
+                    <span>Uptime</span>
+                    <span className="font-semibold text-black">
+                      {consistency.collectedReadings}/{consistency.expectedReadings}
+                    </span>
                   </div>
-                  <div className="bg-slate-900/50 rounded-lg p-3 flex justify-between">
-                    <span className="text-green-200 text-sm">Reading Interval:</span>
-                    <span className="text-white font-bold">30 seconds</span>
+                  <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3">
+                    <span>Reading interval</span>
+                    <span className="font-semibold text-black">30 seconds</span>
                   </div>
-                  <div className="bg-slate-900/50 rounded-lg p-3 flex justify-between">
-                    <span className="text-green-200 text-sm">Missed Readings:</span>
-                    <span className="text-red-300 font-bold">{consistency.missedReadings}</span>
+                  <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3">
+                    <span>Missed readings</span>
+                    <span className="font-semibold text-black">{consistency.missedReadings}</span>
                   </div>
                   {consistency.perfectDayStreak > 0 && (
-                    <div className="bg-orange-900/30 border border-orange-500/50 rounded-lg p-3 flex items-center gap-2">
-                      <span className="text-2xl">🔥</span>
-                      <span className="text-orange-200 font-bold">
-                        {consistency.perfectDayStreak} day{consistency.perfectDayStreak !== 1 ? 's' : ''} perfect streak!
-                      </span>
+                    <div className="rounded-lg border border-gray-200 bg-white p-3 text-sm text-gray-600">
+                      {consistency.perfectDayStreak} day{consistency.perfectDayStreak !== 1 ? 's' : ''} perfect streak
                     </div>
                   )}
                 </div>
               </div>
 
               {/* tDUST INCENTIVES */}
-              <div className="bg-slate-800/60 backdrop-blur-md border-2 border-yellow-500/50 rounded-2xl p-6">
-                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                <div className="mb-4 flex items-center gap-2 text-lg font-semibold">
                   <span>💰</span> tDUST Incentives Earned
-                </h2>
-
-                <div className="mb-4">
-                  <div className="text-center py-4 bg-gradient-to-br from-yellow-900/30 to-orange-900/30 rounded-lg border border-yellow-500/50">
-                    <p className="text-yellow-200 text-sm mb-1">Today's Earnings</p>
-                    <p className="text-5xl font-bold text-yellow-300">{incentives.dailyEarned.toFixed(3)}</p>
-                    <p className="text-yellow-100 text-sm mt-1">tDUST</p>
-                  </div>
                 </div>
 
-                <div className="space-y-3">
-                  <div className="bg-slate-900/50 rounded-lg p-3 flex justify-between">
-                    <span className="text-yellow-200 text-sm">This Week:</span>
-                    <span className="text-white font-bold">{incentives.weeklyEarned.toFixed(3)} tDUST</span>
+                <div className="mb-5 rounded-lg border border-gray-200 bg-gray-50 p-4 text-center">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Today's earnings</p>
+                  <p className="text-4xl font-bold">{incentives.dailyEarned.toFixed(3)}</p>
+                  <p className="text-sm text-gray-600">tDUST</p>
+                </div>
+
+                <div className="space-y-3 text-sm text-gray-600">
+                  <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-3">
+                    <span>This week</span>
+                    <span className="font-semibold text-black">{incentives.weeklyEarned.toFixed(3)} tDUST</span>
                   </div>
-                  <div className="bg-slate-900/50 rounded-lg p-3 flex justify-between">
-                    <span className="text-yellow-200 text-sm">Pending (Batch):</span>
-                    <span className="text-white font-bold">{incentives.pending.toFixed(3)} tDUST</span>
+                  <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-3">
+                    <span>Pending (batch)</span>
+                    <span className="font-semibold text-black">{incentives.pending.toFixed(3)} tDUST</span>
                   </div>
-                  <div className={`rounded-lg p-3 flex justify-between ${
-                    incentives.rewardTier === 'HIGH'
-                      ? 'bg-green-900/30 border border-green-500/50'
-                      : incentives.rewardTier === 'MEDIUM'
-                      ? 'bg-yellow-900/30 border border-yellow-500/50'
-                      : 'bg-red-900/30 border border-red-500/50'
-                  }`}>
-                    <span className={`text-sm ${
-                      incentives.rewardTier === 'HIGH' ? 'text-green-200' : incentives.rewardTier === 'MEDIUM' ? 'text-yellow-200' : 'text-red-200'
-                    }`}>
-                      Reward Tier:
-                    </span>
-                    <span className={`font-bold ${
-                      incentives.rewardTier === 'HIGH' ? 'text-green-300' : incentives.rewardTier === 'MEDIUM' ? 'text-yellow-300' : 'text-red-300'
-                    }`}>
-                      {incentives.rewardTier}
-                    </span>
+                  <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3">
+                    <span>Reward tier</span>
+                    <span className="font-semibold text-black">{incentives.rewardTier}</span>
                   </div>
-                  <div className="bg-blue-900/30 border border-blue-500/50 rounded-lg p-3">
-                    <p className="text-blue-200 text-xs mb-1">Next Tier Threshold:</p>
-                    <p className="text-blue-100 font-bold">{incentives.nextTierThreshold}% consistency → +20% bonus</p>
+                  <div className="rounded-lg border border-gray-200 bg-white p-3 text-sm text-gray-600">
+                    Next tier threshold: <span className="font-semibold text-black">{incentives.nextTierThreshold}% consistency</span>
                   </div>
-                  <button className="w-full bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white font-bold py-3 rounded-xl transition-all">
-                    💰 Claim Rewards
+                  <button className="w-full rounded-lg border border-gray-900 bg-black px-4 py-3 text-sm font-semibold text-white hover:bg-gray-900">
+                    Claim rewards
                   </button>
                 </div>
               </div>
             </div>
 
             {/* SECONDARY: Device Control + Current Reading */}
-            <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <div className="grid gap-6 md:grid-cols-2">
               {/* Device Control */}
-              <div className="bg-slate-800/40 backdrop-blur-md border border-green-500/20 rounded-xl p-5">
-                <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+              <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                <div className="mb-4 flex items-center gap-2 text-lg font-semibold">
                   <span>📡</span> Device Control
-                </h3>
+                </div>
 
-                <div className="space-y-3">
-                  <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
-                    <p className="text-blue-200 text-xs mb-2">
-                      <strong>🔵 Real Hardware:</strong> Connect via Web Bluetooth
-                    </p>
+                <div className="space-y-4">
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+                    <p className="mb-2 font-semibold text-black">Real hardware</p>
                     <button
                       onClick={connectBLE}
                       disabled={isCollecting}
-                      className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold py-2 px-4 rounded-lg transition-all disabled:opacity-50 text-sm"
+                      className="w-full rounded-lg border border-gray-900 bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {isCollecting ? '✅ Connected' : '🔗 Connect BLE'}
                     </button>
                   </div>
 
-                  <div className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-3">
-                    <p className="text-purple-200 text-xs mb-2">
-                      <strong>🟣 Simulation:</strong> Test without hardware
-                    </p>
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+                    <p className="mb-2 font-semibold text-black">Simulation</p>
                     <div className="flex gap-2">
                       <button
                         onClick={() => {
                           setIsCollecting(!isCollecting);
                           if (!isCollecting) collectReading();
                         }}
-                        className={`flex-1 font-semibold py-2 px-4 rounded-lg transition-all text-sm ${
-                          isCollecting
-                            ? 'bg-red-600 hover:bg-red-700 text-white'
-                            : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white'
-                        }`}
+                        className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold hover:border-gray-400 hover:cursor-pointer"
                       >
                         {isCollecting ? 'Stop' : 'Start'}
                       </button>
                       <button
                         onClick={collectReading}
                         disabled={isCollecting}
-                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-all disabled:opacity-50 text-sm"
+                        className="rounded-lg border border-gray-900 bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         Manual
                       </button>
@@ -1331,124 +1291,128 @@ export function ArduinoDashboard() {
               </div>
 
               {/* Current Reading */}
-              <div className="bg-slate-800/40 backdrop-blur-md border border-green-500/20 rounded-xl p-5">
-                <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+              <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                <div className="mb-4 flex items-center gap-2 text-lg font-semibold">
                   <span>📊</span> Current Reading
-                </h3>
+                </div>
 
                 {currentReading ? (
                   <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-orange-900/20 border border-orange-500/30 rounded-lg p-3">
-                        <p className="text-orange-300 text-xs mb-1">Temperature</p>
-                        <p className="text-2xl font-bold text-white">
+                      <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Temperature</p>
+                        <p className="text-2xl font-bold text-black">
                           {currentReading.temperature.toFixed(1)}°C
                         </p>
                       </div>
-                      <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
-                        <p className="text-blue-300 text-xs mb-1">Humidity</p>
-                        <p className="text-2xl font-bold text-white">
+                      <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Humidity</p>
+                        <p className="text-2xl font-bold text-black">
                           {currentReading.humidity.toFixed(1)}%
                         </p>
                       </div>
                     </div>
-                    <div className="text-xs text-gray-400 text-center">
+                    <div className="text-center text-xs text-gray-500">
                       {new Date(currentReading.timestamp).toLocaleTimeString()}
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center py-6 text-gray-500">
-                    <p className="text-sm">No readings yet</p>
+                  <div className="rounded-lg border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">
+                    No readings yet
                   </div>
                 )}
               </div>
             </div>
 
             {/* Collapsible: Farm Details + Data Summary */}
-            <details className="mb-6 bg-slate-800/30 backdrop-blur-md border border-green-500/20 rounded-xl">
-              <summary className="cursor-pointer p-4 text-white font-semibold hover:bg-slate-700/30 rounded-xl transition-all">
-                📋 Farm Details & Data Summary (Click to expand)
+            <details className="rounded-xl border border-gray-200 bg-white shadow-sm">
+              <summary className="cursor-pointer select-none rounded-xl px-4 py-3 text-sm font-semibold text-black">
+                📋 Farm Details & Data Summary
               </summary>
-              <div className="p-4 grid md:grid-cols-2 gap-4">
+              <div className="border-t border-gray-200 p-4 grid gap-4 md:grid-cols-2">
                 {/* Farm Metadata */}
-                <div>
-                  <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                     <span>🌾</span> Farm Configuration
                   </h4>
-                  <div className="space-y-2">
+                  <select
+                    value={farmMetadata.cropType}
+                    onChange={(e) => setFarmMetadata({ ...farmMetadata, cropType: e.target.value })}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+                  >
+                    <option value="maize">Maize</option>
+                    <option value="wheat">Wheat</option>
+                    <option value="rice">Rice</option>
+                    <option value="soybeans">Soybeans</option>
+                  </select>
+                  <div className="grid grid-cols-2 gap-2">
                     <select
-                      value={farmMetadata.cropType}
-                      onChange={(e) => setFarmMetadata({ ...farmMetadata, cropType: e.target.value })}
-                      className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                      value={farmMetadata.soilType}
+                      onChange={(e) => setFarmMetadata({ ...farmMetadata, soilType: e.target.value })}
+                      className="rounded-lg border border-gray-300 bg-white px-2 py-2 text-sm"
                     >
-                      <option value="maize">Maize</option>
-                      <option value="wheat">Wheat</option>
-                      <option value="rice">Rice</option>
-                      <option value="soybeans">Soybeans</option>
+                      <option value="loamy">Loamy</option>
+                      <option value="clay">Clay</option>
+                      <option value="sandy">Sandy</option>
                     </select>
-                    <div className="grid grid-cols-2 gap-2">
-                      <select
-                        value={farmMetadata.soilType}
-                        onChange={(e) => setFarmMetadata({ ...farmMetadata, soilType: e.target.value })}
-                        className="bg-slate-700/50 border border-slate-600 rounded-lg px-2 py-1 text-white text-xs"
-                      >
-                        <option value="loamy">Loamy</option>
-                        <option value="clay">Clay</option>
-                        <option value="sandy">Sandy</option>
-                      </select>
-                      <select
-                        value={farmMetadata.irrigationType}
-                        onChange={(e) => setFarmMetadata({ ...farmMetadata, irrigationType: e.target.value })}
-                        className="bg-slate-700/50 border border-slate-600 rounded-lg px-2 py-1 text-white text-xs"
-                      >
-                        <option value="drip">Drip</option>
-                        <option value="sprinkler">Sprinkler</option>
-                      </select>
-                    </div>
+                    <select
+                      value={farmMetadata.irrigationType}
+                      onChange={(e) => setFarmMetadata({ ...farmMetadata, irrigationType: e.target.value })}
+                      className="rounded-lg border border-gray-300 bg-white px-2 py-2 text-sm"
+                    >
+                      <option value="drip">Drip</option>
+                      <option value="sprinkler">Sprinkler</option>
+                    </select>
                   </div>
                 </div>
 
                 {/* Data Summary */}
-                <div>
-                  <h4 className="text-sm font-bold text-white mb-3">📈 Data Summary</h4>
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-gray-700">📈 Data Summary</h4>
                   {averageConditions ? (
-                    <div className="space-y-2">
-                      <div className="bg-slate-700/30 rounded-lg p-2 flex justify-between text-xs">
-                        <span className="text-gray-300">Avg Temp:</span>
-                        <span className="text-white font-bold">{averageConditions.temperature.toFixed(1)}°C</span>
+                    <div className="space-y-2 text-sm text-gray-600">
+                      <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                        <span>Avg temp</span>
+                        <span className="font-semibold text-black">
+                          {averageConditions.temperature.toFixed(1)}°C
+                        </span>
                       </div>
-                      <div className="bg-slate-700/30 rounded-lg p-2 flex justify-between text-xs">
-                        <span className="text-gray-300">Avg Humidity:</span>
-                        <span className="text-white font-bold">{averageConditions.humidity.toFixed(1)}%</span>
+                      <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                        <span>Avg humidity</span>
+                        <span className="font-semibold text-black">
+                          {averageConditions.humidity.toFixed(1)}%
+                        </span>
                       </div>
-                      <div className="bg-slate-700/30 rounded-lg p-2 flex justify-between text-xs">
-                        <span className="text-gray-300">Total Readings:</span>
-                        <span className="text-white font-bold">{averageConditions.readings}</span>
+                      <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                        <span>Total readings</span>
+                        <span className="font-semibold text-black">{averageConditions.readings}</span>
                       </div>
                     </div>
                   ) : (
-                    <p className="text-gray-500 text-xs">No data yet</p>
+                    <div className="rounded-lg border border-dashed border-gray-200 p-4 text-sm text-gray-500">
+                      No data yet
+                    </div>
                   )}
                 </div>
               </div>
             </details>
 
             {/* Action: Train with Sensor Data */}
-            <div className="bg-gradient-to-r from-purple-900/40 to-blue-900/40 backdrop-blur-md border border-purple-500/30 rounded-2xl p-6">
-              <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <div className="mb-2 flex items-center gap-2 text-lg font-semibold">
                 <span>🚀</span> Train FL Model with IoT Data
-              </h3>
-              <p className="text-purple-100 text-sm mb-4">
-                Use your ZK-verified sensor data to train a federated learning model for crop yield prediction
+              </div>
+              <p className="text-sm text-gray-600 mb-4">
+                Use your ZK-verified sensor data to train a federated learning model for crop yield prediction.
               </p>
               <button
                 onClick={handleTrainWithSensorData}
                 disabled={!averageConditions || sensorData.length < 5}
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {averageConditions && sensorData.length >= 5
-                  ? `🚀 Train Model (${sensorData.length} readings) →`
-                  : '⏳ Collect at least 5 readings to train'}
+                  ? `Train Model (${sensorData.length} readings) →`
+                  : 'Collect at least 5 readings to train'}
               </button>
             </div>
           </>

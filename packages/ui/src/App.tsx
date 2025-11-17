@@ -10,6 +10,7 @@ import { AggregationRoute } from "./routes/AggregationRoute";
 import { PredictionsRoute } from "./routes/PredictionsRoute";
 import Navbar from "./components/Navbar";
 import "./app.css";
+import { Toaster } from "sonner";
 
 // Main App Component with Router
 export default function EdgeChainApp() {
@@ -17,6 +18,7 @@ export default function EdgeChainApp() {
     <AppProvider>
       <BrowserRouter>
         <Navbar />
+        <Toaster position="top-right" />
         <Routes>
           {/* Main app routes */}
           <Route path="/" element={<LoginRoute />} />

@@ -20,20 +20,16 @@ export function LocalTrainingPanel({
   onTrainModel,
 }: LocalTrainingPanelProps) {
   return (
-    <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-6 space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h3 className="text-xl font-bold text-white mb-1">
-            1️⃣ Train Local Model
-          </h3>
-          <p className="text-gray-400 text-sm">
-            Train on your private farm data (never leaves your device)
-          </p>
+          <h3 className="text-xl font-semibold text-black">1️⃣ Train Local Model</h3>
+          <p className="text-sm text-gray-600">Train on your private farm data. Nothing leaves your device.</p>
         </div>
         <button
           onClick={onTrainModel}
           disabled={flState.isTraining || !isWalletConnected}
-          className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          className="rounded-lg border border-gray-900 bg-black px-6 py-3 text-sm font-semibold text-white transition hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {flState.isTraining ? '⏳ Training...' : '🚀 Train Model'}
         </button>
@@ -41,42 +37,34 @@ export function LocalTrainingPanel({
 
       {/* Training Progress */}
       {flState.isTraining && (
-        <div className="bg-black/30 rounded-lg p-4 space-y-3">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-purple-300">
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3">
+          <div className="flex items-center justify-between text-sm text-gray-600">
+            <span>
               Epoch {trainingProgress.currentEpoch} / {trainingProgress.totalEpochs}
             </span>
-            <span className="text-gray-400">
-              {Math.round((trainingProgress.currentEpoch / trainingProgress.totalEpochs) * 100)}%
-            </span>
+            <span>{Math.round((trainingProgress.currentEpoch / trainingProgress.totalEpochs) * 100)}%</span>
           </div>
-
-          <div className="h-2 bg-gray-800 rounded overflow-hidden">
+          <div className="h-2 rounded-full bg-gray-200">
             <div
-              className="h-full bg-gradient-to-r from-purple-600 to-pink-600 transition-all"
+              className="h-full rounded-full bg-blue-600 transition-all"
               style={{
                 width: `${(trainingProgress.currentEpoch / trainingProgress.totalEpochs) * 100}%`,
               }}
             />
           </div>
-
           {trainingProgress.metrics && (
-            <div className="grid grid-cols-3 gap-3 text-xs">
+            <div className="grid grid-cols-3 gap-3 text-xs text-gray-600">
               <div>
                 <p className="text-gray-500">Loss</p>
-                <p className="text-white font-semibold">
-                  {trainingProgress.metrics.loss.toFixed(4)}
-                </p>
+                <p className="text-black font-semibold">{trainingProgress.metrics.loss.toFixed(4)}</p>
               </div>
               <div>
                 <p className="text-gray-500">MAE</p>
-                <p className="text-white font-semibold">
-                  {trainingProgress.metrics.mae.toFixed(4)}
-                </p>
+                <p className="text-black font-semibold">{trainingProgress.metrics.mae.toFixed(4)}</p>
               </div>
               <div>
                 <p className="text-gray-500">Val Loss</p>
-                <p className="text-white font-semibold">
+                <p className="text-black font-semibold">
                   {trainingProgress.metrics.valLoss?.toFixed(4) || 'N/A'}
                 </p>
               </div>
@@ -87,30 +75,23 @@ export function LocalTrainingPanel({
 
       {/* Training Result */}
       {flState.lastTraining && !flState.isTraining && (
-        <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-green-400 text-xl">✅</span>
-            <p className="text-green-300 font-semibold">Training Complete!</p>
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3">
+          <div className="flex items-center gap-2 text-sm font-semibold text-black">
+            <span>✅</span>
+            Training complete
           </div>
-
-          <div className="grid grid-cols-3 gap-3 text-xs">
+          <div className="grid grid-cols-3 gap-3 text-xs text-gray-600">
             <div>
-              <p className="text-green-300/70">Dataset Size</p>
-              <p className="text-white font-semibold">
-                {flState.lastTraining.datasetSize} samples
-              </p>
+              <p className="uppercase tracking-wide text-gray-500">Dataset Size</p>
+              <p className="text-base font-semibold text-black">{flState.lastTraining.datasetSize} samples</p>
             </div>
             <div>
-              <p className="text-green-300/70">Final MAE</p>
-              <p className="text-white font-semibold">
-                {flState.lastTraining.finalMetrics.valMae.toFixed(4)}
-              </p>
+              <p className="uppercase tracking-wide text-gray-500">Final MAE</p>
+              <p className="text-base font-semibold text-black">{flState.lastTraining.finalMetrics.valMae.toFixed(4)}</p>
             </div>
             <div>
-              <p className="text-green-300/70">Training Time</p>
-              <p className="text-white font-semibold">
-                {(flState.lastTraining.trainingTime / 1000).toFixed(1)}s
-              </p>
+              <p className="uppercase tracking-wide text-gray-500">Training Time</p>
+              <p className="text-base font-semibold text-black">{(flState.lastTraining.trainingTime / 1000).toFixed(1)}s</p>
             </div>
           </div>
         </div>

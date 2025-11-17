@@ -1,5 +1,8 @@
 import * as THREE from "three";
 import { useEffect } from "react";
+import { FontLoader } from "three/addons/loaders/FontLoader.js";
+import { TextGeometry } from "three/addons/geometries/TextGeometry.js";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 function Hero() {
   useEffect(() => {
@@ -16,10 +19,59 @@ function Hero() {
     material.roughness = 0.2;
     material.metalness = 0.8;
 
+    const logoBox = new THREE.Group();
+
+    //? font
+    const fontLoader = new FontLoader();
+
+    fontLoader.load("/fonts/sansBartle.json", (font) => {
+      const textGeometry = new TextGeometry("EDGECHAIN", {
+        font: font,
+        size: 0.05,
+        curveSegments: 5,
+        depth: 0.05,
+      });
+
+      textGeometry.center();
+
+      const textMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
+
+      const text1 = new THREE.Mesh(textGeometry, textMaterial);
+      text1.position.set(0, 0, 1 / 2);
+
+      const text2 = new THREE.Mesh(textGeometry, textMaterial);
+      text2.position.set(1 / 2, 0, 0);
+      text2.rotation.y = Math.PI / 2;
+
+      const text3 = new THREE.Mesh(textGeometry, textMaterial);
+      text3.position.set(-1 / 2, 0, 0);
+      text3.rotation.y = -Math.PI / 2;
+
+      const text4 = new THREE.Mesh(textGeometry, textMaterial);
+      text4.position.set(0, 0, -1 / 2);
+      text4.rotation.y = Math.PI;
+
+      const text5 = new THREE.Mesh(textGeometry, textMaterial);
+      text5.position.set(0, 1 / 2, 0);
+      text5.rotation.x = -Math.PI / 2;
+
+      const text6 = new THREE.Mesh(textGeometry, textMaterial);
+      text6.position.set(0, -1 / 2, 0);
+      text6.rotation.x = Math.PI / 2;
+
+      logoBox.add(text1);
+      logoBox.add(text2);
+      logoBox.add(text3);
+      logoBox.add(text4);
+      logoBox.add(text5);
+      logoBox.add(text6);
+    });
+
     //? meshes
     const box = new THREE.Mesh(geomtery, material);
-    box.position.y = -1
-    scene.add(box);
+    logoBox.add(box);
+    logoBox.position.y = -1;
+    scene.add(logoBox);
 
     const light = new THREE.PointLight(0xffffff, 2);
     light.position.y = 3;
@@ -33,9 +85,9 @@ function Hero() {
     scene.add(directionalLight);
 
     //? particles
-    const pointMaterial = new THREE.PointsMaterial({opacity:0.4});
+    const pointMaterial = new THREE.PointsMaterial({ opacity: 0.4 });
     const pointGeomtery = new THREE.BufferGeometry();
-    const count = 500;
+    const count = 10000;
     let positions = new Float32Array(count * 3);
     let opacities = new Float32Array(count);
     const offsets = new Float32Array(count * 3);
@@ -70,14 +122,14 @@ function Hero() {
       new THREE.BufferAttribute(opacities, 1)
     );
 
-    pointMaterial.size = 0.04;
+    pointMaterial.size = 0.01;
     pointMaterial.transparent = true;
     pointMaterial.depthWrite = false;
     pointMaterial.color = new THREE.Color(0x0000ff);
 
     const particles = new THREE.Points(pointGeomtery, pointMaterial);
     scene.add(particles);
-    particles.position.y = -1
+    particles.position.y = -1;
 
     //? camera
     const camera = new THREE.PerspectiveCamera(
@@ -120,9 +172,9 @@ function Hero() {
       const speed = 0.05;
 
       // Rotate box
-      box.rotation.y = elapsedTime * speed;
-      box.rotation.x = elapsedTime * speed;
-      box.rotation.z = elapsedTime * speed;
+      logoBox.rotation.y = elapsedTime * speed;
+      logoBox.rotation.x = elapsedTime * speed;
+      logoBox.rotation.z = elapsedTime * speed;
 
       // Animate particles along infinity loop
       const positionsArray = particles.geometry.attributes.position.array;

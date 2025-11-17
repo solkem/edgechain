@@ -13,49 +13,42 @@ interface GlobalModelPanelProps {
 
 export function GlobalModelPanel({ flState, onDownloadGlobalModel }: GlobalModelPanelProps) {
   return (
-    <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-6 space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h3 className="text-xl font-bold text-white mb-1">
-            3️⃣ Download Global Model
-          </h3>
-          <p className="text-gray-400 text-sm">
-            Get the latest aggregated model for improved predictions
-          </p>
+          <h3 className="text-xl font-semibold text-black">3️⃣ Download Global Model</h3>
+          <p className="text-sm text-gray-600">Get the latest aggregated model for improved predictions.</p>
         </div>
         <button
           onClick={onDownloadGlobalModel}
-          className="px-6 py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg font-semibold hover:from-green-700 hover:to-teal-700 transition"
+          className="rounded-lg border border-gray-900 bg-black px-6 py-3 text-sm font-semibold text-white transition hover:bg-gray-900"
         >
           📥 Download Model
         </button>
       </div>
 
       {flState.globalModel && (
-        <div className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-purple-400 text-xl">🌐</span>
-            <p className="text-purple-300 font-semibold">
-              Global Model v{flState.globalModel.version}
-            </p>
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3">
+          <div className="flex items-center gap-2 text-sm font-semibold text-black">
+            <span>🌐</span>
+            <p>Global Model v{flState.globalModel.version}</p>
           </div>
-
-          <div className="grid grid-cols-3 gap-3 text-xs">
+          <div className="grid grid-cols-3 gap-3 text-xs text-gray-600">
             <div>
-              <p className="text-purple-300/70">Trained By</p>
-              <p className="text-white font-semibold">
+              <p className="uppercase tracking-wide text-gray-500">Trained by</p>
+              <p className="text-base font-semibold text-black">
                 {flState.globalModel.metadata.trainedBy} farmers
               </p>
             </div>
             <div>
-              <p className="text-purple-300/70">Total Samples</p>
-              <p className="text-white font-semibold">
+              <p className="uppercase tracking-wide text-gray-500">Total samples</p>
+              <p className="text-base font-semibold text-black">
                 {flState.globalModel.metadata.totalSamples}
               </p>
             </div>
             <div>
-              <p className="text-purple-300/70">Global MAE</p>
-              <p className="text-white font-semibold">
+              <p className="uppercase tracking-wide text-gray-500">Global MAE</p>
+              <p className="text-base font-semibold text-black">
                 {flState.globalModel.performanceMetrics.globalMae.toFixed(4)}
               </p>
             </div>

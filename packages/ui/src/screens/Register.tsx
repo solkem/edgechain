@@ -43,59 +43,69 @@ export function Register({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full bg-slate-800/60 backdrop-blur-md border border-purple-500/30 rounded-2xl p-8">
-        <h1 className="text-2xl font-bold text-white mb-2">Create Your Profile</h1>
-        <p className="text-purple-200 text-sm mb-6">Choose your privacy level - powered by Midnight ZK-Proofs</p>
+    <div className="min-h-screen bg-white flex items-center justify-center p-4 pt-[65px]">
+      <div className="max-w-2xl w-full bg-white border border-gray-200 rounded-lg shadow-sm p-8">
+        <h1 className="text-3xl font-bold text-black mb-2">Create Your Profile</h1>
+        <p className="text-gray-600 text-sm mb-8">Choose your privacy level - powered by Midnight ZK-Proofs</p>
 
-        <div className="space-y-4">
-          <div className="bg-slate-700/50 rounded-lg p-4">
-            <p className="text-xs text-purple-300 mb-1">Connected Wallet</p>
-            <p className="text-xs text-white font-mono break-all">{address}</p>
+        <div className="space-y-6">
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <p className="text-xs text-gray-500 mb-1 font-medium uppercase tracking-wide">Connected Wallet</p>
+            <p className="text-xs text-black font-mono break-all">{address}</p>
           </div>
 
           {/* Privacy Level Selection */}
-          <div className="bg-purple-900/30 border border-purple-500/40 rounded-lg p-4">
-            <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
-              <span>🔐</span> Programmable Privacy Level
-            </h3>
-            <div className="grid grid-cols-3 gap-2 mb-3">
+          <div className="border border-gray-200 rounded-lg p-6">
+            <h3 className="text-black font-semibold mb-4 text-base">Select Privacy Level</h3>
+            <div className="grid grid-cols-3 gap-3 mb-4">
               <button
                 onClick={() => setPrivacyLevel('basic')}
-                className={`px-3 py-2 rounded-lg text-xs transition-all ${privacyLevel === 'basic' ? 'bg-green-600 text-white' : 'bg-slate-700/50 text-gray-300 hover:bg-slate-700'}`}
+                className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-all border hover:cursor-pointer ${
+                  privacyLevel === 'basic' 
+                    ? 'bg-black text-white border-black' 
+                    : 'bg-white text-black border-gray-300 hover:border-gray-400'
+                }`}
               >
                 Basic
               </button>
               <button
                 onClick={() => setPrivacyLevel('enhanced')}
-                className={`px-3 py-2 rounded-lg text-xs transition-all ${privacyLevel === 'enhanced' ? 'bg-yellow-600 text-white' : 'bg-slate-700/50 text-gray-300 hover:bg-slate-700'}`}
+                className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-all border hover:cursor-pointer ${
+                  privacyLevel === 'enhanced' 
+                    ? 'bg-black text-white border-black' 
+                    : 'bg-white text-black border-gray-300 hover:border-gray-400'
+                }`}
               >
                 Enhanced
               </button>
               <button
                 onClick={() => setPrivacyLevel('detailed')}
-                className={`px-3 py-2 rounded-lg text-xs transition-all ${privacyLevel === 'detailed' ? 'bg-orange-600 text-white' : 'bg-slate-700/50 text-gray-300 hover:bg-slate-700'}`}
+                className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-all border hover:cursor-pointer ${
+                  privacyLevel === 'detailed' 
+                    ? 'bg-black text-white border-black' 
+                    : 'bg-white text-black border-gray-300 hover:border-gray-400'
+                }`}
               >
                 Detailed
               </button>
             </div>
-            <div className="text-xs text-purple-200 space-y-1">
+            <div className="text-sm text-gray-700 space-y-2 pt-2 border-t border-gray-200">
               {privacyLevel === 'basic' && (
                 <>
-                  <p className="font-semibold">✓ Maximum Privacy - Local-first model</p>
-                  <p className="text-purple-300">Train on your data only. Works offline. Optionally contribute ZK-proofs to help others.</p>
+                  <p className="font-semibold text-black">Maximum Privacy - Local-first model</p>
+                  <p className="text-gray-600">Train on your data only. Works offline. Optionally contribute ZK-proofs to help others.</p>
                 </>
               )}
               {privacyLevel === 'enhanced' && (
                 <>
-                  <p className="font-semibold">✓ Better Accuracy - Local + Global models</p>
-                  <p className="text-purple-300">Merge your local model with crowd wisdom. Optional profile helps personalization.</p>
+                  <p className="font-semibold text-black">Better Accuracy - Local + Global models</p>
+                  <p className="text-gray-600">Merge your local model with crowd wisdom. Optional profile helps personalization.</p>
                 </>
               )}
               {privacyLevel === 'detailed' && (
                 <>
-                  <p className="font-semibold">✓ Best Performance - Cohort learning via ZK-proofs</p>
-                  <p className="text-purple-300">Learn from similar farms without revealing identity. Prove attributes privately.</p>
+                  <p className="font-semibold text-black">Best Performance - Cohort learning via ZK-proofs</p>
+                  <p className="text-gray-600">Learn from similar farms without revealing identity. Prove attributes privately.</p>
                 </>
               )}
             </div>
@@ -104,33 +114,35 @@ export function Register({
           {/* Enhanced Privacy Fields - Optional basic profile */}
           {privacyLevel === 'enhanced' && (
             <>
-              <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4">
-                <h4 className="text-sm text-yellow-300 mb-3 flex items-center gap-2">
-                  <span>📝</span> Optional: Basic Profile (helps personalization)
-                </h4>
-                <div className="space-y-3">
+              <div className="border border-gray-200 rounded-lg p-6">
+                <h4 className="text-sm text-black font-semibold mb-4">Optional: Basic Profile (helps personalization)</h4>
+                <div className="space-y-4">
                   <input
                     type="text"
                     value={form.name}
                     onChange={e => setForm({...form, name: e.target.value})}
                     placeholder="Farm Name (optional)"
-                    className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500 transition-colors"
+                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-black placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                   />
                   <input
                     type="text"
                     value={form.region}
                     onChange={e => setForm({...form, region: e.target.value})}
                     placeholder="Region (optional)"
-                    className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500 transition-colors"
+                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-black placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                   />
                   <div>
-                    <label className="block text-sm text-yellow-200 mb-2">Primary Crops (optional)</label>
+                    <label className="block text-sm text-black font-medium mb-2">Primary Crops (optional)</label>
                     <div className="grid grid-cols-2 gap-2">
                       {crops.map(c => (
                         <button
                           key={c}
                           onClick={() => toggleCrop(c)}
-                          className={`px-3 py-2 rounded-lg text-sm transition-all ${form.crops.includes(c) ? 'bg-yellow-600 text-white' : 'bg-slate-700/50 text-gray-300 hover:bg-slate-700'}`}
+                          className={`px-3 py-2 rounded-lg text-sm font-medium transition-all border ${
+                            form.crops.includes(c) 
+                              ? 'bg-black text-white border-black' 
+                              : 'bg-white text-black border-gray-300 hover:border-gray-400'
+                          }`}
                         >
                           {c}
                         </button>
@@ -145,33 +157,35 @@ export function Register({
           {/* Detailed Fields (only for detailed privacy level) */}
           {privacyLevel === 'detailed' && (
             <>
-              <div className="bg-orange-900/20 border border-orange-500/30 rounded-lg p-4">
-                <h4 className="text-sm text-orange-300 mb-3 flex items-center gap-2">
-                  <span>📝</span> Optional: Basic Profile
-                </h4>
-                <div className="space-y-3 mb-4">
+              <div className="border border-gray-200 rounded-lg p-6">
+                <h4 className="text-sm text-black font-semibold mb-4">Optional: Basic Profile</h4>
+                <div className="space-y-4 mb-6">
                   <input
                     type="text"
                     value={form.name}
                     onChange={e => setForm({...form, name: e.target.value})}
                     placeholder="Farm Name (optional)"
-                    className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-colors"
+                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-black placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                   />
                   <input
                     type="text"
                     value={form.region}
                     onChange={e => setForm({...form, region: e.target.value})}
                     placeholder="Region (optional)"
-                    className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-colors"
+                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-black placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                   />
                   <div>
-                    <label className="block text-sm text-orange-200 mb-2">Primary Crops (optional)</label>
+                    <label className="block text-sm text-black font-medium mb-2">Primary Crops (optional)</label>
                     <div className="grid grid-cols-2 gap-2">
                       {crops.map(c => (
                         <button
                           key={c}
                           onClick={() => toggleCrop(c)}
-                          className={`px-3 py-2 rounded-lg text-sm transition-all ${form.crops.includes(c) ? 'bg-orange-600 text-white' : 'bg-slate-700/50 text-gray-300 hover:bg-slate-700'}`}
+                          className={`px-3 py-2 rounded-lg text-sm font-medium transition-all border ${
+                            form.crops.includes(c) 
+                              ? 'bg-black text-white border-black' 
+                              : 'bg-white text-black border-gray-300 hover:border-gray-400'
+                          }`}
                         >
                           {c}
                         </button>
@@ -180,17 +194,15 @@ export function Register({
                   </div>
                 </div>
 
-                <div className="border-t border-orange-500/30 pt-4">
-                  <h4 className="text-sm text-orange-300 mb-3 flex items-center gap-2">
-                    <span>📊</span> Optional: Farming Details (enables cohort learning)
-                  </h4>
-                  <div className="grid grid-cols-2 gap-3">
+                <div className="border-t border-gray-200 pt-6">
+                  <h4 className="text-sm text-black font-semibold mb-4">Optional: Farming Details (enables cohort learning)</h4>
+                  <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs text-purple-200 mb-1">Farm Size</label>
+                    <label className="block text-xs text-gray-600 mb-2 font-medium uppercase tracking-wide">Farm Size</label>
                     <select
                       value={form.farmSize}
                       onChange={e => setForm({...form, farmSize: e.target.value})}
-                      className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500"
+                      className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-black text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                     >
                       <option value="">Select...</option>
                       <option value="<5">{'<'}5 hectares</option>
@@ -200,35 +212,35 @@ export function Register({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs text-purple-200 mb-1">Soil Type</label>
+                    <label className="block text-xs text-gray-600 mb-2 font-medium uppercase tracking-wide">Soil Type</label>
                     <select
                       value={form.soilType}
                       onChange={e => setForm({...form, soilType: e.target.value})}
-                      className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500"
+                      className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-black text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                     >
                       <option value="">Select...</option>
                       {soilTypes.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs text-purple-200 mb-1">Irrigation Type</label>
+                    <label className="block text-xs text-gray-600 mb-2 font-medium uppercase tracking-wide">Irrigation Type</label>
                     <select
                       value={form.irrigationType}
                       onChange={e => setForm({...form, irrigationType: e.target.value})}
-                      className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500"
+                      className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-black text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                     >
                       <option value="">Select...</option>
                       {irrigationTypes.map(i => <option key={i} value={i}>{i}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs text-purple-200 mb-1">Years Experience</label>
+                    <label className="block text-xs text-gray-600 mb-2 font-medium uppercase tracking-wide">Years Experience</label>
                     <input
                       type="number"
                       value={form.yearsExperience}
                       onChange={e => setForm({...form, yearsExperience: e.target.value})}
                       placeholder="Years"
-                      className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                      className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-black text-sm placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                     />
                   </div>
                 </div>
@@ -237,11 +249,16 @@ export function Register({
             </>
           )}
 
-          <div className="flex gap-3 pt-4">
-            <button onClick={onSkip} className="flex-1 bg-slate-700/50 hover:bg-slate-700 text-white font-semibold py-3 rounded-lg transition-all">Skip</button>
+          <div className="flex gap-3 pt-2">
+            <button 
+              onClick={onSkip} 
+              className="flex-1 bg-white border border-gray-300 hover:border-gray-400 text-black font-semibold py-3 rounded-lg transition-all hover:cursor-pointer"
+            >
+              Skip
+            </button>
             <button
               onClick={() => onRegister({...form, privacyLevel})}
-              className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-3 rounded-lg hover:opacity-90 transition-all"
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-all hover:cursor-pointer"
             >
               Create
             </button>

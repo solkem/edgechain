@@ -34,7 +34,6 @@ export function PrivacyFLDashboard() {
 
   // Storage stats
   const [readingCount, setReadingCount] = useState(0);
-  const [storageStats, setStorageStats] = useState<any>(null);
 
   // Mock global model (in production, fetch from aggregator)
   const [globalModel, setGlobalModel] = useState<tf.LayersModel | null>(null);
@@ -83,7 +82,6 @@ export function PrivacyFLDashboard() {
 
       // Load existing stats
       const stats = await orchestrator.getStorageStats();
-      setStorageStats(stats);
       setReadingCount(stats.count);
 
       setCurrentStep('Ready to train!');
@@ -116,7 +114,6 @@ export function PrivacyFLDashboard() {
       }
 
       const stats = await orchestrator.getStorageStats();
-      setStorageStats(stats);
       setReadingCount(stats.count);
 
       setCurrentStep(`Stored ${readings.length} encrypted readings`);
@@ -174,34 +171,32 @@ export function PrivacyFLDashboard() {
     if (confirm('Are you sure you want to clear all stored readings?')) {
       await orchestrator.clearAllReadings();
       const stats = await orchestrator.getStorageStats();
-      setStorageStats(stats);
       setReadingCount(stats.count);
       setCurrentStep('All readings cleared');
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 p-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-white text-black p-4 pt-[65px]">
+      <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center mb-6 pt-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between pt-4">
           <div>
-            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-              <span>🔐</span>
-              Privacy-Preserving FL Training
+            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+              <span>🔐</span> Privacy-Preserving FL Training
             </h1>
-            <p className="text-purple-200 text-sm mt-1">4-Tier Privacy Architecture (L1→L2→L3→L4)</p>
+            <p className="text-sm text-gray-600">4-tier privacy architecture (L1 → L4)</p>
           </div>
           <div className="flex gap-3">
             <button
               onClick={() => navigate('/train')}
-              className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-all text-sm"
+              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold hover:border-gray-400"
             >
               ← Old FL (Fallback)
             </button>
             <button
               onClick={() => navigate('/selection')}
-              className="px-4 py-2 bg-slate-800/60 hover:bg-slate-800 text-white rounded-lg transition-all"
+              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold hover:border-gray-400"
             >
               Back
             </button>
@@ -210,11 +205,10 @@ export function PrivacyFLDashboard() {
 
         {/* Password Prompt */}
         {showPasswordPrompt && (
-          <div className="bg-slate-800/60 border border-purple-500/30 rounded-2xl p-8 mb-6">
-            <h2 className="text-2xl font-bold text-white mb-4">🔑 Initialize Privacy Layer</h2>
-            <p className="text-purple-200 text-sm mb-6">
-              Enter a password to derive your encryption keys. This password encrypts your raw IoT data locally
-              and is NEVER transmitted to servers.
+          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+            <h2 className="text-2xl font-semibold mb-3">🔑 Initialize Privacy Layer</h2>
+            <p className="text-sm text-gray-600 mb-6">
+              Enter a password to derive your encryption keys. This stays local—raw IoT data never leaves your device.
             </p>
 
             <div className="space-y-4">
@@ -224,32 +218,32 @@ export function PrivacyFLDashboard() {
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleInitialize()}
                 placeholder="Enter password (min 8 characters)"
-                className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 transition-colors"
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
 
               <button
                 onClick={handleInitialize}
                 disabled={password.length < 8}
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Initialize Privacy Orchestrator
               </button>
 
               {error && (
-                <div className="p-4 bg-red-900/50 border border-red-500/50 rounded-lg">
-                  <p className="text-red-200 text-sm">❌ {error}</p>
+                <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+                  ❌ {error}
                 </div>
               )}
             </div>
 
-            <div className="mt-6 bg-blue-900/30 border border-blue-500/30 rounded-lg p-4">
-              <p className="text-blue-200 text-sm font-semibold mb-2">🔒 Privacy Guarantees:</p>
-              <ul className="text-blue-100 text-xs space-y-1">
-                <li>✅ Password derives AES-256 encryption key (PBKDF2, 100k iterations)</li>
-                <li>✅ Raw data encrypted in browser localStorage</li>
-                <li>✅ Features deleted after training</li>
-                <li>✅ Gradients encrypted before IPFS upload</li>
-                <li>✅ Only commitments stored on blockchain</li>
+            <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <p className="text-sm font-semibold text-black mb-2">🔒 Privacy guarantees</p>
+              <ul className="text-sm text-gray-600 space-y-1">
+                <li>• AES-256 keys derived via PBKDF2 (100k iterations)</li>
+                <li>• Raw data encrypted in browser storage</li>
+                <li>• Features deleted immediately after training</li>
+                <li>• Gradients encrypted before IPFS upload</li>
+                <li>• Chain stores commitments only</li>
               </ul>
             </div>
           </div>
@@ -259,34 +253,34 @@ export function PrivacyFLDashboard() {
         {initialized && (
           <div className="grid gap-6">
             {/* Storage Stats */}
-            <div className="bg-slate-800/60 border border-purple-500/30 rounded-2xl p-6">
-              <h2 className="text-xl font-bold text-white mb-4">📊 L1: Local Data Vault Status</h2>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="bg-slate-700/50 rounded-lg p-4">
-                  <p className="text-purple-200 text-sm">Encrypted Readings</p>
-                  <p className="text-3xl font-bold text-white">{readingCount}</p>
+            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 className="text-xl font-semibold mb-4">📊 L1: Local Data Vault Status</h2>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                  <p className="text-xs uppercase tracking-wide text-gray-500">Encrypted readings</p>
+                  <p className="text-3xl font-bold text-black">{readingCount}</p>
                 </div>
-                <div className="bg-slate-700/50 rounded-lg p-4">
-                  <p className="text-purple-200 text-sm">Encryption</p>
-                  <p className="text-lg font-bold text-green-400">AES-256-GCM</p>
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                  <p className="text-xs uppercase tracking-wide text-gray-500">Encryption</p>
+                  <p className="text-lg font-semibold text-black">AES-256-GCM</p>
                 </div>
-                <div className="bg-slate-700/50 rounded-lg p-4">
-                  <p className="text-purple-200 text-sm">Storage</p>
-                  <p className="text-lg font-bold text-blue-400">localStorage</p>
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                  <p className="text-xs uppercase tracking-wide text-gray-500">Storage</p>
+                  <p className="text-lg font-semibold text-black">localStorage</p>
                 </div>
               </div>
-              <div className="flex gap-3 mt-4">
+              <div className="mt-4 flex flex-col gap-3 md:flex-row">
                 <button
                   onClick={handleGenerateSampleData}
                   disabled={isTraining}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-all disabled:opacity-50"
+                  className="flex-1 rounded-lg border border-gray-900 bg-black px-4 py-3 text-sm font-semibold text-white transition hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Generate Sample Data (+50 readings)
                 </button>
                 <button
                   onClick={handleClearData}
                   disabled={isTraining || readingCount === 0}
-                  className="px-6 bg-red-600/80 hover:bg-red-700 text-white font-semibold py-3 rounded-xl transition-all disabled:opacity-50"
+                  className="rounded-lg border border-gray-200 bg-white px-6 py-3 text-sm font-semibold text-black hover:border-gray-400 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Clear All
                 </button>
@@ -294,21 +288,21 @@ export function PrivacyFLDashboard() {
             </div>
 
             {/* Training Controls */}
-            <div className="bg-slate-800/60 border border-purple-500/30 rounded-2xl p-6">
-              <h2 className="text-xl font-bold text-white mb-4">🧠 Privacy-Preserving FL Training</h2>
+            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 className="text-xl font-semibold mb-4">🧠 Privacy-Preserving FL Training</h2>
 
               {currentStep && (
-                <div className="mb-4 p-4 bg-purple-900/30 border border-purple-500/30 rounded-lg">
-                  <p className="text-purple-200 text-sm">📝 {currentStep}</p>
+                <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+                  <p>📝 {currentStep}</p>
                   {isTraining && (
-                    <div className="mt-2">
-                      <div className="w-full bg-slate-700 rounded-full h-2">
+                    <div className="mt-3">
+                      <div className="h-2 w-full rounded-full bg-gray-200">
                         <div
-                          className="bg-gradient-to-r from-purple-600 to-pink-600 h-2 rounded-full transition-all duration-300"
+                          className="h-full rounded-full bg-blue-600 transition-all duration-300"
                           style={{ width: `${progress}%` }}
                         />
                       </div>
-                      <p className="text-purple-300 text-xs mt-1 text-right">{progress}%</p>
+                      <p className="mt-1 text-right text-xs text-gray-500">{progress}%</p>
                     </div>
                   )}
                 </div>
@@ -317,123 +311,113 @@ export function PrivacyFLDashboard() {
               <button
                 onClick={handleTrain}
                 disabled={isTraining || readingCount === 0}
-                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+                className="w-full rounded-lg bg-black px-4 py-4 text-sm font-semibold text-white transition hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-60 mb-3"
               >
                 {isTraining ? '⏳ Training...' : '🚀 Start Privacy-Preserving Training'}
               </button>
 
               {readingCount === 0 && (
-                <p className="text-yellow-200 text-sm text-center">
-                  ⚠️ Generate sample data first to enable training
+                <p className="text-sm text-gray-600 text-center">
+                  ⚠️ Generate sample data first to enable training.
                 </p>
               )}
             </div>
 
             {/* Training Results */}
             {result && (
-              <div className="bg-slate-800/60 border border-green-500/30 rounded-2xl p-6">
-                <h2 className="text-xl font-bold text-white mb-4">✅ Training Complete</h2>
+              <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
+                <h2 className="text-xl font-semibold">✅ Training Complete</h2>
 
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="bg-slate-700/50 rounded-lg p-4">
-                    <p className="text-purple-200 text-sm mb-1">IPFS CID</p>
-                    <p className="text-white text-xs font-mono break-all">{result.ipfs_cid}</p>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                    <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">IPFS CID</p>
+                    <p className="font-mono text-xs text-black break-all">{result.ipfs_cid}</p>
                   </div>
-                  <div className="bg-slate-700/50 rounded-lg p-4">
-                    <p className="text-purple-200 text-sm mb-1">Quality Score</p>
-                    <p className="text-3xl font-bold text-green-400">{result.data_quality_score}/100</p>
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                    <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">Quality Score</p>
+                    <p className="text-3xl font-bold text-black">{result.data_quality_score}/100</p>
                   </div>
-                  <div className="bg-slate-700/50 rounded-lg p-4">
-                    <p className="text-purple-200 text-sm mb-1">Reward Earned</p>
-                    <p className="text-2xl font-bold text-yellow-400">{result.reward_earned || 'N/A'} tDUST</p>
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                    <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">Reward Earned</p>
+                    <p className="text-2xl font-semibold text-black">{result.reward_earned || 'N/A'} tDUST</p>
                   </div>
-                  <div className="bg-slate-700/50 rounded-lg p-4">
-                    <p className="text-purple-200 text-sm mb-1">Round ID</p>
-                    <p className="text-2xl font-bold text-blue-400">#{result.round_id}</p>
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                    <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">Round ID</p>
+                    <p className="text-2xl font-semibold text-black">#{result.round_id}</p>
                   </div>
                 </div>
 
-                <div className="bg-green-900/30 border border-green-500/30 rounded-lg p-4">
-                  <h3 className="text-white font-semibold mb-3">🔒 Privacy Audit Trail</h3>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3">
+                  <h3 className="text-sm font-semibold text-black">🔒 Privacy Audit Trail</h3>
+                  <div className="grid md:grid-cols-2 gap-2 text-sm text-gray-600">
                     <div className="flex items-center gap-2">
-                      <span className={result.privacy_audit.l1_readings_encrypted > 0 ? 'text-green-400' : 'text-red-400'}>
-                        {result.privacy_audit.l1_readings_encrypted > 0 ? '✅' : '❌'}
-                      </span>
-                      <span className="text-green-100">L1: {result.privacy_audit.l1_readings_encrypted} readings encrypted</span>
+                      <span>{result.privacy_audit.l1_readings_encrypted > 0 ? '✅' : '❌'}</span>
+                      <span>L1: {result.privacy_audit.l1_readings_encrypted} readings encrypted</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={result.privacy_audit.l2_features_created > 0 ? 'text-green-400' : 'text-red-400'}>
-                        {result.privacy_audit.l2_features_created > 0 ? '✅' : '❌'}
-                      </span>
-                      <span className="text-green-100">L2: {result.privacy_audit.l2_features_created} features created</span>
+                      <span>{result.privacy_audit.l2_features_created > 0 ? '✅' : '❌'}</span>
+                      <span>L2: {result.privacy_audit.l2_features_created} features created</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={result.privacy_audit.l2_features_deleted ? 'text-green-400' : 'text-red-400'}>
-                        {result.privacy_audit.l2_features_deleted ? '✅' : '❌'}
-                      </span>
-                      <span className="text-green-100">L2: Features deleted</span>
+                      <span>{result.privacy_audit.l2_features_deleted ? '✅' : '❌'}</span>
+                      <span>L2: Features deleted</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={result.privacy_audit.l3_gradients_encrypted ? 'text-green-400' : 'text-red-400'}>
-                        {result.privacy_audit.l3_gradients_encrypted ? '✅' : '❌'}
-                      </span>
-                      <span className="text-green-100">L3: Gradients encrypted</span>
+                      <span>{result.privacy_audit.l3_gradients_encrypted ? '✅' : '❌'}</span>
+                      <span>L3: Gradients encrypted</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={result.privacy_audit.l3_ipfs_upload ? 'text-green-400' : 'text-red-400'}>
-                        {result.privacy_audit.l3_ipfs_upload ? '✅' : '❌'}
-                      </span>
-                      <span className="text-green-100">L3: IPFS upload successful</span>
+                      <span>{result.privacy_audit.l3_ipfs_upload ? '✅' : '❌'}</span>
+                      <span>L3: IPFS upload successful</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={result.privacy_audit.l4_commitment_submitted ? 'text-green-400' : 'text-yellow-400'}>
-                        {result.privacy_audit.l4_commitment_submitted ? '✅' : '⏳'}
-                      </span>
-                      <span className="text-green-100">L4: Commitment submitted</span>
+                      <span>{result.privacy_audit.l4_commitment_submitted ? '✅' : '⏳'}</span>
+                      <span>L4: Commitment submitted</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-4 bg-purple-900/30 border border-purple-500/30 rounded-lg p-4">
-                  <p className="text-purple-200 text-sm mb-2"><strong>Commitment Hash:</strong></p>
-                  <p className="text-white text-xs font-mono break-all">{result.commitment}</p>
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                  <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">Commitment hash</p>
+                  <p className="font-mono text-xs text-black break-all">{result.commitment}</p>
                 </div>
               </div>
             )}
 
             {/* Privacy Architecture Info */}
-            <div className="bg-slate-800/60 border border-purple-500/30 rounded-2xl p-6">
-              <h2 className="text-xl font-bold text-white mb-4">🏗️ 4-Tier Privacy Architecture</h2>
-              <div className="space-y-3 text-sm">
-                <div className="flex gap-3 p-3 bg-slate-700/50 rounded-lg">
-                  <span className="text-2xl">🔐</span>
-                  <div>
-                    <p className="text-white font-semibold">L1: Local Data Vault</p>
-                    <p className="text-purple-200">Raw IoT data encrypted with AES-256-GCM, stored in browser localStorage, NEVER transmitted</p>
+            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 className="text-xl font-semibold mb-4">🏗️ 4-Tier Privacy Architecture</h2>
+              <div className="space-y-3 text-sm text-gray-600">
+                {[
+                  {
+                    icon: '🔐',
+                    title: 'L1: Local Data Vault',
+                    desc: 'Raw IoT data encrypted with AES-256-GCM and stored locally.',
+                  },
+                  {
+                    icon: '🔬',
+                    title: 'L2: Feature Extractor',
+                    desc: 'Temporary ML features generated, then deleted after training.',
+                  },
+                  {
+                    icon: '📦',
+                    title: 'L3: Gradient Manager',
+                    desc: 'Gradients encrypted before IPFS upload; only CID is stored.',
+                  },
+                  {
+                    icon: '⛓️',
+                    title: 'L4: Smart Contract',
+                    desc: 'Midnight chain stores cryptographic commitments—no raw data.',
+                  },
+                ].map(({ icon, title, desc }) => (
+                  <div key={title} className="flex gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                    <span className="text-2xl">{icon}</span>
+                    <div>
+                      <p className="font-semibold text-black">{title}</p>
+                      <p>{desc}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex gap-3 p-3 bg-slate-700/50 rounded-lg">
-                  <span className="text-2xl">🔬</span>
-                  <div>
-                    <p className="text-white font-semibold">L2: Feature Extractor</p>
-                    <p className="text-purple-200">Privacy-preserving ML features (normalized, trends), deleted immediately after training</p>
-                  </div>
-                </div>
-                <div className="flex gap-3 p-3 bg-slate-700/50 rounded-lg">
-                  <span className="text-2xl">📦</span>
-                  <div>
-                    <p className="text-white font-semibold">L3: Gradient Manager</p>
-                    <p className="text-purple-200">FL gradients encrypted before IPFS upload, database stores ONLY IPFS CID</p>
-                  </div>
-                </div>
-                <div className="flex gap-3 p-3 bg-slate-700/50 rounded-lg">
-                  <span className="text-2xl">⛓️</span>
-                  <div>
-                    <p className="text-white font-semibold">L4: Smart Contract</p>
-                    <p className="text-purple-200">Only cryptographic commitments on Midnight blockchain, NO raw data/features/gradients</p>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           </div>

@@ -398,34 +398,36 @@ export function FLDashboard() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Status Panel - Header, Contract Status, ZK Explainer, System Metrics */}
-      <FLStatusPanel flState={flState} error={error} />
+    <div className="min-h-screen bg-white text-black p-4 pt-[65px]">
+      <div className="max-w-5xl mx-auto space-y-6">
+        {/* Status Panel - Header, Contract Status, ZK Explainer, System Metrics */}
+        <FLStatusPanel flState={flState} error={error} />
 
-      {/* Training Panel - Step 1 */}
-      <LocalTrainingPanel
-        flState={flState}
-        trainingProgress={trainingProgress}
-        isWalletConnected={wallet.isConnected}
-        onTrainModel={handleTrainModel}
-      />
+        {/* Training Panel - Step 1 */}
+        <LocalTrainingPanel
+          flState={flState}
+          trainingProgress={trainingProgress}
+          isWalletConnected={wallet.isConnected}
+          onTrainModel={handleTrainModel}
+        />
 
-      {/* Submission Panel - Step 2 */}
-      <ModelSubmissionPanel
-        flState={flState}
-        zkProofState={zkProofState}
-        aggregationProgress={aggregationProgress}
-        aggregationStatus={aggregationStatus}
-        submitting={submitting}
-        isWalletConnected={wallet.isConnected}
-        onSubmitModel={handleSubmitModel}
-      />
+        {/* Submission Panel - Step 2 */}
+        <ModelSubmissionPanel
+          flState={flState}
+          zkProofState={zkProofState}
+          aggregationProgress={aggregationProgress}
+          aggregationStatus={aggregationStatus}
+          submitting={submitting}
+          isWalletConnected={wallet.isConnected}
+          onSubmitModel={handleSubmitModel}
+        />
 
-      {/* Global Model Panel - Step 3 */}
-      <GlobalModelPanel
-        flState={flState}
-        onDownloadGlobalModel={handleDownloadGlobalModel}
-      />
+        {/* Global Model Panel - Step 3 */}
+        <GlobalModelPanel
+          flState={flState}
+          onDownloadGlobalModel={handleDownloadGlobalModel}
+        />
+      </div>
     </div>
   );
 }

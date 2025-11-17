@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 
-const MenuItem = ({ label, href }: { label: string; href: string }) => {
+const MenuItem = ({ label, href, activeView }: { label: string; href: string; activeView: string }) => {
   return (
     <Link className=" relative group " to={href}>
-      <span className="group-hover:text-white transition-all duration-300 text-black z-20 relative">
+      <span className={`group-hover:text-white transition-all duration-300 z-20 relative ${activeView === href ? "text-blue-600" : "text-black"}`}>
         {label}
       </span>
       <div className="w-0 h-full absolute top-0 right-0 bg-black transition-all duration-300 group-hover:w-full group-hover:left-0 z-10"></div>
@@ -45,6 +45,7 @@ const MobileMenuItem = ({
 const Navbar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeView, setActiveView] = useState("/");
+  const pathname = useLocation();
 
   const menuItems = [
     {
@@ -77,8 +78,13 @@ const Navbar = () => {
     },
   ];
 
-  useEffect(()=>{
-  }, [])
+  useEffect(() => {
+    setActiveView(pathname.pathname);
+  }, [pathname]);
+
+  if(activeView === "/") {
+    return null;
+  }
 
   return (
     <>
@@ -94,11 +100,11 @@ const Navbar = () => {
           </button>
           <div className="nav-middle md:flex flex-1 justify-center items-center border-t border-b border-gray-300 px-3 py-2 gap-7 uppercase text-xs hidden">
             {menuItems.map((item, index) => (
-              <MenuItem key={index} label={item.label} href={item.href} />
+              <MenuItem key={index} label={item.label} href={item.href} activeView={activeView} />
             ))}
           </div>
           <button className="nav-right border-[0.6px] border-black bg-[#0000ff] hover:bg-white hover:text-black text-white transition-all duration-300 px-3 py-1 cursor-pointer">
-            <Link to={"/register"}>Login</Link>
+            <Link to={"/register"}>Profile</Link>
           </button>
         </div>
       </div>
