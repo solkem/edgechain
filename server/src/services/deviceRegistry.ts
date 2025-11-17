@@ -10,6 +10,7 @@
  */
 
 import * as crypto from 'crypto';
+import { deviceDB } from '../database';
 
 export interface ApprovedDevice {
   device_pubkey: string;
@@ -33,8 +34,36 @@ export class DeviceRegistryService {
   private globalManualEntryRoot: string = '';
 
   constructor() {
-    // Initialize with empty roots
+    // Load devices from database on startup
+    this.loadDevicesFromDatabase();
+    // Initialize roots based on loaded devices
     this.rebuildGlobalRoots();
+  }
+
+  /**
+   * Load devices from database into memory
+   */
+  private loadDevicesFromDatabase(): void {
+    try {
+      const dbDevices = deviceDB.getAll() as any[];
+
+      for (const dbDevice of dbDevices) {
+        const device: ApprovedDevice = {
+          device_pubkey: dbDevice.device_pubkey,
+          collection_mode: dbDevice.collection_mode as 'auto' | 'manual',
+          registration_epoch: dbDevice.registration_epoch,
+          expiry_epoch: dbDevice.expiry_epoch,
+          device_id: dbDevice.device_id,
+          metadata: dbDevice.metadata ? JSON.parse(dbDevice.metadata) : undefined,
+        };
+
+        this.devices.set(device.device_pubkey, device);
+      }
+
+      console.log(`📥 Loaded ${dbDevices.length} device(s) from database`);
+    } catch (error) {
+      console.error('❌ Failed to load devices from database:', error);
+    }
   }
 
   /**
@@ -62,6 +91,10 @@ export class DeviceRegistryService {
 
     this.devices.set(device_pubkey, registration);
     this.rebuildGlobalRoots();
+
+    // Note: Database persistence is handled by the route layer (arduino.ts)
+    // which calls dbService.registerDevice() before this method.
+    // This avoids duplicate database inserts.
 
     console.log(`✅ Device registered: ${device_pubkey.slice(0, 16)}...`);
     console.log(`   Collection mode: ${collection_mode}`);

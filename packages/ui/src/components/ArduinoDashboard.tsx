@@ -76,8 +76,23 @@ interface BackendIncentives {
 }
 
 // Use relative URL in production, localhost in development
+// In Codespaces, hostname will be a .githubpreview.dev domain
+const isLocalDev = window.location.hostname === 'localhost' ||
+                   window.location.hostname.includes('githubpreview.dev') ||
+                   window.location.hostname.includes('codespaces') ||
+                   window.location.hostname.startsWith('10.') ||
+                   window.location.hostname.startsWith('127.');
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL ||
-  (window.location.hostname === 'localhost' ? 'http://localhost:3001' : '');
+  (isLocalDev ? 'http://localhost:3001' : '');
+
+// Debug: Log API_BASE configuration
+console.log('🔧 API_BASE Configuration:', {
+  VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
+  hostname: window.location.hostname,
+  isLocalDev,
+  resolved_API_BASE: API_BASE,
+});
 
 export function ArduinoDashboard() {
   const wallet = useWallet();
@@ -111,7 +126,7 @@ export function ArduinoDashboard() {
   const [zkProofStats, setZkProofStats] = useState<any>(null);
   const [lastProofGenTime, setLastProofGenTime] = useState<number>(0);
   const [anonymitySetSize, setAnonymitySetSize] = useState<number>(0);
-  const [lastRewardNotification, setLastRewardNotification] = useState<number>(0);
+  const [lastRewardNotification, setLastRewardNotification] = useState<number>(Date.now());
   const [accumulatedRewards, setAccumulatedRewards] = useState<number>(0);
 
   // Auto-collect sensor data every 30 seconds when active
@@ -532,6 +547,8 @@ export function ArduinoDashboard() {
       }
 
       console.log(`🔍 Checking registration for device: ${device_pubkey.slice(0, 16)}...`);
+      console.log(`   API_BASE: ${API_BASE}`);
+      console.log(`   Endpoint: ${API_BASE}/api/arduino/registry/check`);
 
       // 1. Check if device is already registered
       const checkResponse = await fetch(`${API_BASE}/api/arduino/registry/check`, {
@@ -695,23 +712,29 @@ export function ArduinoDashboard() {
             const newAccumulated = accumulatedRewards + (submitResult.reward_amount || 0);
             setAccumulatedRewards(newAccumulated);
 
-            console.log(`⏱️  Reward notification throttling:`);
+            // DISABLED: Reward notifications temporarily disabled
+            // Accumulate rewards silently in console logs only
+            console.log(`⏱️  Reward notification (DISABLED):`);
             console.log(`   Time since last: ${(timeSinceLastNotification / 1000).toFixed(1)}s`);
             console.log(`   Accumulated: ${newAccumulated.toFixed(2)} tDUST`);
-            console.log(`   Threshold: 60s`);
+            console.log(`   Notification: DISABLED (check console for rewards)`);
 
-            if (timeSinceLastNotification >= 60000) { // 60 seconds
-              setError(null);
-              setSuccess(`🎉 +${newAccumulated.toFixed(2)} tDUST earned! Readings verified & stored on IPFS.`);
+            // Update accumulator but don't show notification
+            if (timeSinceLastNotification >= 60000) {
               setLastRewardNotification(now);
               setAccumulatedRewards(0); // Reset accumulator
-              console.log(`   ✅ SHOWING NOTIFICATION`);
-
-              // Clear success message after 3 seconds
-              setTimeout(() => setSuccess(null), 3000);
-            } else {
-              console.log(`   ⏳ Skipping (${(60 - timeSinceLastNotification / 1000).toFixed(1)}s remaining)`);
+              console.log(`   💰 Total earned in last 60s: ${newAccumulated.toFixed(2)} tDUST (notification disabled)`);
             }
+
+            // COMMENTED OUT: Annoying notification
+            // if (timeSinceLastNotification >= 60000) { // 60 seconds
+            //   setError(null);
+            //   setSuccess(`🎉 +${newAccumulated.toFixed(2)} tDUST earned! Readings verified & stored on IPFS.`);
+            //   setLastRewardNotification(now);
+            //   setAccumulatedRewards(0); // Reset accumulator
+            //   console.log(`   ✅ SHOWING NOTIFICATION`);
+            //   setTimeout(() => setSuccess(null), 3000);
+            // }
           } else {
             console.warn('⚠️ Reading submission failed:', submitResult.error);
             setError(`Failed to submit reading: ${submitResult.error}`);
