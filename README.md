@@ -6,26 +6,28 @@ EdgeChain is a decentralized federated learning platform that brings AI-powered 
 
 ## 🎉 Live Deployment on Midnight Network
 
-**Arduino IoT Contract**: DEPLOYED with Real ZK Proofs
+**Arduino IoT Contract**: DEPLOYED with Anonymity Set ZK Proofs
 - **Contract Address**: `02001d6243d08ba466d6a3e32d9a04dd1d283d8fe2b9714cde81a25fa9081087b30a`
 - **Network**: Midnight Testnet (testnet-02)
 - **Deployed**: 2025-11-18T01:00:50.279Z
 - **Deployment Proof**: See [deployment.json](packages/contract/deployment.json) for verified deployment details
+- **ZK Innovation**: Devices hide in anonymity sets of 10,000+ using Merkle tree proofs with O(1) on-chain storage (32 bytes)
 
 **Features Enabled**:
 - ✅ Dual Merkle roots (auto/manual collection modes)
-- ✅ Nullifier-based replay prevention
+- ✅ Nullifier-based replay prevention (unlinkable across epochs)
 - ✅ Differential rewards (0.1 tDUST auto, 0.02 tDUST manual)
 - ✅ Range validation in ZK circuits
 - ✅ Privacy-preserving device anonymity
 
 ---
 
-**Federated Learning Contract**: DEPLOYED with ZK Witness Functions
+**Federated Learning Contract**: DEPLOYED with ZK Identity Derivation
 - **Contract Address**: `02002f44e466b8c8a1422e269156a6bb4e098cde1007203adf7181eb6659211dbe39`
 - **Network**: Midnight Testnet (testnet)
 - **Deployed**: 2025-11-08T19:42:27.511Z
 - **Deployment Proof**: See [deployment.json](packages/contract/deployment.json) for verified deployment details
+- **ZK Innovation**: Private witness functions derive public identities without revealing farmer secret keys on-chain
 
 **Features Enabled**:
 - ✅ Private witness functions (farmer secret keys never revealed)
