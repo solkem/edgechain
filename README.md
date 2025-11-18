@@ -19,6 +19,21 @@ EdgeChain is a decentralized federated learning platform that brings AI-powered 
 - ✅ Range validation in ZK circuits
 - ✅ Privacy-preserving device anonymity
 
+---
+
+**Federated Learning Contract**: DEPLOYED with ZK Witness Functions
+- **Contract Address**: `02002f44e466b8c8a1422e269156a6bb4e098cde1007203adf7181eb6659211dbe39`
+- **Network**: Midnight Testnet (testnet)
+- **Deployed**: 2025-11-08T19:42:27.511Z
+- **Deployment Proof**: See [deployment.json](packages/contract/deployment.json) for verified deployment details
+
+**Features Enabled**:
+- ✅ Private witness functions (farmer secret keys never revealed)
+- ✅ Public identity derivation via ZK proofs
+- ✅ Submission threshold triggering (automatic aggregation at 2+ farmers)
+- ✅ Global model hash storage (only aggregated result visible)
+- ✅ Round-based FL cycles with version tracking
+
 ## 🚀 Live Demo
 
 **Try it now:** https://edgechain-midnight-ui.fly.dev/
