@@ -129,6 +129,13 @@ export function ArduinoDashboard() {
   const [lastRewardNotification, setLastRewardNotification] = useState<number>(Date.now());
   const [accumulatedRewards, setAccumulatedRewards] = useState<number>(0);
 
+  // Track when collection was first activated (NEVER resets - persists forever)
+  const [collectionActivatedAt, setCollectionActivatedAt] = useState<number | null>(null);
+
+  // Real-time uptime tracking (in seconds)
+  const [timeDataCollected, setTimeDataCollected] = useState<number>(0); // Cumulative time Arduino sent data
+  const [timeSinceActivated, setTimeSinceActivated] = useState<number>(0); // Total time since first activation
+
   // Real-time consistency tracking
   const [consistency, setConsistency] = useState<ConsistencyMetrics>({
     uptimePercent: 0,
@@ -146,6 +153,65 @@ export function ArduinoDashboard() {
     rewardTier: 'LOW',
     nextTierThreshold: 90,
   });
+
+  // Set activation timestamp when collection starts (only once, never resets)
+  useEffect(() => {
+    if (isCollecting && collectionActivatedAt === null) {
+      setCollectionActivatedAt(Date.now());
+    }
+  }, [isCollecting, collectionActivatedAt]);
+
+  // Update timeSinceActivated every second (continuously incrementing FOREVER)
+  useEffect(() => {
+    if (collectionActivatedAt === null) return;
+
+    const updateTimeSinceActivated = () => {
+      const elapsed = Math.floor((Date.now() - collectionActivatedAt) / 1000); // seconds
+      setTimeSinceActivated(elapsed);
+    };
+
+    // Initial update
+    updateTimeSinceActivated();
+
+    // Update every second
+    const interval = setInterval(updateTimeSinceActivated, 1000);
+
+    return () => clearInterval(interval);
+  }, [collectionActivatedAt]);
+
+  // Calculate timeDataCollected from sensor readings (cumulative time Arduino sent data)
+  useEffect(() => {
+    if (sensorData.length === 0) {
+      setTimeDataCollected(0);
+      return;
+    }
+
+    // Calculate total time covered by sensor readings
+    // Assumption: readings are 30 seconds apart, each reading represents 30 seconds of data collection
+    const READING_INTERVAL = 30; // seconds
+    const GAP_THRESHOLD = 120; // 2 minutes - if gap is longer, device was offline
+
+    let totalCollectionTime = 0;
+
+    for (let i = 0; i < sensorData.length; i++) {
+      if (i === 0) {
+        // First reading counts as one interval
+        totalCollectionTime += READING_INTERVAL;
+      } else {
+        const currentTime = sensorData[i].timestamp;
+        const previousTime = sensorData[i - 1].timestamp;
+        const gap = (currentTime - previousTime) / 1000; // Convert to seconds
+
+        if (gap <= GAP_THRESHOLD) {
+          // Normal reading interval - count it
+          totalCollectionTime += Math.min(gap, READING_INTERVAL);
+        }
+        // If gap > threshold, device was offline - don't count this time
+      }
+    }
+
+    setTimeDataCollected(Math.floor(totalCollectionTime));
+  }, [sensorData]);
 
   // Update consistency and incentive metrics every second for real-time display
   useEffect(() => {
@@ -1201,34 +1267,40 @@ export function ArduinoDashboard() {
                 <div className="mb-5 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-3xl font-bold">
-                      {consistency.uptimePercent.toFixed(1)}%
+                      {timeSinceActivated > 0 ? ((timeDataCollected / timeSinceActivated) * 100).toFixed(1) : 0}%
                     </span>
                     <span className="rounded-full border border-gray-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gray-600">
-                      {consistency.uptimePercent >= 98 ? 'Excellent' : consistency.uptimePercent >= 90 ? 'Good' : 'Needs attention'}
+                      {timeSinceActivated > 0 && (timeDataCollected / timeSinceActivated) * 100 >= 98 ? 'Excellent' :
+                       timeSinceActivated > 0 && (timeDataCollected / timeSinceActivated) * 100 >= 90 ? 'Good' :
+                       'Needs attention'}
                     </span>
                   </div>
                   <div className="h-2 w-full rounded-full bg-gray-100">
                     <div
                       className="h-full rounded-full bg-black transition-all"
-                      style={{ width: `${Math.min(100, consistency.uptimePercent)}%` }}
+                      style={{ width: `${timeSinceActivated > 0 ? Math.min(100, (timeDataCollected / timeSinceActivated) * 100) : 0}%` }}
                     ></div>
                   </div>
                 </div>
 
                 <div className="space-y-3 text-sm text-gray-600">
                   <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3">
-                    <span>Uptime</span>
-                    <span className="font-semibold text-black">
-                      {consistency.collectedReadings}/{consistency.expectedReadings}
+                    <span>Uptime (seconds)</span>
+                    <span className="font-semibold text-black font-mono">
+                      {timeDataCollected}s / {timeSinceActivated}s
                     </span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3">
+                    <span>Data collection time</span>
+                    <span className="font-semibold text-black">{timeDataCollected} seconds</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3">
+                    <span>Total time since activated</span>
+                    <span className="font-semibold text-black">{timeSinceActivated} seconds</span>
                   </div>
                   <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3">
                     <span>Reading interval</span>
                     <span className="font-semibold text-black">30 seconds</span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3">
-                    <span>Missed readings</span>
-                    <span className="font-semibold text-black">{consistency.missedReadings}</span>
                   </div>
                   {consistency.perfectDayStreak > 0 && (
                     <div className="rounded-lg border border-gray-200 bg-white p-3 text-sm text-gray-600">
