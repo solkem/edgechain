@@ -988,7 +988,8 @@ yarn start:production
 **Live Deployment**:
 - 📝 **[Deployment Details](packages/contract/deployment.json)** - Verified contract addresses and deployment configuration
 - 🎉 **Contract Address**: `02001d6243d08ba466d6a3e32d9a04dd1d283d8fe2b9714cde81a25fa9081087b30a` (Midnight Testnet testnet-02)
-- ⚙️ **Alternative Explorers**: [Nocturne Explorer](https://midnight-explorer-sand.vercel.app) (community-built, limited functionality)
+- 📜 **[Contract Source Code](packages/contract/src/arduino-iot.compact)** - View the deployed Compact contract code
+- ⚠️ **Note**: Midnight testnet explorer is currently unavailable. Deployment verified via deployment.json and transaction logs.
 
 ### External Resources
 - [Midnight Network Docs](https://docs.midnight.network/)
