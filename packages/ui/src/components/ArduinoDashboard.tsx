@@ -129,6 +129,43 @@ export function ArduinoDashboard() {
   const [lastRewardNotification, setLastRewardNotification] = useState<number>(Date.now());
   const [accumulatedRewards, setAccumulatedRewards] = useState<number>(0);
 
+  // Real-time consistency tracking
+  const [consistency, setConsistency] = useState<ConsistencyMetrics>({
+    uptimePercent: 0,
+    expectedReadings: 0,
+    collectedReadings: 0,
+    perfectDayStreak: 0,
+    missedReadings: 0,
+  });
+
+  // Real-time incentive tracking
+  const [incentives, setIncentives] = useState<IncentiveData>({
+    dailyEarned: 0,
+    weeklyEarned: 0,
+    pending: 0,
+    rewardTier: 'LOW',
+    nextTierThreshold: 90,
+  });
+
+  // Update consistency and incentive metrics every second for real-time display
+  useEffect(() => {
+    const updateMetrics = () => {
+      const consistencyMetrics = getConsistencyMetrics();
+      setConsistency(consistencyMetrics);
+
+      const incentiveMetrics = getIncentiveData(consistencyMetrics);
+      setIncentives(incentiveMetrics);
+    };
+
+    // Initial update
+    updateMetrics();
+
+    // Update every second
+    const interval = setInterval(updateMetrics, 1000);
+
+    return () => clearInterval(interval);
+  }, [sensorData, backendConsistency, backendIncentives]); // Re-run when data changes
+
   // Auto-collect sensor data every 30 seconds when active
   useEffect(() => {
     if (!isCollecting) return;
@@ -274,7 +311,7 @@ export function ArduinoDashboard() {
   /**
    * Calculate incentives based on consistency (use backend data if available)
    */
-  const getIncentiveData = (): IncentiveData => {
+  const getIncentiveData = (consistencyMetrics?: ConsistencyMetrics): IncentiveData => {
     // Prefer backend data (actual incentive calculation)
     if (backendIncentives) {
       const { total_earned, consistency_percent } = backendIncentives;
@@ -299,7 +336,7 @@ export function ArduinoDashboard() {
     }
 
     // Fallback: Calculate from local session data
-    const consistency = getConsistencyMetrics();
+    const consistency = consistencyMetrics || getConsistencyMetrics();
     const { uptimePercent } = consistency;
 
     // Reward tiers based on consistency
@@ -933,8 +970,6 @@ export function ArduinoDashboard() {
   };
 
   const averageConditions = getAverageConditions();
-  const consistency = getConsistencyMetrics();
-  const incentives = getIncentiveData();
 
   return (
     <div className="min-h-screen bg-white text-black p-4 pt-[65px]">
