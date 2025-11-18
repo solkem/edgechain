@@ -1150,14 +1150,6 @@ export function ArduinoDashboard() {
                       </p>
                       <p className="font-mono text-xs text-black break-all">{deviceInfo.pubkey}</p>
                     </div>
-                    <div className="flex gap-2">
-                      <button className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold hover:border-gray-400 hover:cursor-pointer">
-                        View Proof Details
-                      </button>
-                      <button className="flex-1 rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-900">
-                        Verify On-Chain
-                      </button>
-                    </div>
                   </div>
                 </div>
               </div>
