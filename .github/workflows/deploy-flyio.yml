@@ -18,28 +18,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'yarn'
 
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Prepare Yarn with retry
+      - name: Install Yarn via npm (bypass Corepack registry issue)
         run: |
-          set +e
-          max_attempts=5
-          attempt=1
-          while [ $attempt -le $max_attempts ]; do
-            echo "Attempt $attempt of $max_attempts to prepare Yarn..."
-            corepack prepare yarn@4.9.2 --activate
-            if [ $? -eq 0 ]; then
-              echo "Successfully prepared Yarn"
-              exit 0
-            fi
-            echo "Failed to download Yarn, retrying in 10 seconds..."
-            sleep 10
-            attempt=$((attempt + 1))
-          done
-          echo "Failed to prepare Yarn after $max_attempts attempts"
-          exit 1
+          npm install -g yarn@4.9.2
+          yarn --version
 
       - name: Install dependencies
         run: yarn install --immutable
