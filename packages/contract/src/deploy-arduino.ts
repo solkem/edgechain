@@ -159,9 +159,13 @@ async function main() {
 
     const ArduinoIoTModule = await import(contractModulePath);
 
-    // Get wallet state first (needed for admin pubkey)
+    // Get wallet state first (needed for walletProvider)
     const walletState = await Rx.firstValueFrom(wallet.state());
-    const adminPubkey = walletState.coinPublicKey;
+
+    // Generate admin pubkey (32 bytes) - in production, derive from deployer key
+    const adminPubkey = new Uint8Array(32);
+    crypto.getRandomValues(adminPubkey);
+    console.log(`   Admin pubkey (hex): ${Buffer.from(adminPubkey).toString('hex').slice(0, 32)}...`);
 
     // Create witness functions for the contract
     const witnesses = {
@@ -183,10 +187,9 @@ async function main() {
       }
     };
 
-    // Create contract instance with constructor args
-    const contractInstance = new ArduinoIoTModule.Contract(witnesses, {
-      admin: adminPubkey
-    });
+    // Create contract instance with ONLY witnesses
+    // Constructor parameters are passed during deployment, not instantiation
+    const contractInstance = new ArduinoIoTModule.Contract(witnesses);
     console.log("   ✅ Contract loaded\n");
 
     const walletProvider = {
@@ -239,12 +242,14 @@ async function main() {
     console.log("   ⏳ Generating zero-knowledge proofs...");
     console.log("   This takes 30-60 seconds - please be patient!\n");
 
-    // Deploy the contract
+    // Deploy the contract with constructor parameters
+    // The Midnight SDK will call contractInstance.initialState() internally with these args
     const deployed = await deployContract(providers, {
       contract: contractInstance,
       privateStateId: "arduinoIoTDeploymentState",
-      initialPrivateState: {}
-    });
+      initialPrivateState: {},
+      args: [adminPubkey]  // Pass admin pubkey to constructor (field name is 'args' not 'constructorArguments')
+    } as any);  // Type assertion since args may not be in official types yet
 
     const contractAddress = deployed.deployTxData.public.contractAddress;
 

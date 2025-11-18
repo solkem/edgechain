@@ -4,5 +4,18 @@
   "network": "testnet",
   "deploymentWalletAddress": "mn_shield-addr_test1qy0urnfdffs3pyp5308ql3lr4jjl69tr2knwlsxw9l97aa44je8qxqxqmvs3l3xqpcs0prenazr72rkw9upqasu9l378dcsg3kl50g4cey903x4e",
   "deploymentWalletSeed": "4c03e1497dbee12cdc2ad1db73c3b0679de5475cf78a896c9a8b48b27950f33d",
-  "note": "This wallet was used for deployment only. Use your Lace wallet for UI interaction."
+  "note": "This wallet was used for deployment only. Use your Lace wallet for UI interaction.",
+  "arduinoIoT": {
+    "contractAddress": "02001d6243d08ba466d6a3e32d9a04dd1d283d8fe2b9714cde81a25fa9081087b30a",
+    "adminPubkey": "e33dcfe464bd95197ef9a99e51f5320b2e5048dd93e4d34b43972f8f54b40b5d",
+    "deployedAt": "2025-11-18T01:00:50.279Z",
+    "network": "testnet-02",
+    "deploymentWalletAddress": "mn_shield-addr_test1qy0urnfdffs3pyp5308ql3lr4jjl69tr2knwlsxw9l97aa44je8qxqxqmvs3l3xqpcs0prenazr72rkw9upqasu9l378dcsg3kl50g4cey903x4e",
+    "features": {
+      "dualMerkleRoots": true,
+      "autoCollectionReward": "0.1 tDUST",
+      "manualEntryReward": "0.02 tDUST",
+      "nullifierTracking": true
+    }
+  }
 }
