@@ -36,6 +36,22 @@ EdgeChain is a decentralized federated learning platform that brings AI-powered 
 - ✅ Global model hash storage (only aggregated result visible)
 - ✅ Round-based FL cycles with version tracking
 
+## 💡 Core ZK Innovations
+
+### **"One Among Thousands"**
+*IoT Contract - Anonymity Set ZK Proofs*
+
+**Hide in the crowd.** Every device anonymous among 10,000+ others. Privacy that grows with every farmer who joins.
+
+---
+
+### **"Different Submissions, Different Identities"**
+*Federated Learning Contract - ZK Identity Derivation*
+
+**Same farmer, different disguise every time.** Privacy that scales with participation.
+
+---
+
 ## 🚀 Live Demo
 
 **Try it now:** https://edgechain-midnight-ui.fly.dev/
