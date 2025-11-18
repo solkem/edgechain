@@ -39,8 +39,8 @@ Traditional agriculture AI solutions require farmers to upload sensitive farm da
 ## ✨ Features
 
 - **🔐 Privacy-First** - Uses Midnight Network's zero-knowledge proofs. Sensitive farm data never leaves the farmer's device
-- **📡 IoT Sensor Integration** - Arduino Nano 33 BLE Sense collects real-time environmental data (temperature, humidity) with cryptographic authentication
-- **🔑 Unique Device Identity** - Each Arduino generates unique Ed25519 keypairs from hardware serial numbers for secure device authentication
+- **📡 IoT Sensor Integration** - Arduino Nano 33 BLE Sense collects real-time environmental data (temperature, humidity) with **anonymous authentication via ZK proofs**
+- **🔑 Anonymous Device Identity** - Each Arduino proves authorization without revealing which device submitted data. Devices hide in anonymity sets of 10,000+, preventing farm tracking and price discrimination
 - **📱 SMS Predictions** - Works on any phone, no app download needed. Farmers text commands to get crop predictions instantly
 - **🤝 Decentralized Aggregation** - Multiple aggregators can submit, system picks the best one by historical accuracy
 - **💰 Incentive System** - Farmers and honest aggregators earn rewards for participation (0.1 DUST per verified IoT reading)
@@ -467,7 +467,8 @@ Midnight Blockchain verifies:
 ✅ Device Identity:  Unique per Arduino (derived from hardware serial)
 ✅ Data Authenticity: EdDSA signatures verify sensor readings
 ✅ Replay Protection: Nullifiers prevent double-claiming rewards
-✅ Privacy-Preserving: ZK proofs hide device identity (reveal only Merkle root)
+✅ Anonymity Sets:   ZK proofs hide device identity among 10,000+ devices (O(1) storage via Merkle roots)
+✅ Unlinkable:       Cannot correlate submissions across epochs (prevents farm tracking)
 ✅ Decentralized:    IPFS storage for immutability and transparency
 ✅ Incentive-Aligned: 0.1 DUST reward for automatic collection (IoT devices)
                       0.02 DUST reward for manual data entry
