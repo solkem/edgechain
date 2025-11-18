@@ -154,12 +154,13 @@ export function ArduinoDashboard() {
     nextTierThreshold: 90,
   });
 
-  // Set activation timestamp when collection starts (only once, never resets)
+  // Set activation timestamp based on FIRST sensor reading (only once, never resets)
   useEffect(() => {
-    if (isCollecting && collectionActivatedAt === null) {
-      setCollectionActivatedAt(Date.now());
+    if (sensorData.length > 0 && collectionActivatedAt === null) {
+      // Use the timestamp of the first sensor reading as activation time
+      setCollectionActivatedAt(sensorData[0].timestamp);
     }
-  }, [isCollecting, collectionActivatedAt]);
+  }, [sensorData, collectionActivatedAt]);
 
   // Update timeSinceActivated every second (continuously incrementing FOREVER)
   useEffect(() => {
