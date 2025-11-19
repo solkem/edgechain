@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "license": "MIT",
   "scripts": {
+    "dev": "turbo run dev",
     "build": "turbo run build",
     "build:all": "cd packages/contract && npx turbo run build && cd ../api && npx turbo run build && cd ../cli && npx turbo run build && cd ../ui && npx turbo run build",
     "clean": "turbo run clean",
