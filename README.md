@@ -902,7 +902,6 @@ yarn start:production
 
 **Zero-Knowledge Proofs**:
 - 🔐 **[ZK IoT Proof Guide](ZK_IOT_PROOF.md)** - Comprehensive explanation of why ZK proofs are essential for IoT privacy
-- 🔒 **[ZK Defense for Judges](private-docs/ZK_IOT_DEFENSE_FOR_JUDGES.md)** - Technical defense of ZK proof necessity for hackathon evaluation
 - 📊 **[Anonymous Set Flow](edgechain_anonymous_set_flow.md)** - Detailed flow diagrams showing device registration and ZK proof generation
 - 🆚 **[Traceable vs Anonymous](edgechain_traceable_vs_anonymous.md)** - Side-by-side comparison of traditional signatures vs ZK proofs
 
