@@ -941,6 +941,6 @@ This project is licensed under the Apache License 2.0. See [LICENSE](LICENSE) fi
 
 ---
 
-**Made with ❤️ (NeRudo) for smallholder farmers** 🌾
+**Made with ❤️ (NeRudo) for smallholder farmers in Global South** 🌾
 
 *EdgeChain: Privacy-Preserving AI, Farmer-Owned Data*
