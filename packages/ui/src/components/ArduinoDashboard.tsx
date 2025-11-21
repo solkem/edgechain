@@ -480,7 +480,7 @@ export function ArduinoDashboard() {
         pubkey: devicePubkey,
         registered: true,
         collectionMode: 'auto',
-        merkleRoot: data.global_auto_collection_root,
+        merkleRoot: data.global_device_root,
       });
 
       if (data.already_registered) {
@@ -731,7 +731,7 @@ export function ArduinoDashboard() {
           pubkey: device_pubkey,
           registered: true,
           collectionMode: 'auto',
-          merkleRoot: registerResult.global_auto_collection_root,
+          merkleRoot: registerResult.global_device_root,
         });
 
         return true;

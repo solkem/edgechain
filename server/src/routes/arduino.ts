@@ -153,7 +153,6 @@ router.post('/registry/register', async (req, res) => {
     const dbResult = dbService.registerDevice(
       device_pubkey,
       owner_wallet,
-      collection_mode,
       device_id || 'iot-kit-001',
       metadata || {},
       merkle_leaf_hash
@@ -164,7 +163,6 @@ router.post('/registry/register', async (req, res) => {
     if (!dbResult.alreadyRegistered) {
       registration = registryService.registerDevice(
         device_pubkey,
-        collection_mode,
         device_id,
         metadata
       );
@@ -178,7 +176,6 @@ router.post('/registry/register', async (req, res) => {
         // Not in memory yet (server restarted), register now
         registration = registryService.registerDevice(
           device_pubkey,
-          collection_mode,
           device_id,
           metadata
         );
@@ -193,8 +190,7 @@ router.post('/registry/register', async (req, res) => {
       success: true,
       registration,
       owner_wallet,
-      global_auto_collection_root: status.global_auto_collection_root,
-      global_manual_entry_root: status.global_manual_entry_root,
+      global_device_root: status.global_device_root,
       already_registered: dbResult.alreadyRegistered, // Let frontend know if it was already registered
     });
   } catch (error: any) {
@@ -263,10 +259,8 @@ router.get('/registry/devices', (_req, res) => {
     res.json({
       devices,
       count: devices.length,
-      auto_devices: status.auto_devices,
-      manual_devices: status.manual_devices,
-      global_auto_collection_root: status.global_auto_collection_root,
-      global_manual_entry_root: status.global_manual_entry_root,
+      total_devices: status.total_devices,
+      global_device_root: status.global_device_root,
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -309,9 +303,8 @@ router.post('/prove', async (req, res) => {
       throw new Error('Device not found in registry');
     }
 
-    if (device.collection_mode !== claimed_mode) {
-      throw new Error(`Collection mode mismatch: device=${device.collection_mode}, claimed=${claimed_mode}`);
-    }
+    // Note: In single-tree architecture, all devices are in one tree
+    // collection_mode is no longer tracked per device
 
     // TODO: Implement actual ZK proof generation using Compact/Midnight
     // For now, return mock proof structure
@@ -388,28 +381,13 @@ router.post('/submit-proof', async (req, res) => {
       });
     }
 
-    // 2. Verify claimed_root matches collection_mode
-    const auto_root = registryService.getGlobalAutoCollectionRoot();
-    const manual_root = registryService.getGlobalManualEntryRoot();
+    // 2. Verify claimed_root matches the global device root (single-tree architecture)
+    const global_root = registryService.getGlobalDeviceRoot();
 
-    if (collection_mode === 'auto' && claimed_root !== auto_root) {
+    if (claimed_root !== global_root) {
       return res.status(400).json({
         valid: false,
-        reason: 'Claimed auto-collection but root mismatch',
-      });
-    }
-
-    if (collection_mode === 'manual' && claimed_root !== manual_root) {
-      return res.status(400).json({
-        valid: false,
-        reason: 'Claimed manual-entry but root mismatch',
-      });
-    }
-
-    if (claimed_root !== auto_root && claimed_root !== manual_root) {
-      return res.status(400).json({
-        valid: false,
-        reason: 'Claimed root not in approved registry',
+        reason: 'Claimed root does not match global device root',
       });
     }
 
@@ -551,7 +529,7 @@ router.post('/zk/generate-proof', async (req, res) => {
       { temperature, humidity, timestamp },
       witnessInputs,
       collection_mode as 'auto' | 'manual',
-      merkleProof.appropriate_root
+      merkleProof.root
     );
 
     res.json({
@@ -601,11 +579,9 @@ router.post('/zk/submit-private-reading', async (req, res) => {
       });
     }
 
-    // 2. Get expected Merkle root
+    // 2. Get expected Merkle root (single-tree architecture)
     const status = registryService.getStatus();
-    const expectedRoot = public_inputs.collectionMode === 0
-      ? status.global_auto_collection_root
-      : status.global_manual_entry_root;
+    const expectedRoot = status.global_device_root;
 
     // 3. Verify ZK proof
     const verification = await zkProofService.verifyProof(
@@ -623,16 +599,15 @@ router.post('/zk/submit-private-reading', async (req, res) => {
     }
 
     // 4. Calculate reward
+    const collectionMode = public_inputs.collectionMode === 0 ? 'auto' : 'manual';
     const reward = public_inputs.collectionMode === 0 ? 0.1 : 0.02;
 
     // 5. Mark nullifier as spent
-    const collectionMode = public_inputs.collectionMode === 0 ? 'auto' : 'manual';
     nullifierService.markNullifierSpent(
       public_inputs.nullifier,
       public_inputs.epoch,
       public_inputs.dataHash,
-      reward,
-      collectionMode
+      reward
     );
 
     // 6. Store anonymous reading in database
@@ -1073,12 +1048,8 @@ router.get('/registry', (_req, res) => {
     res.json({
       devices,
       count: devices.length,
-      dual_roots: {
-        auto_root: status.global_auto_collection_root,
-        manual_root: status.global_manual_entry_root,
-      },
-      auto_devices: status.auto_devices,
-      manual_devices: status.manual_devices,
+      total_devices: status.total_devices,
+      global_device_root: status.global_device_root,
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
