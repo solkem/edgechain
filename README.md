@@ -1,8 +1,8 @@
 # EdgeChain 🌾
 
-**Privacy-Preserving AI for Farmers on Midnight Network**
+**Privacy-Preserving IoT and AI for Farmers on Midnight Network**
 
-EdgeChain is a decentralized federated learning platform that brings AI-powered agricultural predictions to farmers while protecting sensitive farm data through zero-knowledge proofs.
+EdgeChain is a decentralized IoT and federated learning platform that brings AI-powered agricultural predictions to farmers while protecting sensitive farm data through zero-knowledge proofs.
 
 ## 🎉 Live Deployment on Midnight Network
 
@@ -902,7 +902,6 @@ yarn start:production
 
 **Zero-Knowledge Proofs**:
 - 🔐 **[ZK IoT Proof Guide](ZK_IOT_PROOF.md)** - Comprehensive explanation of why ZK proofs are essential for IoT privacy
-- 🔒 **[ZK Defense for Judges](private-docs/ZK_IOT_DEFENSE_FOR_JUDGES.md)** - Technical defense of ZK proof necessity for hackathon evaluation
 - 📊 **[Anonymous Set Flow](edgechain_anonymous_set_flow.md)** - Detailed flow diagrams showing device registration and ZK proof generation
 - 🆚 **[Traceable vs Anonymous](edgechain_traceable_vs_anonymous.md)** - Side-by-side comparison of traditional signatures vs ZK proofs
 

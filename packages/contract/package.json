@@ -23,7 +23,7 @@
     "compact": "compact compile src/edgechain.compact ./src/managed/edgechain",
     "compact:arduino": "compact compile src/arduino-iot.compact ./src/managed/arduino-iot",
     "compact:arduino-private": "compact compile src/arduino-iot-private.compact ./dist/managed/arduino-iot-private",
-    "build": "rm -rf dist && find src/managed -type d -empty -delete && tsc --project tsconfig.build.json && mkdir -p dist/managed && test -d ./src/managed/edgechain && cp -R ./src/managed/edgechain ./dist/managed/ && test -d ./src/managed/arduino-iot && cp -R ./src/managed/arduino-iot ./dist/managed/ && mkdir -p ./dist/managed/edgechain/keys ./dist/managed/edgechain/zkir && mkdir -p ./dist/managed/arduino-iot/keys ./dist/managed/arduino-iot/zkir && cp ./src/*.compact dist",
+    "build": "bash -lc 'set -euo pipefail; rm -rf dist && find src/managed -type d -empty -delete && tsc --project tsconfig.build.json && mkdir -p dist/managed && if [ -d ./src/managed/edgechain ]; then cp -R ./src/managed/edgechain ./dist/managed/ && mkdir -p ./dist/managed/edgechain/keys ./dist/managed/edgechain/zkir; fi && if [ -d ./src/managed/arduino-iot ]; then cp -R ./src/managed/arduino-iot ./dist/managed/ && mkdir -p ./dist/managed/arduino-iot/keys ./dist/managed/arduino-iot/zkir; fi && cp ./src/*.compact dist'",
     "build:ts": "tsc --project tsconfig.json",
     "deploy": "npm run build:ts && node dist/deploy-simple.js",
     "deploy:arduino": "npm run build:ts && node dist/deploy-arduino.js",
