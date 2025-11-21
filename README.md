@@ -1,8 +1,8 @@
 # EdgeChain 🌾
 
-**Privacy-Preserving AI for Farmers on Midnight Network**
+**Privacy-Preserving IoT and AI for Farmers on Midnight Network**
 
-EdgeChain is a decentralized federated learning platform that brings AI-powered agricultural predictions to farmers while protecting sensitive farm data through zero-knowledge proofs.
+EdgeChain is a decentralized IoT and federated learning platform that brings AI-powered agricultural predictions to farmers while protecting sensitive farm data through zero-knowledge proofs.
 
 ## 🎉 Live Deployment on Midnight Network
 
