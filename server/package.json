@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "ts-node src/index.ts",
     "start": "node dist/index.js",
-    "build": "tsc"
+    "build": "tsc",
+    "test": "ts-node src/test-single-tree.ts"
   },
   "keywords": [
     "federated-learning",

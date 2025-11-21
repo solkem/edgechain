@@ -1,21 +1,19 @@
 -- EdgeChain Database Schema
 -- Production-grade persistent storage for Arduino IoT data
 
--- Device Registry
+-- Device Registry (Single-Tree Architecture)
 CREATE TABLE IF NOT EXISTS devices (
   device_pubkey TEXT PRIMARY KEY,
   owner_wallet TEXT NOT NULL, -- Lace wallet address that owns this device
-  collection_mode TEXT NOT NULL CHECK (collection_mode IN ('auto', 'manual')),
   registration_epoch INTEGER NOT NULL,
   expiry_epoch INTEGER NOT NULL,
   device_id TEXT,
   metadata TEXT, -- JSON
   merkle_leaf_hash TEXT NOT NULL,
-  authorization_reward_paid INTEGER DEFAULT 0, -- Boolean: 0.02 tDUST paid for device registration
+  authorization_reward_paid INTEGER DEFAULT 0, -- Boolean: 0.1 tDUST paid for verified readings
   created_at INTEGER DEFAULT (strftime('%s', 'now'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_devices_collection_mode ON devices(collection_mode);
 CREATE INDEX IF NOT EXISTS idx_devices_expiry ON devices(expiry_epoch);
 CREATE INDEX IF NOT EXISTS idx_devices_owner ON devices(owner_wallet);
 
@@ -42,7 +40,6 @@ CREATE INDEX IF NOT EXISTS idx_readings_created ON sensor_readings(created_at);
 CREATE TABLE IF NOT EXISTS batch_proofs (
   batch_id TEXT PRIMARY KEY,
   device_pubkey TEXT NOT NULL,
-  collection_mode TEXT NOT NULL,
   readings_count INTEGER NOT NULL,
   proof_data TEXT, -- ZK proof JSON
   public_inputs TEXT, -- JSON
@@ -87,10 +84,9 @@ CREATE TABLE IF NOT EXISTS nullifiers (
 
 CREATE INDEX IF NOT EXISTS idx_nullifiers_batch ON nullifiers(batch_id);
 
--- Merkle Roots (historical tracking)
+-- Merkle Roots (historical tracking - single tree)
 CREATE TABLE IF NOT EXISTS merkle_roots (
   root_hash TEXT PRIMARY KEY,
-  collection_mode TEXT NOT NULL CHECK (collection_mode IN ('auto', 'manual')),
   device_count INTEGER NOT NULL,
   published_to_chain INTEGER DEFAULT 0, -- Boolean
   tx_hash TEXT,
@@ -98,7 +94,6 @@ CREATE TABLE IF NOT EXISTS merkle_roots (
   created_at INTEGER DEFAULT (strftime('%s', 'now'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_merkle_roots_mode ON merkle_roots(collection_mode);
 CREATE INDEX IF NOT EXISTS idx_merkle_roots_published ON merkle_roots(published_to_chain);
 
 -- Transaction Log (for audit trail)
@@ -124,13 +119,11 @@ CREATE TABLE IF NOT EXISTS spent_nullifiers (
   epoch INTEGER NOT NULL,
   data_hash TEXT NOT NULL,
   reward REAL NOT NULL,
-  collection_mode TEXT NOT NULL CHECK (collection_mode IN ('auto', 'manual')),
   spent_at INTEGER DEFAULT (strftime('%s', 'now')),
   PRIMARY KEY (nullifier, epoch)
 );
 
 CREATE INDEX IF NOT EXISTS idx_spent_nullifiers_epoch ON spent_nullifiers(epoch);
-CREATE INDEX IF NOT EXISTS idx_spent_nullifiers_mode ON spent_nullifiers(collection_mode);
 
 -- Device Secrets (for nullifier generation - HIGHLY SENSITIVE)
 -- NOTE: In production, this should be on device only, never on server!
@@ -152,8 +145,7 @@ CREATE TABLE IF NOT EXISTS zk_proof_submissions (
   temperature REAL NOT NULL,
   humidity REAL NOT NULL,
   timestamp_device INTEGER NOT NULL,
-  collection_mode TEXT NOT NULL CHECK (collection_mode IN ('auto', 'manual')),
-  reward REAL NOT NULL,
+  reward REAL NOT NULL, -- Fixed at 0.1 tDUST for all devices
   ipfs_cid TEXT, -- Optional: IPFS storage
   verified INTEGER DEFAULT 1, -- Boolean: proof verified
   created_at INTEGER DEFAULT (strftime('%s', 'now')),
@@ -161,5 +153,4 @@ CREATE TABLE IF NOT EXISTS zk_proof_submissions (
 );
 
 CREATE INDEX IF NOT EXISTS idx_zk_submissions_epoch ON zk_proof_submissions(epoch);
-CREATE INDEX IF NOT EXISTS idx_zk_submissions_mode ON zk_proof_submissions(collection_mode);
 CREATE INDEX IF NOT EXISTS idx_zk_submissions_ipfs ON zk_proof_submissions(ipfs_cid);

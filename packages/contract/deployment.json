@@ -31,6 +31,25 @@
         "nullifierTracking": true,
         "anonymitySetSize": "10,000+"
       }
+    },
+    "arduinoIoTPrivate": {
+      "contractAddress": "02000b43ab8f04186ccd9de1901da41d67a13f3ddc33f263390e1adfa33153011188",
+      "adminPubkey": "ef6b89ca30d5c9cbdf4578f4cb44eba42979ffaa26b4a1c4ce1445441889d926",
+      "deployedAt": "2025-11-19T03:41:02.902Z",
+      "network": "testnet-02",
+      "contractFile": "arduino-iot-private.compact",
+      "deploymentWalletAddress": "mn_shield-addr_test1qy0urnfdffs3pyp5308ql3lr4jjl69tr2knwlsxw9l97aa44je8qxqxqmvs3l3xqpcs0prenazr72rkw9upqasu9l378dcsg3kl50g4cey903x4e",
+      "deploymentTimeSeconds": 63.9,
+      "features": {
+        "singleMerkleTree": true,
+        "privacyEnhanced": true,
+        "deviceIdentityHidden": true,
+        "fixedReward": "0.1 tDUST",
+        "nullifierTracking": true,
+        "unlinkableSubmissions": true,
+        "zkProofs": true,
+        "anonymitySetSize": "Unlimited (all registered devices)"
+      }
     }
   }
 }

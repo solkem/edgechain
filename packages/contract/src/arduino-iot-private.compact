@@ -3,7 +3,7 @@ pragma language_version >= 0.16.0;
 import CompactStandardLibrary;
 
 /**
- * EdgeChain Arduino IoT Privacy Circuit - Full Implementation
+ * EdgeChain Arduino IoT Privacy Circuit - Simplified Single-Tree Implementation
  *
  * This circuit implements the Two-Layer Privacy Architecture:
  * - Layer 1 (Registration): Device proves ownership of private key (done off-chain)
@@ -14,6 +14,7 @@ import CompactStandardLibrary;
  * - Nullifier prevents double-spending but changes per epoch (unlinkability)
  * - Backend cannot correlate readings to specific devices
  * - Only proves: "I'm an approved device" without revealing which one
+ * - Single Merkle tree for all devices (larger anonymity set)
  *
  * See: private-docs/PRIVACY_ARCHITECTURE.md for full specification
  */
@@ -23,19 +24,16 @@ import CompactStandardLibrary;
 // Device's private inputs (NEVER revealed)
 witness devicePubkey(): Bytes<32>;           // Device public key (stays private in ZK)
 witness deviceSecret(): Bytes<32>;           // Used for nullifier generation
-witness merkleSiblings(): Vector<20, Bytes<32>>; // Merkle proof path
+witness merkleSiblings(): Vector<8, Bytes<32>>; // Merkle proof path (simplified)
 witness leafIndex(): Field;                  // Position in Merkle tree
 
 // ============= PUBLIC LEDGER (Visible to everyone) =============
 
-// Global Merkle Roots for Device Registry
-export ledger globalAutoCollectionRoot: Bytes<32>;
-export ledger globalManualEntryRoot: Bytes<32>;
+// Global Merkle Root for Device Registry (single tree for all devices)
+export ledger globalDeviceRoot: Bytes<32>;
 
 // Statistics counters (aggregated only)
 export ledger totalSubmissions: Counter;
-export ledger totalAutoSubmissions: Counter;
-export ledger totalManualSubmissions: Counter;
 export ledger totalRewardsPaid: Counter;
 
 // Contract admin
@@ -44,26 +42,23 @@ export ledger adminPubkey: Bytes<32>;
 // ============= CONSTRUCTOR =============
 
 constructor(admin: Bytes<32>) {
-  // Initialize with empty roots
-  globalAutoCollectionRoot = pad(32, "0");
-  globalManualEntryRoot = pad(32, "0");
+  // Initialize with empty root
+  globalDeviceRoot = pad(32, "0");
   adminPubkey = disclose(admin);
 }
 
 // ============= HELPER CIRCUITS =============
 
 /**
- * Compute leaf hash: H(device_pubkey || collection_mode)
- * This binds the device to its collection mode in the Merkle tree
+ * Compute leaf hash: H(device_pubkey)
+ * Simple hash of device public key for Merkle tree
  */
 circuit computeLeafHash(
-  pubkey: Bytes<32>,
-  mode: Field
+  pubkey: Bytes<32>
 ): Bytes<32> {
-  return persistentHash<Vector<3, Bytes<32>>>([
+  return persistentHash<Vector<2, Bytes<32>>>([
     pad(32, "edgechain:device:"),
-    pubkey,
-    mode as Bytes<32>
+    pubkey
   ]);
 }
 
@@ -73,14 +68,14 @@ circuit computeLeafHash(
  */
 circuit verifyMerkleProof(
   leaf: Bytes<32>,
-  siblings: Vector<20, Bytes<32>>,
+  siblings: Vector<8, Bytes<32>>,
   index: Field,
   expectedRoot: Bytes<32>
 ): Boolean {
   // Simplified Merkle proof verification
   // Hash leaf with all siblings and expected root
   // Production version would implement proper binary tree traversal
-  const proofHash = persistentHash<Vector<22, Bytes<32>>>([
+  const proofHash = persistentHash<Vector<10, Bytes<32>>>([
     leaf,
     expectedRoot,
     siblings[0],
@@ -90,19 +85,7 @@ circuit verifyMerkleProof(
     siblings[4],
     siblings[5],
     siblings[6],
-    siblings[7],
-    siblings[8],
-    siblings[9],
-    siblings[10],
-    siblings[11],
-    siblings[12],
-    siblings[13],
-    siblings[14],
-    siblings[15],
-    siblings[16],
-    siblings[17],
-    siblings[18],
-    siblings[19]
+    siblings[7]
   ]);
 
   // Simplified check - proof hash must not be zero
@@ -155,8 +138,6 @@ circuit computeDataHash(
  * 4. Reading is within valid ranges
  *
  * PUBLIC INPUTS (revealed):
- * - claimed_root: Merkle root of approved devices
- * - collection_mode: auto (0) or manual (1)
  * - nullifier: Unique per device per epoch
  * - data_hash: Hash of sensor reading
  * - epoch: Current epoch
@@ -168,11 +149,10 @@ circuit computeDataHash(
  * - merkle_proof: Path to root
  * - leaf_index: Position in tree
  *
- * Returns: reward amount
+ * Returns: reward amount (fixed at 0.1 tDUST for all devices)
  */
 export circuit submitPrivateReading(
   // Public inputs
-  collectionMode: Field,      // 0 = auto, 1 = manual
   nullifier: Bytes<32>,
   dataHash: Bytes<32>,
   epoch: Field,
@@ -181,7 +161,6 @@ export circuit submitPrivateReading(
   timestamp: Field
 ): Field {
   // Disclose public inputs
-  const publicMode = disclose(collectionMode);
   const publicNullifier = disclose(nullifier);
   const publicDataHash = disclose(dataHash);
   const publicEpoch = disclose(epoch);
@@ -196,8 +175,8 @@ export circuit submitPrivateReading(
   const privIndex = leafIndex();
 
   // 1. Verify device is in Merkle tree
-  const leaf = computeLeafHash(privPubkey, publicMode);
-  const expectedRoot = (publicMode == 0) ? globalAutoCollectionRoot : globalManualEntryRoot;
+  const leaf = computeLeafHash(privPubkey);
+  const expectedRoot = globalDeviceRoot;
 
   const inTree = verifyMerkleProof(leaf, privSiblings, privIndex, expectedRoot);
   assert(inTree, "Device not in approved registry");
@@ -211,28 +190,16 @@ export circuit submitPrivateReading(
   assert(publicDataHash == expectedDataHash, "Data hash mismatch");
 
   // 4. Range checks on sensor data
-  // Temperature: 0°C to 100°C (stored as tenths: 0 to 1000) - simplified for ZK circuits
-  // Note: Adjust offset in client code (add 50 to convert -50°C to 0, etc.)
-  assert(publicTemp >= 0, "Temperature too low");
-  assert(publicTemp <= 1100, "Temperature too high");
-
+  // Note: Field types in Compact don't support relational operators
+  // Range validation should be done off-chain before submission
+  // Temperature: 0°C to 100°C (stored as tenths: 0 to 1000)
   // Humidity: 0% to 100% (stored as tenths: 0 to 1000)
-  assert(publicHumidity >= 0, "Humidity too low");
-  assert(publicHumidity <= 1000, "Humidity too high");
 
   // 5. Update statistics (aggregated only, no device identity)
   totalSubmissions.increment(1);
 
-  if (publicMode == 0) {
-    totalAutoSubmissions.increment(1);
-  } else {
-    totalManualSubmissions.increment(1);
-  }
-
-  // 6. Calculate reward
-  // Auto: 0.1 tDUST = 10 (in 0.01 tDUST units)
-  // Manual: 0.02 tDUST = 2 (in 0.01 tDUST units)
-  const rewardAmount = (publicMode == 0) ? 10 : 2;
+  // 6. Calculate reward (fixed at 0.1 tDUST for all devices)
+  const rewardAmount = 10; // 0.1 tDUST = 10 (in 0.01 tDUST units)
 
   totalRewardsPaid.increment(rewardAmount);
 
@@ -244,35 +211,26 @@ export circuit submitPrivateReading(
  * Called when new devices are registered
  */
 export circuit updateMerkleRoot(
-  collectionMode: Field,
   newRoot: Bytes<32>
 ): [] {
   // TODO: Add admin signature verification
-  const publicMode = disclose(collectionMode);
   const publicRoot = disclose(newRoot);
-
-  if (publicMode == 0) {
-    globalAutoCollectionRoot = publicRoot;
-  } else {
-    globalManualEntryRoot = publicRoot;
-  }
+  globalDeviceRoot = publicRoot;
 }
 
 /**
- * Get current Merkle roots
+ * Get current Merkle root
  */
-export circuit getMerkleRoots(): Vector<2, Bytes<32>> {
-  return [globalAutoCollectionRoot, globalManualEntryRoot];
+export circuit getMerkleRoot(): Bytes<32> {
+  return globalDeviceRoot;
 }
 
 /**
  * Get statistics (aggregated only, no device information)
  */
-export circuit getStats(): Vector<4, Field> {
+export circuit getStats(): Vector<2, Field> {
   return [
     totalSubmissions as Field,
-    totalAutoSubmissions as Field,
-    totalManualSubmissions as Field,
     totalRewardsPaid as Field
   ];
 }

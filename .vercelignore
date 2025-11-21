@@ -1,2 +1,0 @@
-# Ignore Turbo configuration to prevent Vercel from using Turbo build
-turbo.json

@@ -1,12 +1,12 @@
 /**
- * Device Registry Service with Incentive Layer
+ * Device Registry Service - Simplified Single-Tree Architecture
  *
- * Manages approved IoT devices with DUAL Merkle trees:
- * - Auto-collection root (higher reward: 0.1 DUST)
- * - Manual-entry root (lower reward: 0.02 DUST)
+ * Manages approved IoT devices with a SINGLE Merkle tree:
+ * - All devices in one tree (larger anonymity set)
+ * - Fixed reward: 0.1 DUST for all verified readings
  *
- * Key Innovation: Leaf = H(device_pubkey || collection_mode)
- * This cryptographically binds device to its collection method
+ * Key Innovation: Leaf = H(device_pubkey)
+ * Simpler hash, larger anonymity set, better privacy
  */
 
 import * as crypto from 'crypto';
@@ -14,7 +14,6 @@ import { deviceDB } from '../database';
 
 export interface ApprovedDevice {
   device_pubkey: string;
-  collection_mode: 'auto' | 'manual';
   registration_epoch: number;
   expiry_epoch: number;
   device_id?: string;
@@ -24,20 +23,18 @@ export interface ApprovedDevice {
 export interface MerkleProof {
   merkle_proof: string[];
   leaf_index: number;
-  collection_mode: 'auto' | 'manual';
-  appropriate_root: string;
+  root: string;
 }
 
 export class DeviceRegistryService {
   private devices: Map<string, ApprovedDevice> = new Map();
-  private globalAutoCollectionRoot: string = '';
-  private globalManualEntryRoot: string = '';
+  private globalDeviceRoot: string = '';
 
   constructor() {
     // Load devices from database on startup
     this.loadDevicesFromDatabase();
-    // Initialize roots based on loaded devices
-    this.rebuildGlobalRoots();
+    // Initialize root based on loaded devices
+    this.rebuildGlobalRoot();
   }
 
   /**
@@ -50,7 +47,6 @@ export class DeviceRegistryService {
       for (const dbDevice of dbDevices) {
         const device: ApprovedDevice = {
           device_pubkey: dbDevice.device_pubkey,
-          collection_mode: dbDevice.collection_mode as 'auto' | 'manual',
           registration_epoch: dbDevice.registration_epoch,
           expiry_epoch: dbDevice.expiry_epoch,
           device_id: dbDevice.device_id,
@@ -67,11 +63,10 @@ export class DeviceRegistryService {
   }
 
   /**
-   * Register a new device with collection mode
+   * Register a new device (all devices use auto collection)
    */
   registerDevice(
     device_pubkey: string,
-    collection_mode: 'auto' | 'manual' = 'auto',
     device_id?: string,
     metadata?: any
   ): ApprovedDevice {
@@ -82,7 +77,6 @@ export class DeviceRegistryService {
     const current_epoch = this.getCurrentEpoch();
     const registration: ApprovedDevice = {
       device_pubkey,
-      collection_mode,
       registration_epoch: current_epoch,
       expiry_epoch: current_epoch + 365, // Valid for 1 year
       device_id,
@@ -90,16 +84,14 @@ export class DeviceRegistryService {
     };
 
     this.devices.set(device_pubkey, registration);
-    this.rebuildGlobalRoots();
+    this.rebuildGlobalRoot();
 
     // Note: Database persistence is handled by the route layer (arduino.ts)
     // which calls dbService.registerDevice() before this method.
     // This avoids duplicate database inserts.
 
     console.log(`✅ Device registered: ${device_pubkey.slice(0, 16)}...`);
-    console.log(`   Collection mode: ${collection_mode}`);
-    console.log(`   Auto root: ${this.globalAutoCollectionRoot.slice(0, 16)}...`);
-    console.log(`   Manual root: ${this.globalManualEntryRoot.slice(0, 16)}...`);
+    console.log(`   Device root: ${this.globalDeviceRoot.slice(0, 16)}...`);
 
     return registration;
   }
@@ -125,7 +117,6 @@ export class DeviceRegistryService {
 
   /**
    * Get Merkle proof for a device
-   * CRITICAL: Returns proof for the device's collection_mode tree
    */
   getMerkleProof(device_pubkey: string): MerkleProof {
     const device = this.devices.get(device_pubkey);
@@ -133,47 +124,31 @@ export class DeviceRegistryService {
       throw new Error(`Device ${device_pubkey} not in registry`);
     }
 
-    const collection_mode = device.collection_mode;
+    // Get all devices
+    const allDevices = Array.from(this.devices.values());
 
-    // Get all devices with same collection mode
-    const devicesForMode = Array.from(this.devices.values())
-      .filter(d => d.collection_mode === collection_mode);
-
-    const leaf_index = devicesForMode.findIndex(d => d.device_pubkey === device_pubkey);
+    const leaf_index = allDevices.findIndex(d => d.device_pubkey === device_pubkey);
     if (leaf_index === -1) {
-      throw new Error(`Device not found in ${collection_mode} list`);
+      throw new Error(`Device not found in registry`);
     }
 
-    // Build leaves with collection_mode binding: H(pubkey || mode)
-    const leaves = devicesForMode.map(d =>
-      this.hashLeaf(d.device_pubkey, d.collection_mode)
-    );
+    // Build leaves: H(pubkey)
+    const leaves = allDevices.map(d => this.hashLeaf(d.device_pubkey));
 
     const merkle_proof = this.computeMerkleProof(leaves, leaf_index);
-    const appropriate_root = collection_mode === 'auto'
-      ? this.globalAutoCollectionRoot
-      : this.globalManualEntryRoot;
 
     return {
       merkle_proof,
       leaf_index,
-      collection_mode,
-      appropriate_root,
+      root: this.globalDeviceRoot,
     };
   }
 
   /**
-   * Get global auto-collection root
+   * Get global device root
    */
-  getGlobalAutoCollectionRoot(): string {
-    return this.globalAutoCollectionRoot;
-  }
-
-  /**
-   * Get global manual-entry root
-   */
-  getGlobalManualEntryRoot(): string {
-    return this.globalManualEntryRoot;
+  getGlobalDeviceRoot(): string {
+    return this.globalDeviceRoot;
   }
 
   /**
@@ -184,61 +159,37 @@ export class DeviceRegistryService {
   }
 
   /**
-   * Get registry status with dual roots
+   * Get registry status
    */
   getStatus() {
-    const auto_devices = Array.from(this.devices.values())
-      .filter(d => d.collection_mode === 'auto');
-    const manual_devices = Array.from(this.devices.values())
-      .filter(d => d.collection_mode === 'manual');
-
     return {
       total_devices: this.devices.size,
-      auto_devices: auto_devices.length,
-      manual_devices: manual_devices.length,
-      global_auto_collection_root: this.globalAutoCollectionRoot,
-      global_manual_entry_root: this.globalManualEntryRoot,
+      global_device_root: this.globalDeviceRoot,
     };
   }
 
   /**
-   * Rebuild BOTH Merkle roots (auto and manual)
-   * CRITICAL: Separate trees for separate incentives
+   * Rebuild global Merkle root (single tree for all devices)
    */
-  private rebuildGlobalRoots(): void {
-    const auto_devices = Array.from(this.devices.values())
-      .filter(d => d.collection_mode === 'auto');
-    const manual_devices = Array.from(this.devices.values())
-      .filter(d => d.collection_mode === 'manual');
+  private rebuildGlobalRoot(): void {
+    const all_devices = Array.from(this.devices.values());
 
-    // Build auto-collection tree
-    const auto_leaves = auto_devices.map(d =>
-      this.hashLeaf(d.device_pubkey, 'auto')
-    );
-    this.globalAutoCollectionRoot = auto_leaves.length > 0
-      ? this.buildMerkleRoot(auto_leaves)
+    // Build single device tree
+    const leaves = all_devices.map(d => this.hashLeaf(d.device_pubkey));
+    this.globalDeviceRoot = leaves.length > 0
+      ? this.buildMerkleRoot(leaves)
       : '0'.repeat(64);
 
-    // Build manual-entry tree
-    const manual_leaves = manual_devices.map(d =>
-      this.hashLeaf(d.device_pubkey, 'manual')
-    );
-    this.globalManualEntryRoot = manual_leaves.length > 0
-      ? this.buildMerkleRoot(manual_leaves)
-      : '0'.repeat(64);
-
-    console.log('✓ Global Merkle roots rebuilt:');
-    console.log(`  Auto-collection root:  ${this.globalAutoCollectionRoot.slice(0, 32)}...`);
-    console.log(`  Manual-entry root:     ${this.globalManualEntryRoot.slice(0, 32)}...`);
+    console.log('✓ Global Merkle root rebuilt:');
+    console.log(`  Device root: ${this.globalDeviceRoot.slice(0, 32)}...`);
+    console.log(`  Total devices: ${all_devices.length}`);
   }
 
   /**
-   * CRITICAL: Leaf hash includes collection_mode
-   * This cryptographically binds device to its collection method
+   * Leaf hash: Simple hash of device public key
    */
-  private hashLeaf(device_pubkey: string, collection_mode: 'auto' | 'manual'): string {
-    const combined = device_pubkey + '|' + collection_mode;
-    return crypto.createHash('sha256').update(combined).digest('hex');
+  private hashLeaf(device_pubkey: string): string {
+    return crypto.createHash('sha256').update(device_pubkey).digest('hex');
   }
 
   /**
@@ -316,7 +267,7 @@ export class DeviceRegistryService {
    */
   reset(): void {
     this.devices.clear();
-    this.rebuildGlobalRoots();
+    this.rebuildGlobalRoot();
     console.log('🔄 Device registry reset');
   }
 }

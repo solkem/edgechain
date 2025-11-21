@@ -53,8 +53,7 @@ export class NullifierTrackingService {
     nullifier: string,
     epoch: number,
     data_hash: string,
-    reward: number,
-    collection_mode: string
+    reward: number
   ): void {
     // Check if already spent (double-spend attempt)
     if (this.isNullifierSpent(nullifier, epoch)) {
@@ -67,13 +66,12 @@ export class NullifierTrackingService {
         epoch,
         data_hash,
         reward,
-        collection_mode,
         spent_at
-      ) VALUES (?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?)
     `);
 
     const now = Math.floor(Date.now() / 1000);
-    stmt.run(nullifier, epoch, data_hash, reward, collection_mode, now);
+    stmt.run(nullifier, epoch, data_hash, reward, now);
 
     console.log(`🔒 Nullifier marked as spent: ${nullifier.slice(0, 16)}... (epoch ${epoch})`);
   }

@@ -11,7 +11,6 @@ import { SignedReading } from '../types/arduino';
 export interface DeviceRecord {
   device_pubkey: string;
   owner_wallet: string;
-  collection_mode: 'auto' | 'manual';
   registration_epoch: number;
   expiry_epoch: number;
   device_id: string;
@@ -64,13 +63,12 @@ export class DatabasePersistenceService {
   }
 
   /**
-   * Persist device registration to database
+   * Persist device registration to database (single-tree architecture)
    * Returns: { alreadyRegistered: boolean, device: DeviceRecord }
    */
   registerDevice(
     device_pubkey: string,
     owner_wallet: string,
-    collection_mode: 'auto' | 'manual',
     device_id: string,
     metadata: any,
     merkle_leaf_hash: string
@@ -99,7 +97,6 @@ export class DatabasePersistenceService {
       INSERT INTO devices (
         device_pubkey,
         owner_wallet,
-        collection_mode,
         registration_epoch,
         expiry_epoch,
         device_id,
@@ -107,13 +104,12 @@ export class DatabasePersistenceService {
         merkle_leaf_hash,
         authorization_reward_paid,
         created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
       device_pubkey,
       owner_wallet,
-      collection_mode,
       registration_epoch,
       expiry_epoch,
       device_id,

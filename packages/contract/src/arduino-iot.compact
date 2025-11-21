@@ -3,14 +3,14 @@ pragma language_version >= 0.16.0;
 import CompactStandardLibrary;
 
 /**
- * EdgeChain Arduino IoT Smart Contract - Simplified Version for Compilation
+ * EdgeChain Arduino IoT Smart Contract - Simplified Single-Tree Version
  *
  * Architecture:
- * - Dual Merkle Roots: Separate trees for auto-collection and manual-entry devices
- * - Device Registry: On-chain Merkle roots for verification
+ * - Single Merkle Root: One tree for all devices (larger anonymity set)
+ * - Device Registry: On-chain Merkle root for verification
  * - Batch Processing: Track batches with ZK proofs
  * - Nullifier Tracking: Prevent replay attacks
- * - Differential Rewards: Different amounts based on collection mode
+ * - Fixed Rewards: 0.1 tDUST for all verified readings
  *
  * Note: This is a simplified version focusing on getting the core logic working
  * Production version would have full EdDSA signature verification and Merkle proof verification
@@ -26,9 +26,8 @@ witness merkleSiblings(): Vector<8, Bytes<32>>;
 
 // ============= PUBLIC LEDGER (Visible to everyone) =============
 
-// Global Merkle Roots for Device Registry
-export ledger globalAutoCollectionRoot: Bytes<32>;
-export ledger globalManualEntryRoot: Bytes<32>;
+// Global Merkle Root for Device Registry (single tree for all devices)
+export ledger globalDeviceRoot: Bytes<32>;
 
 // Nullifier tracking (simplified - in production, use proper storage)
 // Using last nullifier as simple check
@@ -36,8 +35,6 @@ export ledger lastNullifier: Bytes<32>;
 
 // Statistics counters
 export ledger totalBatchesVerified: Counter;
-export ledger totalAutoCollectionBatches: Counter;
-export ledger totalManualEntryBatches: Counter;
 export ledger totalRewardsPaid: Counter;
 
 // Contract admin
@@ -46,9 +43,8 @@ export ledger adminPubkey: Bytes<32>;
 // ============= CONSTRUCTOR =============
 
 constructor(admin: Bytes<32>) {
-  // Initialize with empty roots
-  globalAutoCollectionRoot = pad(32, "0");
-  globalManualEntryRoot = pad(32, "0");
+  // Initialize with empty root
+  globalDeviceRoot = pad(32, "0");
   adminPubkey = disclose(admin);
   lastNullifier = pad(32, "0");
 }
@@ -56,16 +52,14 @@ constructor(admin: Bytes<32>) {
 // ============= HELPER CIRCUITS =============
 
 /**
- * Compute leaf hash: H(device_pubkey || collection_mode)
+ * Compute leaf hash: H(device_pubkey)
  */
 export circuit computeLeafHash(
-  devicePubkey: Bytes<32>,
-  collectionMode: Field
+  devicePubkey: Bytes<32>
 ): Bytes<32> {
-  return persistentHash<Vector<3, Bytes<32>>>([
+  return persistentHash<Vector<2, Bytes<32>>>([
     pad(32, "edgechain:device:"),
-    devicePubkey,
-    collectionMode as Bytes<32>
+    devicePubkey
   ]);
 }
 
@@ -75,11 +69,10 @@ export circuit computeLeafHash(
  */
 circuit verifyDeviceAuthorization(
   devicePubkey: Bytes<32>,
-  collectionMode: Field,
   expectedRoot: Bytes<32>
 ): Boolean {
   // Compute leaf hash
-  const leaf = computeLeafHash(devicePubkey, collectionMode);
+  const leaf = computeLeafHash(devicePubkey);
 
   // Get Merkle siblings from witness
   const siblings = merkleSiblings();
@@ -107,27 +100,25 @@ circuit verifyDeviceAuthorization(
 /**
  * Submit Sensor Batch Circuit
  *
- * Verifies batch and returns reward amount
+ * Verifies batch and returns reward amount (fixed at 0.1 tDUST for all devices)
  */
 export circuit submitSensorBatch(
   devicePubkey: Bytes<32>,
-  collectionMode: Field, // 0 = auto, 1 = manual
   batchHash: Bytes<32>,
   nullifier: Bytes<32>
 ): Field {
   // Disclose public inputs (these are intentionally public)
-  const publicCollectionMode = disclose(collectionMode);
   const publicNullifier = disclose(nullifier);
 
   // 1. Check nullifier not used (simplified - check against last nullifier)
   // In production, use proper nullifier set with Merkle tree or database
   assert(publicNullifier != lastNullifier, "Nullifier already spent");
 
-  // 2. Get appropriate Merkle root
-  const expectedRoot = (publicCollectionMode == 0) ? globalAutoCollectionRoot : globalManualEntryRoot;
+  // 2. Get Merkle root
+  const expectedRoot = globalDeviceRoot;
 
   // 3. Verify device authorization
-  const authorized = verifyDeviceAuthorization(devicePubkey, publicCollectionMode, expectedRoot);
+  const authorized = verifyDeviceAuthorization(devicePubkey, expectedRoot);
   assert(authorized, "Device not authorized");
 
   // 4. Verify signature (simplified - get from witness)
@@ -147,16 +138,8 @@ export circuit submitSensorBatch(
   // 6. Update counters
   totalBatchesVerified.increment(1);
 
-  if (publicCollectionMode == 0) {
-    totalAutoCollectionBatches.increment(1);
-  } else {
-    totalManualEntryBatches.increment(1);
-  }
-
-  // 7. Calculate reward (in tDUST x 100 for precision)
-  // Auto: 0.1 tDUST = 10 (stored as 10/100)
-  // Manual: 0.02 tDUST = 2 (stored as 2/100)
-  const rewardAmount = (publicCollectionMode == 0) ? 10 : 2;
+  // 7. Calculate reward (fixed at 0.1 tDUST for all devices)
+  const rewardAmount = 10; // 0.1 tDUST = 10 (in 0.01 tDUST units)
 
   totalRewardsPaid.increment(rewardAmount);
 
@@ -167,24 +150,17 @@ export circuit submitSensorBatch(
  * Update Merkle Root (Admin Only)
  */
 export circuit updateMerkleRoot(
-  collectionMode: Field,
   newRoot: Bytes<32>
 ): [] {
   // TODO: Add admin signature verification
-  const publicCollectionMode = disclose(collectionMode);
-
-  if (publicCollectionMode == 0) {
-    globalAutoCollectionRoot = disclose(newRoot);
-  } else {
-    globalManualEntryRoot = disclose(newRoot);
-  }
+  globalDeviceRoot = disclose(newRoot);
 }
 
 /**
- * Get current Merkle roots
+ * Get current Merkle root
  */
-export circuit getMerkleRoots(): Vector<2, Bytes<32>> {
-  return [globalAutoCollectionRoot, globalManualEntryRoot];
+export circuit getMerkleRoot(): Bytes<32> {
+  return globalDeviceRoot;
 }
 
 /**
@@ -197,11 +173,9 @@ export circuit isNullifierSpent(nullifier: Bytes<32>): Boolean {
 /**
  * Get statistics
  */
-export circuit getStats(): Vector<4, Field> {
+export circuit getStats(): Vector<2, Field> {
   return [
     totalBatchesVerified as Field,
-    totalAutoCollectionBatches as Field,
-    totalManualEntryBatches as Field,
     totalRewardsPaid as Field
   ];
 }

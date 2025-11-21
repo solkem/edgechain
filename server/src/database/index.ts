@@ -42,13 +42,13 @@ export function initializeDatabase() {
   console.log(`   ✅ Database initialized at: ${DB_PATH}`);
 }
 
-// Device operations
+// Device operations (single-tree architecture)
 export const deviceDB = {
   insert: (device: any) => {
     const stmt = db.prepare(`
-      INSERT INTO devices (device_pubkey, collection_mode, registration_epoch, expiry_epoch,
+      INSERT INTO devices (device_pubkey, owner_wallet, registration_epoch, expiry_epoch,
                           device_id, metadata, merkle_leaf_hash)
-      VALUES (@device_pubkey, @collection_mode, @registration_epoch, @expiry_epoch,
+      VALUES (@device_pubkey, @owner_wallet, @registration_epoch, @expiry_epoch,
               @device_id, @metadata, @merkle_leaf_hash)
     `);
     return stmt.run(device);
@@ -57,11 +57,6 @@ export const deviceDB = {
   findByPubkey: (device_pubkey: string) => {
     const stmt = db.prepare('SELECT * FROM devices WHERE device_pubkey = ?');
     return stmt.get(device_pubkey);
-  },
-
-  findByMode: (collection_mode: string) => {
-    const stmt = db.prepare('SELECT * FROM devices WHERE collection_mode = ?');
-    return stmt.all(collection_mode);
   },
 
   getAll: () => {

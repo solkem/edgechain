@@ -1329,10 +1329,6 @@ export function ArduinoDashboard() {
                                 {zkProofStats.ipfs.stored_on_ipfs}/{zkProofStats.ipfs.total_submissions}
                               </span>
                             </div>
-                            <div className="flex justify-between">
-                              <span>Decentralized</span>
-                              <span className="font-semibold text-black">{zkProofStats.ipfs.percentage}%</span>
-                            </div>
                           </div>
                         )}
                       </div>
