@@ -34,7 +34,7 @@ function Hero() {
 
       textGeometry.center();
 
-      const textMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
+      const textMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff });
 
       const text1 = new THREE.Mesh(textGeometry, textMaterial);
       text1.position.set(0, 0, 1 / 2);
