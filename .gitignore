@@ -57,3 +57,13 @@ packages/ui/.vite/
 *.db
 *.db-shm
 *.db-wal
+
+# Secrets - NEVER commit these
+*SEED*
+*WALLET*
+*SECRET*
+*.mnemonic
+wallet.json
+*.secret
+*.key
+!package*.json

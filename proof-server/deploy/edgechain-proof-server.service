@@ -1,0 +1,30 @@
+[Unit]
+Description=EdgeChain Proof Server
+Documentation=https://github.com/solkem/edgechain
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/edgechain/proof-server
+ExecStart=/usr/bin/node /home/pi/edgechain/proof-server/dist/index.js
+Restart=on-failure
+RestartSec=10
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=edgechain-proof-server
+
+# Environment
+Environment=NODE_ENV=production
+EnvironmentFile=-/home/pi/edgechain/proof-server/.env
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/pi/edgechain/proof-server/data /home/pi/edgechain/proof-server/logs
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

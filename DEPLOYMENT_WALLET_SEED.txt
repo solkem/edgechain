@@ -1,9 +1,0 @@
-EdgeChain Deployment Wallet Seed
-===============================
-
-Seed: 4c03e1497dbee12cdc2ad1db73c3b0679de5475cf78a896c9a8b48b27950f33d
-
-Generated: 2025-11-08T19:31:42.475Z
-
-NOTE: This is for contract deployment only.
-Your Lace wallet (with 1,000 tDUST) should be used for UI interaction.

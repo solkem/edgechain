@@ -11,7 +11,7 @@ import { create } from '@storacha/client';
 import * as Signer from '@ucanto/principal/ed25519';
 
 const app = express();
-const PORT = 3002;
+const PORT = process.env.PORT || 3003;
 
 // Middleware
 app.use(cors());

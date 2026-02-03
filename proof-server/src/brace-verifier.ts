@@ -19,8 +19,33 @@ export interface RegistrationResult {
 export class BraceVerifier {
     private merkleTree: MerkleTree;
 
+    // M3 FIX: Rate limiting for auto-registration
+    private autoRegCounts: Map<number, { count: number; resetAt: number }> = new Map();
+    private static readonly MAX_AUTO_REGISTRATIONS_PER_HOUR = 10;
+
     constructor(merkleTree: MerkleTree) {
         this.merkleTree = merkleTree;
+    }
+
+    /**
+     * M3 FIX: Check rate limit for auto-registration by source address
+     */
+    private checkAutoRegRateLimit(sourceAddress: number): boolean {
+        const now = Date.now();
+        const record = this.autoRegCounts.get(sourceAddress);
+
+        if (!record || now > record.resetAt) {
+            this.autoRegCounts.set(sourceAddress, { count: 1, resetAt: now + 3600000 });
+            return true;
+        }
+
+        if (record.count >= BraceVerifier.MAX_AUTO_REGISTRATIONS_PER_HOUR) {
+            logger.warn('Rate limit exceeded for auto-registration:', { sourceAddress });
+            return false;
+        }
+
+        record.count++;
+        return true;
     }
 
     /**
@@ -86,6 +111,12 @@ export class BraceVerifier {
             // 1. Check if commitment is in our Merkle tree
             if (!this.merkleTree.hasLeaf(packet.commitment)) {
                 logger.warn('Unknown commitment:', packet.commitment.slice(0, 16) + '...');
+
+                // M3 FIX: Rate-limited auto-registration
+                if (!this.checkAutoRegRateLimit(packet.sourceAddress)) {
+                    logger.error('Auto-registration rate limited, rejecting packet');
+                    return false;
+                }
 
                 // Auto-register new devices (BRACE enrollment)
                 await this.registerCommitment(packet.commitment);

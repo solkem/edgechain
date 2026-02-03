@@ -8,6 +8,8 @@
 import { MidnightProver, ZKProof } from './midnight-prover';
 import { MerkleTree } from './merkle-tree';
 import { logger } from './utils/logger';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export interface RewardClaim {
     nullifier: string;
@@ -34,7 +36,9 @@ export class AcrHandler {
     private merkleTree: MerkleTree;
 
     // Track spent nullifiers locally (also tracked on-chain)
+    // M2 FIX: Now persisted to disk
     private spentNullifiers: Map<string, NullifierRecord> = new Map();
+    private nullifierStorePath: string;
 
     // Reward tiers based on consistency
     private static readonly REWARD_TIERS = {
@@ -46,6 +50,10 @@ export class AcrHandler {
     constructor(prover: MidnightProver, merkleTree: MerkleTree) {
         this.prover = prover;
         this.merkleTree = merkleTree;
+
+        // M2 FIX: Set up persistent storage path
+        this.nullifierStorePath = path.join(process.cwd(), 'data', 'spent-nullifiers.json');
+        this.loadNullifiersFromDisk();
     }
 
     /**
@@ -172,6 +180,41 @@ export class AcrHandler {
             claimedAt: Date.now(),
             reward
         });
+
+        // M2 FIX: Persist to disk immediately
+        this.saveNullifiersToDisk();
+    }
+
+    /**
+     * M2 FIX: Load nullifiers from disk on startup
+     */
+    private loadNullifiersFromDisk(): void {
+        try {
+            if (fs.existsSync(this.nullifierStorePath)) {
+                const data = JSON.parse(fs.readFileSync(this.nullifierStorePath, 'utf-8'));
+                this.spentNullifiers = new Map(Object.entries(data));
+                logger.info(`Loaded ${this.spentNullifiers.size} nullifiers from disk`);
+            }
+        } catch (error) {
+            logger.warn('Failed to load nullifiers from disk, starting fresh:', error);
+        }
+    }
+
+    /**
+     * M2 FIX: Save nullifiers to disk
+     */
+    private saveNullifiersToDisk(): void {
+        try {
+            const dir = path.dirname(this.nullifierStorePath);
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir, { recursive: true });
+            }
+
+            const data = Object.fromEntries(this.spentNullifiers);
+            fs.writeFileSync(this.nullifierStorePath, JSON.stringify(data, null, 2));
+        } catch (error) {
+            logger.error('Failed to save nullifiers to disk:', error);
+        }
     }
 
     /**

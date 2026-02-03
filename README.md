@@ -63,9 +63,9 @@ Shared gateways/browsers see device identity before ZK proofs are generated—de
 ### ACR (Anonymous Contribution Rewards)
 
 Devices earn rewards for data contributions without revealing identity:
-- Compute nullifier: `N = H(device_secret || epoch)`
-- Generate ZK proof of valid contribution
-- Claim rewards using nullifier (no identity linkage)
+- Data buyers post bounties with predicates (e.g., "temperature > 30°C")
+- Device generates ZK proof that their data satisfies predicate
+- Device claims reward using nullifier (no identity linkage)
 
 ## 📦 Hardware Requirements
 
@@ -99,7 +99,22 @@ cd firmware/esp32-msingi
 pio run --target upload
 ```
 
-### 2. Start Backend Server
+### 2. Start Proof Server (Raspberry Pi 5 or Dev Machine)
+
+```bash
+cd proof-server
+npm install
+npm run dev
+```
+
+The server starts on http://localhost:3002 with:
+- `/health` - Health check
+- `/status` - Server statistics
+- `/register-commitment` - Register device commitment
+- `/claim-reward` - ACR reward claims
+- WebSocket at `/ws` for real-time updates
+
+### 3. Start Backend API Server
 
 ```bash
 cd server
@@ -107,30 +122,48 @@ npm install
 npm run dev
 ```
 
-### 3. Access Web Interface
+### 4. Start Web Interface
 
-Open http://localhost:3000
+```bash
+cd packages/ui
+npm install
+npm run dev
+```
+
+Open http://localhost:5173
 
 ## 📁 Project Structure
 
 ```
 edgechain/
 ├── firmware/
-│   └── esp32-msingi/          # ESP32-S3 firmware (NEW)
+│   └── esp32-msingi/              # ESP32-S3 firmware
 │       ├── src/
-│       │   ├── main.cpp        # Entry point
-│       │   ├── secure_element.cpp  # ATECC608B driver
-│       │   ├── lora_comm.cpp   # LoRa communication
-│       │   └── brace_client.cpp    # BRACE protocol
+│       │   ├── main.cpp           # Entry point
+│       │   ├── secure_element.cpp # ATECC608B driver
+│       │   ├── lora_comm.cpp      # LoRa communication
+│       │   └── brace_client.cpp   # BRACE protocol
 │       └── platformio.ini
+├── proof-server/                   # Farmer-owned proof server (NEW)
+│   ├── circuits/
+│   │   └── attestation.compact    # ZK attestation circuit
+│   ├── src/
+│   │   ├── index.ts               # Express API + WebSocket
+│   │   ├── lora-receiver.ts       # RYLR896 LoRa interface
+│   │   ├── midnight-prover.ts     # Midnight SDK integration
+│   │   ├── brace-verifier.ts      # BRACE protocol handler
+│   │   ├── acr-handler.ts         # ACR reward processing
+│   │   └── merkle-tree.ts         # Device registry
+│   └── MIDNIGHT_INTEGRATION.md    # SDK setup guide
 ├── packages/
-│   ├── contract/              # Compact smart contracts
+│   ├── contract/                  # Compact smart contracts
 │   │   └── src/
-│   │       ├── device-iot.compact     # IoT registration + attestation
-│   │       └── edgechain.compact      # Federated learning
-│   └── ui/                    # React frontend
-├── server/                    # Express.js backend
-└── Msingi.md                  # Architecture reference
+│   │       ├── device-iot.compact # IoT registration + attestation
+│   │       ├── bounty.compact     # ACR bounty contract (NEW)
+│   │       └── edgechain.compact  # Federated learning
+│   └── ui/                        # React frontend
+├── server/                        # Express.js backend API
+└── Msingi.md                      # Architecture reference
 ```
 
 ## 🔧 Smart Contracts
@@ -141,11 +174,45 @@ edgechain/
 - **Nullifier Storage**: Map-based (prevents race conditions)
 - **Admin Authentication**: Signature verification for root updates
 
+### bounty.compact (ACR Protocol)
+
+- **createBounty()**: Data buyers post predicate-based bounties
+- **claimBounty()**: Devices claim rewards anonymously with ZK proofs
+- **Nullifier Tracking**: Prevents double-claiming per epoch
+
 ### edgechain.compact
 
 - **Federated Learning**: Private witness functions for farmer identity
 - **Aggregation**: Threshold-triggered model aggregation
 - **Privacy**: Only aggregated model hash stored on-chain
+
+## 🧪 Testing the API
+
+### Register a Device Commitment
+
+```bash
+curl -X POST http://localhost:3002/register-commitment \
+  -H "Content-Type: application/json" \
+  -d '{"commitment": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"}'
+```
+
+### Claim a Reward (ACR)
+
+```bash
+curl -X POST http://localhost:3002/claim-reward \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nullifier": "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
+    "proof": "base64encodedproof...",
+    "sensorDataHash": "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+  }'
+```
+
+### Check Server Status
+
+```bash
+curl http://localhost:3002/status
+```
 
 ## 🎯 Deployment
 
@@ -154,26 +221,32 @@ edgechain/
 | Contract | Address |
 |----------|---------|
 | Device IoT | `02001d62...b30a` |
+| Bounty (ACR) | TBD |
 | Federated Learning | `02002f44...be39` |
 
-### Live Demo
+### Raspberry Pi 5 Deployment
 
-- **Frontend**: https://edgechain-midnight-ui.fly.dev/
-- **API**: https://edgechain-api.fly.dev/health
+See [proof-server/MIDNIGHT_INTEGRATION.md](proof-server/MIDNIGHT_INTEGRATION.md) for:
+- Docker setup for local proof generation
+- Wallet configuration
+- Circuit compilation
+- Real ZK proof enablement
 
 ## 🛡️ Security Considerations
 
 > **Production Deployment Checklist**
 
-- [ ] Integrate Midnight SDK for real ZK proofs (currently mocked)
-- [ ] Deploy proof server software on Raspberry Pi 5
+- [x] Integrate Midnight SDK for real ZK proofs
+- [ ] Deploy proof server on Raspberry Pi 5
 - [ ] Provision ATECC608B devices with unique keys
 - [ ] Set `DEMO_MODE=false` to disable test endpoints
 - [ ] Configure LoRa network parameters for deployment region
+- [ ] Set up systemd service for proof server auto-start
 
 ## 📚 Documentation
 
 - [Msingi Architecture](Msingi.md) - Detailed architecture and protocols
+- [Midnight Integration](proof-server/MIDNIGHT_INTEGRATION.md) - SDK setup guide
 - [CLAUDE.md](CLAUDE.md) - Development guide
 - [ZK_IOT_PROOF.md](ZK_IOT_PROOF.md) - ZK proof flow documentation
 
@@ -194,3 +267,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 **Built for Zimbabwe's smallholder farmers** 🇿🇼
 
 *Privacy that grows with every device that joins.*
+

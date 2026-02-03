@@ -1074,10 +1074,20 @@ router.get('/registry', (_req, res) => {
 
 /**
  * POST /api/arduino/reset
- * Reset device registry (demo purposes)
+ * Reset device registry (demo purposes only)
+ * PROTECTED: Requires DEMO_MODE=true
  */
 router.post('/reset', (req, res) => {
   try {
+    // H1 FIX: Gate reset endpoint behind DEMO_MODE
+    const isDemoMode = process.env.DEMO_MODE === 'true';
+    if (!isDemoMode) {
+      return res.status(403).json({
+        error: 'Reset only available in demo mode',
+        message: 'Set DEMO_MODE=true in environment to enable reset functionality'
+      });
+    }
+
     registryService.reset();
     res.json({ success: true, message: 'Registry reset' });
   } catch (error: any) {

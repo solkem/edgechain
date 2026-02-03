@@ -189,17 +189,15 @@ export class NullifierTrackingService {
   getNullifierDistribution(): {
     epoch: number;
     count: number;
-    auto_count: number;
-    manual_count: number;
     total_rewards: number;
+    date: string;
   }[] {
     const stmt = this.db.prepare(`
       SELECT
         epoch,
         COUNT(*) as count,
-        SUM(CASE WHEN collection_mode = 'auto' THEN 1 ELSE 0 END) as auto_count,
-        SUM(CASE WHEN collection_mode = 'manual' THEN 1 ELSE 0 END) as manual_count,
-        SUM(reward) as total_rewards
+        SUM(reward) as total_rewards,
+        date(spent_at, 'unixepoch') as date
       FROM spent_nullifiers
       GROUP BY epoch
       ORDER BY epoch DESC

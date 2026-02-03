@@ -124,8 +124,9 @@ export class DeviceRegistryService {
       throw new Error(`Device ${device_pubkey} not in registry`);
     }
 
-    // Get all devices
-    const allDevices = Array.from(this.devices.values());
+    // Get all devices SORTED for deterministic ordering
+    const allDevices = Array.from(this.devices.values())
+      .sort((a, b) => a.device_pubkey.localeCompare(b.device_pubkey));
 
     const leaf_index = allDevices.findIndex(d => d.device_pubkey === device_pubkey);
     if (leaf_index === -1) {
@@ -172,7 +173,9 @@ export class DeviceRegistryService {
    * Rebuild global Merkle root (single tree for all devices)
    */
   private rebuildGlobalRoot(): void {
-    const all_devices = Array.from(this.devices.values());
+    // CRITICAL: Sort devices for deterministic Merkle root (C3 fix)
+    const all_devices = Array.from(this.devices.values())
+      .sort((a, b) => a.device_pubkey.localeCompare(b.device_pubkey));
 
     // Build single device tree
     const leaves = all_devices.map(d => this.hashLeaf(d.device_pubkey));

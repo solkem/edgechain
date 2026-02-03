@@ -20,7 +20,12 @@ const PORT = process.env.PORT || 3001;
 initializeDatabase();
 
 // Middleware
-app.use(cors());
+// H2 FIX: Restrict CORS in production
+const corsOrigins = process.env.CORS_ORIGINS?.split(',') || ['http://localhost:5173', 'http://localhost:3000'];
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' ? corsOrigins : true,
+  credentials: true
+}));
 app.use(express.json({ limit: '50mb' })); // Large limit for model weights
 
 // Serve gateway HTML from the gateway directory
