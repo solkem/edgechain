@@ -113,7 +113,8 @@ export class AcrHandler {
                         epoch: this.getCurrentEpoch(),
                         merkleRoot: this.merkleTree.getRoot()
                     },
-                    generationTime: 0
+                    generationTime: 0,
+                    isMock: false
                 };
 
                 const txResult = await this.prover.submitProof(zkProof);

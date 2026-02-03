@@ -62,40 +62,49 @@ export class LoRaReceiver extends EventEmitter {
 
     async connect(): Promise<void> {
         return new Promise((resolve, reject) => {
+            // Check if serial port exists first (graceful handling for dev without hardware)
             try {
                 this.port = new SerialPort({
                     path: this.config.serialPort,
-                    baudRate: this.config.baudRate
+                    baudRate: this.config.baudRate,
+                    autoOpen: false // Don't auto-open, we'll do it manually
                 });
-
-                this.parser = this.port.pipe(new ReadlineParser({ delimiter: '\r\n' }));
-
-                this.port.on('open', async () => {
-                    logger.info(`Serial port ${this.config.serialPort} opened`);
-
-                    try {
-                        // Configure LoRa module
-                        await this.configureModule();
-                        this.connected = true;
-                        resolve();
-                    } catch (error) {
-                        reject(error);
-                    }
-                });
-
-                this.port.on('error', (err) => {
-                    logger.error('Serial port error:', err);
-                    this.connected = false;
-                    this.emit('error', err);
-                });
-
-                this.parser.on('data', (line: string) => {
-                    this.handleData(line);
-                });
-
-            } catch (error) {
-                reject(error);
+            } catch (error: any) {
+                return reject(new Error(`Failed to create serial port: ${error.message}`));
             }
+
+            this.parser = this.port.pipe(new ReadlineParser({ delimiter: '\r\n' }));
+
+            this.port.on('open', async () => {
+                logger.info(`Serial port ${this.config.serialPort} opened`);
+
+                try {
+                    // Configure LoRa module
+                    await this.configureModule();
+                    this.connected = true;
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            });
+
+            this.port.on('error', (err) => {
+                logger.error('Serial port error:', err);
+                this.connected = false;
+                this.emit('error', err);
+                reject(err);
+            });
+
+            this.parser.on('data', (line: string) => {
+                this.handleData(line);
+            });
+
+            // Now open the port
+            this.port.open((err) => {
+                if (err) {
+                    reject(new Error(`Failed to open ${this.config.serialPort}: ${err.message}`));
+                }
+            });
         });
     }
 

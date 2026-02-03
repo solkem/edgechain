@@ -201,9 +201,14 @@ async function main() {
         await merkleTree.load(config.merkleTree.storagePath);
         logger.info(`Loaded Merkle tree with ${merkleTree.getLeafCount()} commitments`);
 
-        // Connect to LoRa module
-        await loraReceiver.connect();
-        logger.info('LoRa receiver connected');
+        // Connect to LoRa module (optional - for development without hardware)
+        try {
+            await loraReceiver.connect();
+            logger.info('LoRa receiver connected');
+        } catch (error: any) {
+            logger.warn(`LoRa connection failed: ${error.message}`);
+            logger.warn('Running without LoRa - use API endpoints for testing');
+        }
 
         // Connect to Midnight (optional - can run in offline mode)
         try {
@@ -216,7 +221,11 @@ async function main() {
         // Start HTTP/WebSocket server
         server.listen(config.server.port, config.server.host, () => {
             logger.info(`Proof server running on http://${config.server.host}:${config.server.port}`);
-            logger.info('Waiting for LoRa packets from devices...');
+            if (loraReceiver.isConnected()) {
+                logger.info('Waiting for LoRa packets from devices...');
+            } else {
+                logger.info('API-only mode - POST to /register-commitment to test');
+            }
         });
 
     } catch (error) {
