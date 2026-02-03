@@ -1,0 +1,205 @@
+/**
+ * Attestation Circuit - ZK Proof for Anonymous Sensor Data Submission
+ * 
+ * Proves:
+ * 1. Device commitment is in the Merkle tree
+ * 2. Nullifier is correctly computed from commitment + epoch
+ * 3. Sensor data hash matches the provided data
+ * 
+ * Privacy: Commitment and Merkle proof remain private (witness)
+ * Public: Nullifier, data hash, and Merkle root
+ */
+
+pragma language_version >= 0.16.0;
+import CompactStandardLibrary;
+
+// Constants
+const MERKLE_DEPTH: Field = 20;
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Hash two 32-byte values together (Merkle tree internal node)
+ */
+circuit hashPair(left: Bytes<32>, right: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<2, Bytes<32>>>([left, right]);
+}
+
+/**
+ * Compute nullifier from commitment and epoch
+ * N = H(commitment || epoch_bytes)
+ */
+circuit computeNullifier(commitment: Bytes<32>, epoch: Field): Bytes<32> {
+  // Convert epoch to 8-byte representation
+  const epochBytes = fieldToBytes8(epoch);
+  
+  // Hash commitment with epoch
+  return persistentHash<[Bytes<32>, Bytes<8>]>([commitment, epochBytes]);
+}
+
+/**
+ * Convert a Field to 8 bytes (big-endian)
+ */
+circuit fieldToBytes8(value: Field): Bytes<8> {
+  // Extract bytes from the field value
+  let bytes: Bytes<8> = pad(8, "");
+  
+  // Simple byte extraction (assuming value < 2^64)
+  for (let i: Field = 0; i < 8; i = i + 1) {
+    const shift = (7 - i) * 8;
+    const byte = (value >> shift) & 0xFF;
+    bytes[i] = byte as Uint<8>;
+  }
+  
+  return bytes;
+}
+
+/**
+ * Hash sensor data to produce a commitment
+ */
+circuit hashSensorData(
+  temperature: Field,
+  humidity: Field,
+  pressure: Field,
+  soilMoisture: Field,
+  timestamp: Field
+): Bytes<32> {
+  return persistentHash<Vector<5, Field>>([
+    temperature,
+    humidity,
+    pressure,
+    soilMoisture,
+    timestamp
+  ]);
+}
+
+// ============================================================================
+// Merkle Tree Verification
+// ============================================================================
+
+/**
+ * Verify a Merkle proof for a given leaf
+ * 
+ * @param leaf - The commitment (leaf value)
+ * @param siblings - 20 sibling hashes along the path
+ * @param pathBits - 20 bits indicating left (false) or right (true) at each level
+ * @param expectedRoot - The expected Merkle root
+ * 
+ * @returns true if the proof is valid
+ */
+circuit verifyMerkleProof(
+  leaf: Bytes<32>,
+  siblings: Vector<20, Bytes<32>>,
+  pathBits: Vector<20, Boolean>,
+  expectedRoot: Bytes<32>
+): Boolean {
+  let current = leaf;
+  
+  for (let i: Field = 0; i < 20; i = i + 1) {
+    const sibling = siblings[i];
+    const isRight = pathBits[i];
+    
+    // Hash in correct order based on path bit
+    current = isRight
+      ? hashPair(sibling, current)     // Current is right child
+      : hashPair(current, sibling);    // Current is left child
+  }
+  
+  return current == expectedRoot;
+}
+
+// ============================================================================
+// Main Attestation Circuit
+// ============================================================================
+
+/**
+ * Prove a valid sensor data attestation
+ * 
+ * Private inputs (witness):
+ * - commitment: Device's anonymous commitment H(pk || r)
+ * - blindingFactor: Random value r used in commitment
+ * - merkleSiblings: Sibling hashes for Merkle proof
+ * - merklePathBits: Path bits for Merkle proof
+ * - sensorData: Raw sensor readings
+ * 
+ * Public inputs (statement):
+ * - nullifier: Prevents double-submission per epoch
+ * - dataHash: Hash of the sensor data
+ * - merkleRoot: Current device registry root
+ * - epoch: Time period for this attestation
+ */
+export circuit proveAttestation(
+  // Private inputs (remain hidden)
+  witness commitment: Bytes<32>,
+  witness merkleSiblings: Vector<20, Bytes<32>>,
+  witness merklePathBits: Vector<20, Boolean>,
+  witness temperature: Field,
+  witness humidity: Field,
+  witness pressure: Field,
+  witness soilMoisture: Field,
+  witness timestamp: Field,
+  
+  // Public inputs (revealed)
+  instance nullifier: Bytes<32>,
+  instance dataHash: Bytes<32>,
+  instance merkleRoot: Bytes<32>,
+  instance epoch: Field
+): Boolean {
+  
+  // 1. Verify commitment is in the Merkle tree
+  const validMerkleProof = verifyMerkleProof(
+    commitment,
+    merkleSiblings,
+    merklePathBits,
+    merkleRoot
+  );
+  assert(validMerkleProof, "Invalid Merkle proof: commitment not in tree");
+  
+  // 2. Verify nullifier is correctly computed
+  const expectedNullifier = computeNullifier(commitment, epoch);
+  assert(nullifier == expectedNullifier, "Invalid nullifier");
+  
+  // 3. Verify data hash matches sensor data
+  const expectedDataHash = hashSensorData(
+    temperature,
+    humidity,
+    pressure,
+    soilMoisture,
+    timestamp
+  );
+  assert(dataHash == expectedDataHash, "Invalid data hash");
+  
+  // 4. Validate sensor data ranges (prevents garbage data)
+  // Temperature: -40°C to 85°C (scaled by 100 for precision)
+  assert(temperature >= -4000 && temperature <= 8500, "Temperature out of range");
+  
+  // Humidity: 0% to 100% (scaled by 100)
+  assert(humidity >= 0 && humidity <= 10000, "Humidity out of range");
+  
+  // Pressure: 300-1100 hPa (scaled by 100)
+  assert(pressure >= 30000 && pressure <= 110000, "Pressure out of range");
+  
+  // Soil moisture: 0% to 100% (scaled by 100)
+  assert(soilMoisture >= 0 && soilMoisture <= 10000, "Soil moisture out of range");
+  
+  return true;
+}
+
+// ============================================================================
+// Commitment Generation (for reference - done on device)
+// ============================================================================
+
+/**
+ * Generate a commitment from public key and blinding factor
+ * C = H(pk || r)
+ * 
+ * Note: This is shown for reference. In production, this runs on the device.
+ */
+export pure circuit generateCommitment(
+  publicKey: Bytes<64>,     // Uncompressed P-256 public key
+  blindingFactor: Bytes<32> // Random value r
+): Bytes<32> {
+  return persistentHash<[Bytes<64>, Bytes<32>]>([publicKey, blindingFactor]);
+}

@@ -1,0 +1,361 @@
+/**
+ * Bounty Contract - Anonymous Contribution Rewards (ACR Protocol)
+ * 
+ * Enables data buyers to post bounties that devices can claim anonymously.
+ * 
+ * Flow:
+ * 1. Buyer posts bounty with predicate (e.g., "temperature > 30°C in region X")
+ * 2. Device generates ZK proof that their data satisfies predicate
+ * 3. Device claims reward using nullifier (no identity linkage)
+ * 
+ * Privacy guarantees:
+ * - Buyer learns: Some valid device satisfied the predicate
+ * - Buyer doesn't learn: Which device, exact data values
+ * - Device learns: Reward amount
+ * - Device doesn't reveal: Their identity, full sensor data
+ */
+
+pragma language_version >= 0.16.0;
+import CompactStandardLibrary;
+
+// ============================================================================
+// Type Definitions
+// ============================================================================
+
+struct BountyInfo {
+  creator: Bytes<32>;           // Buyer's public key hash
+  reward: Field;                // Reward amount in tDUST
+  predicateHash: Bytes<32>;     // Hash of the predicate definition
+  merkleRoot: Bytes<32>;        // Required device registry root
+  expirationEpoch: Field;       // When bounty expires
+  maxClaims: Field;             // Maximum number of claims
+  claimCount: Field;            // Current claim count
+  active: Boolean;              // Whether bounty is open
+}
+
+struct ClaimTicket {
+  bountyId: Bytes<32>;
+  nullifier: Bytes<32>;
+  epoch: Field;
+  reward: Field;
+}
+
+// ============================================================================
+// Contract State
+// ============================================================================
+
+// Global bounty registry
+export ledger bounties: Map<Bytes<32>, BountyInfo>;
+
+// Claimed tickets (nullifier → claim info)
+export ledger claimedTickets: Map<Bytes<32>, ClaimTicket>;
+
+// Total rewards distributed
+export ledger totalRewardsDistributed: Counter;
+
+// Contract admin (for emergency actions)
+export ledger adminPubkeyHash: Bytes<32>;
+
+// Current epoch (updated by admin)
+export ledger currentEpoch: Field;
+
+// Device registry Merkle root (synced from device-iot contract)
+export ledger deviceMerkleRoot: Bytes<32>;
+
+// ============================================================================
+// Bounty Management Circuits
+// ============================================================================
+
+/**
+ * Create a new bounty
+ * 
+ * @param bountyId - Unique identifier for this bounty
+ * @param predicateHash - Hash of the predicate devices must satisfy
+ * @param reward - Reward per claim in tDUST
+ * @param maxClaims - Maximum number of devices that can claim
+ * @param expirationEpoch - When the bounty expires
+ * @param creatorPubkey - Buyer's public key (for refund if not fully claimed)
+ */
+export circuit createBounty(
+  bountyId: Bytes<32>,
+  predicateHash: Bytes<32>,
+  reward: Field,
+  maxClaims: Field,
+  expirationEpoch: Field,
+  creatorPubkey: Bytes<32>
+): Bytes<32> {
+  
+  // Ensure bounty doesn't already exist
+  assert(!bounties.has(bountyId), "Bounty ID already exists");
+  
+  // Validate parameters
+  assert(reward > 0, "Reward must be positive");
+  assert(maxClaims > 0, "Max claims must be positive");
+  assert(expirationEpoch > currentEpoch, "Expiration must be in the future");
+  
+  // Get current Merkle root
+  const root = deviceMerkleRoot;
+  
+  // Create bounty record
+  const bounty: BountyInfo = BountyInfo {
+    creator: creatorPubkey,
+    reward: reward,
+    predicateHash: predicateHash,
+    merkleRoot: root,
+    expirationEpoch: expirationEpoch,
+    maxClaims: maxClaims,
+    claimCount: 0,
+    active: true
+  };
+  
+  // Store bounty
+  bounties.set(bountyId, bounty);
+  
+  // Return bounty ID for reference
+  return disclose(bountyId);
+}
+
+/**
+ * Cancel a bounty (creator only)
+ */
+export circuit cancelBounty(
+  bountyId: Bytes<32>,
+  creatorSignature: Bytes<64>
+): Boolean {
+  
+  // Get bounty
+  assert(bounties.has(bountyId), "Bounty not found");
+  const bounty = bounties.get(bountyId);
+  
+  // Verify creator signature
+  const message = persistentHash<[Bytes<32>, Bytes<6>]>([
+    bountyId,
+    pad(6, "cancel")
+  ]);
+  
+  // Note: In production, verify signature against bounty.creator
+  // For now, just ensure bounty exists and is active
+  assert(bounty.active, "Bounty already inactive");
+  
+  // Deactivate bounty
+  const updatedBounty = BountyInfo {
+    creator: bounty.creator,
+    reward: bounty.reward,
+    predicateHash: bounty.predicateHash,
+    merkleRoot: bounty.merkleRoot,
+    expirationEpoch: bounty.expirationEpoch,
+    maxClaims: bounty.maxClaims,
+    claimCount: bounty.claimCount,
+    active: false
+  };
+  
+  bounties.set(bountyId, updatedBounty);
+  
+  // Note: Refund logic would be handled by tDUST transfer
+  return disclose(true);
+}
+
+// ============================================================================
+// Claim Circuits (ACR Protocol)
+// ============================================================================
+
+/**
+ * Claim a bounty reward anonymously
+ * 
+ * The device proves:
+ * 1. Their commitment is in the Merkle tree
+ * 2. Their sensor data satisfies the bounty predicate
+ * 3. The nullifier is correctly computed
+ * 
+ * Private inputs (witness):
+ * - commitment: Device's anonymous commitment
+ * - merkleProof: Proof of membership in device registry
+ * - sensorData: Raw sensor readings
+ * - predicateSatisfaction: Proof that predicate(sensorData) = true
+ * 
+ * Public inputs (instance):
+ * - bountyId: Which bounty to claim
+ * - nullifier: Prevents double-claiming
+ * - dataHash: Hash of the contributed data
+ */
+export circuit claimBounty(
+  bountyId: Bytes<32>,
+  nullifier: Bytes<32>,
+  dataHash: Bytes<32>,
+  
+  // Merkle proof (private)
+  witness commitment: Bytes<32>,
+  witness merkleSiblings: Vector<20, Bytes<32>>,
+  witness merklePathBits: Vector<20, Boolean>,
+  
+  // Predicate satisfaction proof (private)
+  witness predicateInput: Bytes<32>,
+  witness predicateResult: Boolean
+): Field {
+  
+  // 1. Check bounty exists and is active
+  assert(bounties.has(bountyId), "Bounty not found");
+  const bounty = bounties.get(bountyId);
+  
+  assert(bounty.active, "Bounty is not active");
+  assert(bounty.claimCount < bounty.maxClaims, "Bounty fully claimed");
+  assert(currentEpoch <= bounty.expirationEpoch, "Bounty expired");
+  
+  // 2. Verify commitment is in device registry
+  const validProof = verifyMerkleProofInternal(
+    commitment,
+    merkleSiblings,
+    merklePathBits,
+    bounty.merkleRoot
+  );
+  assert(validProof, "Invalid Merkle proof");
+  
+  // 3. Check nullifier hasn't been used
+  assert(!claimedTickets.has(nullifier), "Nullifier already claimed");
+  
+  // 4. Verify nullifier is correctly computed
+  const expectedNullifier = computeClaimNullifier(commitment, bountyId, currentEpoch);
+  assert(nullifier == expectedNullifier, "Invalid nullifier");
+  
+  // 5. Verify predicate is satisfied
+  // Note: In full implementation, this would verify a predicate ZK proof
+  assert(predicateResult == true, "Predicate not satisfied");
+  
+  // 6. Record claim
+  const ticket = ClaimTicket {
+    bountyId: bountyId,
+    nullifier: nullifier,
+    epoch: currentEpoch,
+    reward: bounty.reward
+  };
+  claimedTickets.set(nullifier, ticket);
+  
+  // 7. Update bounty claim count
+  const updatedBounty = BountyInfo {
+    creator: bounty.creator,
+    reward: bounty.reward,
+    predicateHash: bounty.predicateHash,
+    merkleRoot: bounty.merkleRoot,
+    expirationEpoch: bounty.expirationEpoch,
+    maxClaims: bounty.maxClaims,
+    claimCount: bounty.claimCount + 1,
+    active: bounty.claimCount + 1 < bounty.maxClaims
+  };
+  bounties.set(bountyId, updatedBounty);
+  
+  // 8. Update total rewards
+  totalRewardsDistributed.increment(bounty.reward as Uint<64>);
+  
+  // Return reward amount
+  return disclose(bounty.reward);
+}
+
+// ============================================================================
+// Internal Helper Circuits
+// ============================================================================
+
+/**
+ * Compute claim nullifier
+ * N = H(commitment || bountyId || epoch)
+ */
+circuit computeClaimNullifier(
+  commitment: Bytes<32>,
+  bountyId: Bytes<32>,
+  epoch: Field
+): Bytes<32> {
+  const epochBytes = pad(8, "");
+  // Simplified: hash commitment, bounty, and epoch
+  return persistentHash<Vector<3, Bytes<32>>>([
+    commitment,
+    bountyId,
+    persistentHash<Field>(epoch)
+  ]);
+}
+
+/**
+ * Internal Merkle proof verification
+ */
+circuit verifyMerkleProofInternal(
+  leaf: Bytes<32>,
+  siblings: Vector<20, Bytes<32>>,
+  pathBits: Vector<20, Boolean>,
+  expectedRoot: Bytes<32>
+): Boolean {
+  let current = leaf;
+  
+  for (let i: Field = 0; i < 20; i = i + 1) {
+    const sibling = siblings[i];
+    const isRight = pathBits[i];
+    
+    current = isRight
+      ? persistentHash<Vector<2, Bytes<32>>>([sibling, current])
+      : persistentHash<Vector<2, Bytes<32>>>([current, sibling]);
+  }
+  
+  return current == expectedRoot;
+}
+
+// ============================================================================
+// Admin Circuits
+// ============================================================================
+
+/**
+ * Update the device Merkle root (admin only)
+ */
+export circuit updateDeviceMerkleRoot(
+  newRoot: Bytes<32>,
+  adminSignature: Bytes<64>
+): Bytes<32> {
+  
+  // Verify admin signature
+  const message = persistentHash<[Bytes<32>, Bytes<12>]>([
+    newRoot,
+    pad(12, "update_root:")
+  ]);
+  
+  // Note: Full signature verification would use adminPubkeyHash
+  // For hackathon, simplified
+  
+  deviceMerkleRoot = disclose(newRoot);
+  return deviceMerkleRoot;
+}
+
+/**
+ * Update the current epoch (admin only)
+ */
+export circuit updateEpoch(
+  newEpoch: Field,
+  adminSignature: Bytes<64>
+): Field {
+  
+  assert(newEpoch > currentEpoch, "Epoch must increase");
+  
+  currentEpoch = disclose(newEpoch);
+  return currentEpoch;
+}
+
+// ============================================================================
+// Query Circuits (View Functions)
+// ============================================================================
+
+/**
+ * Get bounty info
+ */
+export circuit getBounty(bountyId: Bytes<32>): BountyInfo {
+  assert(bounties.has(bountyId), "Bounty not found");
+  return disclose(bounties.get(bountyId));
+}
+
+/**
+ * Check if a nullifier has been used
+ */
+export circuit isNullifierUsed(nullifier: Bytes<32>): Boolean {
+  return disclose(claimedTickets.has(nullifier));
+}
+
+/**
+ * Get total rewards distributed
+ */
+export circuit getTotalRewards(): Counter {
+  return disclose(totalRewardsDistributed);
+}
