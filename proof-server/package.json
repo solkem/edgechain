@@ -12,10 +12,8 @@
         "lint": "eslint src/**/*.ts"
     },
     "dependencies": {
-        "@midnight-ntwrk/midnight-js-contracts": "^0.2.0",
-        "@midnight-ntwrk/midnight-js-types": "^0.2.0",
-        "@midnight-ntwrk/compact-runtime": "^0.16.0",
-        "@midnight-ntwrk/zswap": "^0.2.0",
+        "@midnight-ntwrk/wallet": "^5.0.0",
+        "@midnight-ntwrk/compact-runtime": "^0.14.0",
         "serialport": "^12.0.0",
         "express": "^4.18.2",
         "cors": "^2.8.5",
