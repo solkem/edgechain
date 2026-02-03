@@ -1,0 +1,33 @@
+{
+    "server": {
+        "port": 3002,
+        "host": "0.0.0.0"
+    },
+    "lora": {
+        "serialPort": "/dev/ttyUSB0",
+        "baudRate": 115200,
+        "networkId": 18,
+        "address": 1,
+        "frequency": 915000000,
+        "spreadingFactor": 9,
+        "bandwidth": 125,
+        "txPower": 20
+    },
+    "midnight": {
+        "nodeUrl": "https://testnet.midnight.network",
+        "contractAddress": "02001d62...b30a",
+        "walletPath": "./wallet.json"
+    },
+    "merkleTree": {
+        "depth": 20,
+        "storagePath": "./data/merkle-tree.json"
+    },
+    "logging": {
+        "level": "info",
+        "file": "./logs/proof-server.log"
+    },
+    "security": {
+        "enableEncryption": true,
+        "sharedSecretPath": "./secrets/lora-key.bin"
+    }
+}
