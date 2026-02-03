@@ -13,6 +13,7 @@
 import { useState, useEffect } from 'react';
 import { useWallet } from '../providers/WalletProvider';
 import { useNavigate } from 'react-router-dom';
+import { ProofServerPanel } from './ProofServerPanel';
 
 interface IoTReading {
   t: number; // temperature °C
@@ -1284,8 +1285,8 @@ export function IoTDashboard() {
                       <button
                         onClick={() => setUsePrivateMode(!usePrivateMode)}
                         className={`rounded-lg px-4 py-2 text-sm font-semibold hover:cursor-pointer ${usePrivateMode
-                            ? 'bg-black text-white'
-                            : 'bg-white text-black border border-gray-300'
+                          ? 'bg-black text-white'
+                          : 'bg-white text-black border border-gray-300'
                           }`}
                       >
                         {usePrivateMode ? '🔒 Private' : '⚠️ Public'}
@@ -1567,6 +1568,9 @@ export function IoTDashboard() {
                 </div>
               </div>
             </details>
+
+            {/* Proof Server Status Panel */}
+            <ProofServerPanel />
 
             {/* Action: Train with Sensor Data */}
             <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
