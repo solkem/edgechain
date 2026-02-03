@@ -3,7 +3,7 @@ import { AppProvider } from "./context/AppContext";
 import { LoginRoute } from "./routes/LoginRoute";
 import { RegisterRoute } from "./routes/RegisterRoute";
 import { SelectionRoute } from "./routes/SelectionRoute";
-import { ArduinoRoute } from "./routes/ArduinoRoute";
+import { IoTRoute } from "./routes/IoTRoute";
 import { TrainRoute } from "./routes/TrainRoute";
 import { PrivacyTrainRoute } from "./routes/PrivacyTrainRoute";
 import { AggregationRoute } from "./routes/AggregationRoute";
@@ -24,7 +24,7 @@ export default function EdgeChainApp() {
           <Route path="/" element={<LoginRoute />} />
           <Route path="/register" element={<RegisterRoute />} />
           <Route path="/selection" element={<SelectionRoute />} />
-          <Route path="/arduino" element={<ArduinoRoute />} />
+          <Route path="/arduino" element={<IoTRoute />} /> {/* Keep /arduino path for backward compatibility */}
           <Route path="/train" element={<TrainRoute />} />
           <Route path="/train-privacy" element={<PrivacyTrainRoute />} />
           <Route path="/aggregation" element={<AggregationRoute />} />

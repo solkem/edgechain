@@ -1,14 +1,14 @@
 import { Navigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { ArduinoDashboard } from '../components/ArduinoDashboard';
+import { IoTDashboard } from '../components/IoTDashboard';
 
-export function ArduinoRoute() {
+export function IoTRoute() {
   const { farmer } = useAppContext();
 
   if (!farmer) {
     return <Navigate to="/" replace />;
   }
 
-  return <ArduinoDashboard />;
+  return <IoTDashboard />;
 }
 

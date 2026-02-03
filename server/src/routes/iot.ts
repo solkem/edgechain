@@ -12,7 +12,7 @@ import { DeviceAuthService } from '../services/deviceAuth';
 import { NullifierTrackingService } from '../services/nullifierTracking';
 import { ZKProofService } from '../services/zkProofService';
 import { ipfsStorage } from '../services/ipfsStorage';
-import { SignedReading } from '../types/arduino';
+import { SignedReading } from '../types/iot';
 // TODO: Re-enable in Phase 3 (Midnight SDK integration)
 // import { deploymentWalletService } from '../services/deploymentWallet';
 
@@ -1085,4 +1085,4 @@ router.post('/reset', (req, res) => {
   }
 });
 
-export { router as arduinoRouter, registryService };
+export { router as iotRouter, registryService };

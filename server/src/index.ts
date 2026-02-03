@@ -3,14 +3,14 @@
  *
  * Multi-purpose backend for EdgeChain system:
  * 1. Federated Learning aggregation (FL routes)
- * 2. Arduino IoT data collection with incentive layer (Arduino routes)
+ * 2. IoT device data collection with incentive layer (IoT routes)
  */
 
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { aggregationRouter } from './routes/aggregation';
-import { arduinoRouter } from './routes/arduino';
+import { iotRouter } from './routes/iot';
 import { initializeDatabase, getDatabaseStats } from './database';
 
 const app = express();
@@ -61,7 +61,7 @@ app.get('/api', (_req, res) => {
   res.json({
     name: 'EdgeChain Unified Backend',
     version: '2.0.0',
-    description: 'Unified backend for EdgeChain: Federated Learning + Arduino IoT with Midnight Testnet',
+    description: 'Unified backend for EdgeChain: Federated Learning + IoT devices with Midnight Testnet',
     services: {
       'Federated Learning': '/api/fl',
       'Arduino IoT': '/api/arduino',
@@ -81,7 +81,7 @@ app.get('/api', (_req, res) => {
 
 // API Routes (must be before catch-all route)
 app.use('/api/fl', aggregationRouter);
-app.use('/api/arduino', arduinoRouter);
+app.use('/api/arduino', iotRouter); // Keep /api/arduino path for backward compatibility
 
 // SPA fallback - serve frontend for all other routes (MUST BE LAST)
 app.get('*', (_req, res) => {

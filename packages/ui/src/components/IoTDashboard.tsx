@@ -78,10 +78,10 @@ interface BackendIncentives {
 // Use relative URL in production, localhost in development
 // In Codespaces, hostname will be a .githubpreview.dev domain
 const isLocalDev = window.location.hostname === 'localhost' ||
-                   window.location.hostname.includes('githubpreview.dev') ||
-                   window.location.hostname.includes('codespaces') ||
-                   window.location.hostname.startsWith('10.') ||
-                   window.location.hostname.startsWith('127.');
+  window.location.hostname.includes('githubpreview.dev') ||
+  window.location.hostname.includes('codespaces') ||
+  window.location.hostname.startsWith('10.') ||
+  window.location.hostname.startsWith('127.');
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ||
   (isLocalDev ? 'http://localhost:3001' : '');
@@ -98,7 +98,7 @@ console.log('🔧 API_BASE Configuration:', {
 const BLE_DEVICE_ID_KEY = 'edgechain_ble_device_id';
 const BLE_DEVICE_NAME_KEY = 'edgechain_ble_device_name';
 
-export function ArduinoDashboard() {
+export function IoTDashboard() {
   const wallet = useWallet();
   const navigate = useNavigate();
 
@@ -1283,11 +1283,10 @@ export function ArduinoDashboard() {
                       <span className="text-sm font-semibold text-gray-600">Privacy Mode</span>
                       <button
                         onClick={() => setUsePrivateMode(!usePrivateMode)}
-                        className={`rounded-lg px-4 py-2 text-sm font-semibold hover:cursor-pointer ${
-                          usePrivateMode
+                        className={`rounded-lg px-4 py-2 text-sm font-semibold hover:cursor-pointer ${usePrivateMode
                             ? 'bg-black text-white'
                             : 'bg-white text-black border border-gray-300'
-                        }`}
+                          }`}
                       >
                         {usePrivateMode ? '🔒 Private' : '⚠️ Public'}
                       </button>
