@@ -126,8 +126,8 @@ edgechain/
 ├── packages/
 │   ├── contract/              # Compact smart contracts
 │   │   └── src/
-│   │       ├── arduino-iot.compact     # IoT registration + attestation
-│   │       └── edgechain.compact       # Federated learning
+│   │       ├── device-iot.compact     # IoT registration + attestation
+│   │       └── edgechain.compact      # Federated learning
 │   └── ui/                    # React frontend
 ├── server/                    # Express.js backend
 └── Msingi.md                  # Architecture reference
@@ -135,7 +135,7 @@ edgechain/
 
 ## 🔧 Smart Contracts
 
-### arduino-iot.compact
+### device-iot.compact
 
 - **Merkle Proof Verification**: 20-level binary tree (supports 1M+ devices)
 - **Nullifier Storage**: Map-based (prevents race conditions)
@@ -153,7 +153,7 @@ edgechain/
 
 | Contract | Address |
 |----------|---------|
-| Arduino IoT | `02001d62...b30a` |
+| Device IoT | `02001d62...b30a` |
 | Federated Learning | `02002f44...be39` |
 
 ### Live Demo
