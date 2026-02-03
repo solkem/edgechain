@@ -17,7 +17,8 @@ EdgeChain is a **Privacy-Preserving IoT and AI Platform for Farmers on Midnight 
 | Blockchain | Midnight Network, Compact language (ZK smart contracts) |
 | Frontend | React 19, TypeScript, Vite, TailwindCSS, Shadcn UI |
 | Backend | Node.js, Express.js, SQLite, TypeScript |
-| IoT | Arduino Nano 33 BLE Sense |
+| **IoT (Current)** | **ESP32-S3 + ATECC608B + LoRa** (Msingi architecture) |
+| IoT (Legacy) | ~~Arduino Nano 33 BLE Sense~~ (deprecated) |
 | ML | TensorFlow.js (in-browser training) |
 | Storage | IPFS (Storacha) |
 | Wallet | Lace Midnight Preview |
@@ -68,13 +69,21 @@ edgechain-midnight-hackathon/
 │   │   │   └── iot/           # Arduino BLE integration
 │   ├── api/                # Shared API types
 │   └── cli/                # Deployment CLI
+├── proof-server/           # Farmer-owned proof server (Msingi Layer 2)
+│   ├── circuits/           # ZK circuits in Compact
+│   ├── src/                # Express server + Midnight SDK
+│   └── MIDNIGHT_INTEGRATION.md
+├── firmware/               # ESP32-S3 firmware (Msingi Layer 1)
+│   └── esp32-msingi/       # PlatformIO project
 ├── server/                 # Backend aggregation + Arduino API
 │   ├── src/
 │   │   ├── routes/         # aggregation.ts, arduino.ts
 │   │   ├── services/       # Core business logic
 │   │   └── database/       # SQLite schema
-├── arduino/                # Arduino firmware
-│   └── edgechain_iot/      # Arduino sketch
+├── arduino/                # ⚠️ DEPRECATED - Legacy Arduino firmware
+│   └── edgechain_iot/      # Use firmware/esp32-msingi instead
+├── gateway/                # ⚠️ DEPRECATED - Legacy BLE gateway
+│   └── ble_receiver.ts     # Use proof-server instead
 ├── docs/                   # Documentation
 └── turbo.json              # Turbo build config
 ```
@@ -100,10 +109,26 @@ edgechain-midnight-hackathon/
 - `server/src/services/deviceRegistry.ts` - Merkle tree management
 - `server/src/services/nullifierTracking.ts` - Replay attack prevention
 
-### Arduino
-- `arduino/edgechain_iot/edgechain_iot.ino` - Sensor firmware (temp/humidity via BLE)
+### Proof Server (NEW - Msingi Architecture)
+- `proof-server/src/index.ts` - Express API + WebSocket
+- `proof-server/src/lora-receiver.ts` - LoRa packet processing
+- `proof-server/src/brace-verifier.ts` - BRACE protocol implementation
+- `proof-server/src/acr-handler.ts` - Anonymous contribution rewards
+
+### Arduino (DEPRECATED)
+> ⚠️ **The Arduino BLE code is deprecated.** Use the ESP32-S3 firmware in `firmware/esp32-msingi/` instead.
+> The new Msingi architecture provides better range (LoRa vs BLE), hardware security (ATECC608B), 
+> and privacy (farmer-owned proof servers vs browser-based ZK).
+
+- `arduino/edgechain_iot/edgechain_iot.ino` - ~~Sensor firmware (temp/humidity via BLE)~~ DEPRECATED
 
 ## Architecture Patterns
+
+### Msingi Architecture (Current)
+```
+ESP32-S3 Device → LoRa → Raspberry Pi 5 (Proof Server) → Midnight Network
+                         (farmer-owned)
+```
 
 ### Federated Learning Flow
 ```
@@ -132,10 +157,13 @@ IoT Device → Generates ZK Proof (device secret as witness)
 - ZK proof generation requires proof server access
 - Contract compilation via `compact` CLI
 
-### Arduino Setup
-- Requires Arduino IDE 2.x with Mbed OS Nano board support
-- Ed25519 key derivation from hardware serial (NRF_FICR registers)
-- BLE payload limited to 31 bytes (requires chunking)
+### ESP32-S3 Setup (Current)
+- Requires PlatformIO with ESP-IDF framework
+- ATECC608B secure element for P-256 keys
+- LoRa RYLR896 module for long-range communication
+- See [HARDWARE_GUIDE.md](HARDWARE_GUIDE.md) for assembly instructions
+
+### Arduino Setup (DEPRECATED)
 
 ### Environment Variables
 Key variables in `.env`:

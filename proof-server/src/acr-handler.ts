@@ -256,9 +256,12 @@ export class AcrHandler {
 
     /**
      * Get current epoch (24-hour window)
+     * H4 FIX: Standardized epoch = Unix seconds / 86400
+     * This matches the server's epoch calculation for consistency
      */
     private getCurrentEpoch(): number {
-        return Math.floor(Date.now() / (24 * 60 * 60 * 1000));
+        // Unix seconds divided by seconds per day
+        return Math.floor(Date.now() / 1000 / 86400);
     }
 
     /**

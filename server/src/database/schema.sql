@@ -25,8 +25,11 @@ CREATE TABLE IF NOT EXISTS sensor_readings (
   temperature REAL,
   humidity REAL,
   timestamp_device INTEGER NOT NULL,
-  signature_r TEXT NOT NULL,
-  signature_s TEXT NOT NULL,
+  -- M1 FIX: New consolidated signature column
+  signature TEXT,
+  -- DEPRECATED: Legacy columns (kept for backward compatibility)
+  signature_r TEXT,
+  signature_s TEXT,
   batch_id TEXT,
   created_at INTEGER DEFAULT (strftime('%s', 'now')),
   FOREIGN KEY (device_pubkey) REFERENCES devices(device_pubkey)

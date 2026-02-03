@@ -216,6 +216,27 @@ curl http://localhost:3002/status
 
 ## 🎯 Deployment
 
+### Service Ports
+
+| Service | Default Port | Environment Variable |
+|---------|--------------|---------------------|
+| Backend API Server | 3001 | `PORT` |
+| Proof Server | 3002 | `PORT` |
+| IPFS Service | 3003 | `IPFS_SERVICE_PORT` |
+| Web Interface (Vite) | 5173 | `VITE_PORT` |
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PORT` | Server port | `3001` (server) / `3002` (proof-server) |
+| `DEMO_MODE` | Enable demo endpoints (reset, etc.) | `false` |
+| `CORS_ORIGINS` | Comma-separated allowed origins | `http://localhost:5173` |
+| `STORACHA_EMAIL` | w3up.storage email (IPFS) | - |
+| `STORACHA_TOKEN` | w3up.storage token (IPFS) | - |
+| `LORA_PORT` | Serial port for LoRa module | `/dev/ttyUSB0` |
+| `NODE_ENV` | Environment mode | `development` |
+
 ### Midnight Testnet
 
 | Contract | Address |
@@ -236,10 +257,27 @@ See [proof-server/MIDNIGHT_INTEGRATION.md](proof-server/MIDNIGHT_INTEGRATION.md)
 
 > **Production Deployment Checklist**
 
-- [x] Integrate Midnight SDK for real ZK proofs
+### Critical
+- [x] Remove wallet/seed files from repository (C1)
+- [x] Fix DB schema/query mismatches (C2)
+- [x] Ensure deterministic Merkle roots (C3)
+- [x] Resolve service port conflicts (C4)
+
+### High Priority
+- [x] Add authentication to sensitive endpoints (H1)
+- [x] Configure restrictive CORS origins (H2)
+- [x] Standardize epoch calculations (H4)
+
+### Medium Priority
+- [x] Persist ACR nullifiers to survive restarts (M2)
+- [x] Rate limit auto-registration (M3)
+- [x] Consolidate signature schema (M1)
+
+### Deployment Readiness
 - [ ] Deploy proof server on Raspberry Pi 5
 - [ ] Provision ATECC608B devices with unique keys
 - [ ] Set `DEMO_MODE=false` to disable test endpoints
+- [ ] Set `CORS_ORIGINS` to production domains
 - [ ] Configure LoRa network parameters for deployment region
 - [ ] Set up systemd service for proof server auto-start
 
@@ -247,6 +285,7 @@ See [proof-server/MIDNIGHT_INTEGRATION.md](proof-server/MIDNIGHT_INTEGRATION.md)
 
 - [Msingi Architecture](Msingi.md) - Detailed architecture and protocols
 - [Midnight Integration](proof-server/MIDNIGHT_INTEGRATION.md) - SDK setup guide
+- [Hardware Guide](HARDWARE_GUIDE.md) - Bill of materials and wiring
 - [CLAUDE.md](CLAUDE.md) - Development guide
 - [ZK_IOT_PROOF.md](ZK_IOT_PROOF.md) - ZK proof flow documentation
 

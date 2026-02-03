@@ -27,6 +27,9 @@ export interface ReadingRecord {
   temperature: number;
   humidity: number;
   timestamp_device: number;
+  // M1 FIX: New consolidated signature column
+  signature: string;
+  // DEPRECATED: Legacy columns (kept for backward compatibility)
   signature_r: string;
   signature_s: string;
   batch_id: string | null;
@@ -156,6 +159,7 @@ export class DatabasePersistenceService {
   saveReading(reading: SignedReading): number {
     const parsed = JSON.parse(reading.reading_json);
 
+    // M1 FIX: Use new signature column, but also populate legacy columns for backward compatibility
     const stmt = this.db.prepare(`
       INSERT INTO sensor_readings (
         device_pubkey,
@@ -163,23 +167,23 @@ export class DatabasePersistenceService {
         temperature,
         humidity,
         timestamp_device,
+        signature,
         signature_r,
         signature_s,
         batch_id,
         created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
-    // For now, store the signature in signature_r and leave signature_s empty
-    // This matches the schema which expects separate r and s values
     const info = stmt.run(
       reading.device_pubkey,
       reading.reading_json,
       parsed.t,
       parsed.h,
       parsed.ts,
-      reading.signature, // Store full signature in signature_r
-      '', // Empty signature_s for now
+      reading.signature, // New consolidated column
+      reading.signature, // Legacy: Store full signature in signature_r
+      '', // Legacy: Empty signature_s
       null, // batch_id assigned later
       Math.floor(Date.now() / 1000)
     );

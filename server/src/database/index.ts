@@ -78,11 +78,12 @@ export const deviceDB = {
 // Sensor readings operations
 export const readingDB = {
   insert: (reading: any) => {
+    // M1 FIX: Use new signature column, also populate legacy columns for backward compatibility
     const stmt = db.prepare(`
       INSERT INTO sensor_readings (device_pubkey, reading_json, temperature, humidity,
-                                  timestamp_device, signature_r, signature_s, batch_id)
+                                  timestamp_device, signature, signature_r, signature_s, batch_id)
       VALUES (@device_pubkey, @reading_json, @temperature, @humidity,
-              @timestamp_device, @signature_r, @signature_s, @batch_id)
+              @timestamp_device, @signature, @signature_r, @signature_s, @batch_id)
     `);
     return stmt.run(reading);
   },
