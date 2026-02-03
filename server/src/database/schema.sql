@@ -122,18 +122,11 @@ CREATE TABLE IF NOT EXISTS spent_nullifiers (
   spent_at INTEGER DEFAULT (strftime('%s', 'now')),
   PRIMARY KEY (nullifier, epoch)
 );
-
 CREATE INDEX IF NOT EXISTS idx_spent_nullifiers_epoch ON spent_nullifiers(epoch);
 
--- Device Secrets (for nullifier generation - HIGHLY SENSITIVE)
--- NOTE: In production, this should be on device only, never on server!
--- Including for testing/simulation purposes
-CREATE TABLE IF NOT EXISTS device_secrets (
-  device_pubkey TEXT PRIMARY KEY,
-  device_secret TEXT NOT NULL, -- Used for nullifier generation
-  created_at INTEGER DEFAULT (strftime('%s', 'now')),
-  FOREIGN KEY (device_pubkey) REFERENCES devices(device_pubkey)
-);
+-- NOTE: Device secrets are stored ONLY on device hardware (ATECC608B secure element)
+-- per Msingi architecture. Never store device secrets on server.
+-- See: Msingi.md for privacy architecture details.
 
 -- ZK Proof Submissions (anonymous readings with proofs)
 CREATE TABLE IF NOT EXISTS zk_proof_submissions (

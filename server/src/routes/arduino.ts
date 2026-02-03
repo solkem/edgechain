@@ -100,9 +100,19 @@ router.post('/auth/verify-signature', async (req, res) => {
  * POST /api/arduino/auth/generate-keypair
  * Generate ED25519 keypair for testing (DEMO ONLY)
  * In production, this should ONLY run on the Arduino device!
+ * Set DEMO_MODE=true in environment to enable.
  */
 router.post('/auth/generate-keypair', async (req, res) => {
   try {
+    // Feature flag: Disable in production
+    const DEMO_MODE = process.env.DEMO_MODE === 'true';
+    if (!DEMO_MODE) {
+      return res.status(403).json({
+        error: 'Endpoint disabled in production',
+        message: 'Set DEMO_MODE=true in environment to enable keypair generation. In production, keys are generated on ATECC608B secure element.',
+      });
+    }
+
     const keypair = await DeviceAuthService.generateKeypair();
 
     console.log('⚠️  DEMO: Generated device keypair');
@@ -342,8 +352,8 @@ router.post('/prove', async (req, res) => {
  * POST /api/arduino/submit-proof
  * Submit proof to backend verifier
  */
-// Nullifier tracking (in-memory for demo; use database in production)
-const spentNullifiers = new Set<string>();
+// NOTE: Nullifier tracking now uses ONLY database-backed NullifierTrackingService
+// for consistency across server restarts (removed in-memory Set per audit)
 
 // Reward amounts based on collection mode
 const REWARD_AMOUNTS = {
@@ -373,8 +383,9 @@ router.post('/submit-proof', async (req, res) => {
     console.log(`🔐 Nullifier: ${claim_nullifier.slice(0, 20)}...`);
     console.log('═══════════════════════════════════════');
 
-    // 1. Check nullifier not spent (prevents replay)
-    if (spentNullifiers.has(claim_nullifier)) {
+    // 1. Check nullifier not spent using database (prevents replay)
+    const currentEpoch = nullifierService.getCurrentEpoch();
+    if (nullifierService.isNullifierSpent(claim_nullifier, epoch || currentEpoch)) {
       return res.status(400).json({
         valid: false,
         reason: 'Nullifier already spent (replay detected)',
@@ -409,11 +420,16 @@ router.post('/submit-proof', async (req, res) => {
     // 4. TODO: Verify actual ZK proof using Compact/Midnight
     // For now, mock verification passes
 
-    // 5. Mark nullifier as spent
-    spentNullifiers.add(claim_nullifier);
-
-    // 6. Calculate reward based on collection_mode
+    // 5. Calculate reward based on collection_mode
     const reward = REWARD_AMOUNTS[collection_mode as 'auto' | 'manual'] || 0;
+
+    // 6. Mark nullifier as spent in database (persistent across restarts)
+    nullifierService.markNullifierSpent(
+      claim_nullifier,
+      epoch || currentEpoch,
+      data_hash || 'direct_submission',
+      reward
+    );
 
     const verification = {
       valid: true,
