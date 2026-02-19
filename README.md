@@ -1,6 +1,6 @@
 # EdgeChain
 
-Privacy-preserving IoT + federated learning infrastructure for smallholder farming use cases, built around the Msingi architecture.
+Privacy-preserving IoT + federated learning infrastructure for smallholder farming use cases, built around the Msingi architecture and implemented on the Midnight network.
 
 ## Overview
 
