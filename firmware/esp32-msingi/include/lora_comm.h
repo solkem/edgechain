@@ -23,7 +23,7 @@ public:
   
   /**
    * Configure LoRa parameters
-   * @param frequency Frequency in Hz (e.g., 868000000)
+   * @param frequency Frequency in Hz (e.g., 915000000)
    * @param spreadingFactor SF7-SF12
    * @param bandwidth Bandwidth in kHz (125, 250, or 500)
    */

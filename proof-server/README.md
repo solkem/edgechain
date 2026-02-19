@@ -1,6 +1,6 @@
 # EdgeChain Proof Server
 
-Farmer-owned proof server for the EdgeChain platform, designed to run on Raspberry Pi 5.
+Farmer-owned proof server for EdgeChain Freedom Nodes (Linux x86 or ARM).
 
 ## Overview
 
@@ -8,7 +8,7 @@ The proof server receives LoRa transmissions from ESP32-S3 IoT devices and gener
 
 ```
 ┌─────────────────────┐         ┌─────────────────────┐
-│   ESP32-S3 Device   │  LoRa   │   Raspberry Pi 5    │
+│   ESP32-S3 Device   │  LoRa   │    Freedom Node     │
 │   (Field Sensor)    │ ──────► │   (Proof Server)    │
 │                     │         │                     │
 │  • ATECC608B        │         │  • ZK Proof Gen     │
@@ -26,11 +26,20 @@ The proof server receives LoRa transmissions from ESP32-S3 IoT devices and gener
 
 ## Hardware Requirements
 
-- **Raspberry Pi 5** (4GB+ RAM recommended)
-- **LoRa Module**: RYLR896 connected via USB-Serial (e.g., USB-TTL adapter)
-- **Storage**: 32GB+ SD card
+- **Freedom Node Compute**: Dell OptiPlex 7060 Micro class x86 host (i5-8500T, 16GB RAM recommended)
+- **LoRa Module**: RYLR896 connected via USB-UART adapter (CP2102, 3.3V)
+- **LTE Modem**: Huawei E3372-325 (Band 3 capable for Zimbabwe deployments)
+- **Storage**: 64GB+ SSD/NVMe
 
 ## Installation
+
+Recommended (Ubuntu Freedom Node host):
+
+```bash
+bash deploy/install.sh
+```
+
+Manual:
 
 ```bash
 # Clone the repository
@@ -61,7 +70,7 @@ Edit `config/local.json`:
   "lora": {
     "serialPort": "/dev/ttyUSB0",
     "baudRate": 115200,
-    "networkId": 18,
+    "networkId": 6,
     "address": 1,
     "frequency": 915000000
   },
@@ -78,9 +87,23 @@ Edit `config/local.json`:
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `PORT` | HTTP server port | 3002 |
+| `HOST` | Bind host | `0.0.0.0` |
 | `LORA_PORT` | Serial port for LoRa module | /dev/ttyUSB0 |
+| `LORA_BAUD` | LoRa serial baud | 115200 |
+| `LORA_NETWORK_ID` | LoRa network ID | 6 |
+| `LORA_ADDRESS` | LoRa receiver address | 1 |
+| `LORA_FREQUENCY` | LoRa frequency in Hz | 915000000 |
+| `LORA_SF` | LoRa spreading factor | 9 |
+| `LORA_BW` | LoRa bandwidth (kHz) | 125 |
+| `LORA_TX_POWER` | LoRa TX power (dBm) | 20 |
 | `MIDNIGHT_NODE_URL` | Midnight network URL | testnet URL |
+| `MIDNIGHT_CONTRACT` | Contract address override | empty |
+| `MIDNIGHT_WALLET_PATH` | Wallet file path | `./wallet.json` |
+| `MERKLE_STORAGE_PATH` | Merkle tree state path | `./data/merkle-tree.json` |
 | `LOG_LEVEL` | Logging level | info |
+| `LOG_FILE` | Log file path | `./logs/proof-server.log` |
+
+Compatibility note: legacy installer variable names (`SERVER_PORT`, `LORA_SERIAL_PORT`, `LORA_BAUD_RATE`) are still accepted.
 
 ## Running
 
@@ -100,8 +123,13 @@ npm start
 ### As a systemd Service
 
 ```bash
-# Copy service file
-sudo cp edgechain-proof-server.service /etc/systemd/system/
+# Render service file with your user/home
+EDGECHAIN_USER="$USER"
+EDGECHAIN_HOME="$HOME"
+sed \
+  -e "s|__EDGECHAIN_USER__|$EDGECHAIN_USER|g" \
+  -e "s|__EDGECHAIN_HOME__|$EDGECHAIN_HOME|g" \
+  deploy/edgechain-proof-server.service | sudo tee /etc/systemd/system/edgechain-proof-server.service >/dev/null
 
 # Enable and start
 sudo systemctl enable edgechain-proof-server

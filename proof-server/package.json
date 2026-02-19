@@ -1,7 +1,7 @@
 {
     "name": "@edgechain/proof-server",
     "version": "1.0.0",
-    "description": "Farmer-owned proof server for EdgeChain - runs on Raspberry Pi 5",
+    "description": "Farmer-owned proof server for EdgeChain Freedom Nodes",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
@@ -42,7 +42,7 @@
         "zk-proofs",
         "lora",
         "midnight",
-        "raspberry-pi"
+        "freedom-node"
     ],
     "author": "EdgeChain Team",
     "license": "MIT"

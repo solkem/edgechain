@@ -60,11 +60,11 @@ The payment creates a side-channel that destroys anonymity. For device anonymity
                               ▲
                               │ ZK proofs
 ┌─────────────────────────────────────────────────────────────────┐
-│  Layer 2: Proof Server (Raspberry Pi 5)                          │
+│  Layer 2: Proof Server (Freedom Node)                             │
 │  - Farmer-owned (critical for privacy)                           │
 │  - Generates ZK proofs (devices too constrained)                 │
 │  - Receives LoRa transmissions from devices                      │
-│  - Cost: ~$110                                                   │
+│  - Cost: ~$255 (existing solar)                                  │
 └─────────────────────────────────────────────────────────────────┘
                               ▲
                               │ LoRa (encrypted)
@@ -86,9 +86,9 @@ The payment creates a side-channel that destroys anonymity. For device anonymity
 - Privacy guarantees completely undermined
 
 **Current Design (Farmer-Owned Proof Server):**
-- Each farmer owns their own Raspberry Pi 5 proof server
+- Each farmer owns their own Freedom Node proof server
 - Device identity and raw data never leave farmer's control
-- Hardware cost increased (~$50 → ~$160 total) but privacy preserved
+- Hardware cost increased (~$50 → ~$305 total, existing solar) but privacy preserved
 - **Principle:** Privacy cannot be compromised even for cost considerations
 
 ---
@@ -193,9 +193,13 @@ The payment creates a side-channel that destroys anonymity. For device anonymity
 
 | Component | Function | Cost (USD) |
 |-----------|----------|------------|
-| Raspberry Pi 5 / CM5 | Proof generation | ~$110 |
+| Dell OptiPlex 7060 Micro (i5-8500T, 16GB) | Proof generation | ~$209 |
+| Huawei E3372-325 LTE modem | Backhaul connectivity | ~$21 |
+| CP2102 USB-UART + antennas | LoRa/LTE I/O | ~$25 |
 
-### Total Deployment Cost: ~$160 per farmer
+### Total Deployment Cost: ~$305 per farmer (existing solar)
+
+With new solar installation, add ~$240 (about ~$545 total).
 
 ### Key Hardware Constraint: Curve Compatibility
 

@@ -126,8 +126,8 @@ edgechain-midnight-hackathon/
 
 ### Msingi Architecture (Current)
 ```
-ESP32-S3 Device → LoRa → Raspberry Pi 5 (Proof Server) → Midnight Network
-                         (farmer-owned)
+ESP32-S3 Device → LoRa → Freedom Node (Proof Server) → Midnight Network
+                         (farmer-owned, OptiPlex-class x86 baseline)
 ```
 
 ### Federated Learning Flow

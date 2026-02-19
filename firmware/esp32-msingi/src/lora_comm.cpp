@@ -45,10 +45,10 @@ void LoRaComm::configure(uint32_t frequency, uint8_t spreadingFactor, uint16_t b
   
   // Set spreading factor (7-12) and bandwidth
   // RYLR896 uses combined parameter
-  uint8_t bwCode = 0;
-  if (bandwidth >= 500) bwCode = 2;
-  else if (bandwidth >= 250) bwCode = 1;
-  else bwCode = 0; // 125kHz
+  uint8_t bwCode = 7;
+  if (bandwidth >= 500) bwCode = 9;
+  else if (bandwidth >= 250) bwCode = 8;
+  else bwCode = 7; // 125kHz
   
   snprintf(cmd, sizeof(cmd), "AT+PARAMETER=%d,%d,%d,12", 
            spreadingFactor, bwCode, 1); // SF, BW, CR=4/5, Preamble=12
@@ -81,9 +81,9 @@ bool LoRaComm::transmit(const uint8_t* data, size_t length) {
   }
   hexData[length * 2] = '\0';
   
-  // Send to proof server (address 1)
+  // Send to proof server (configured destination address)
   char cmd[560];
-  snprintf(cmd, sizeof(cmd), "AT+SEND=1,%zu,%s", length * 2, hexData);
+  snprintf(cmd, sizeof(cmd), "AT+SEND=%d,%zu,%s", PROOF_SERVER_LORA_ADDRESS, length * 2, hexData);
   
   char response[64];
   if (!sendCommand(cmd, response, sizeof(response))) {

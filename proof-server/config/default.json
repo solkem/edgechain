@@ -6,7 +6,7 @@
     "lora": {
         "serialPort": "/dev/ttyUSB0",
         "baudRate": 115200,
-        "networkId": 18,
+        "networkId": 6,
         "address": 1,
         "frequency": 915000000,
         "spreadingFactor": 9,

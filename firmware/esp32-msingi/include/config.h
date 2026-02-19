@@ -40,19 +40,23 @@
 
 // ============= LORA CONFIGURATION =============
 
-// Frequency (868MHz for EU, 915MHz for US)
+// Frequency (915 MHz baseline for Freedom Node deployment)
 #ifndef LORA_FREQUENCY
-#define LORA_FREQUENCY 868000000
+#define LORA_FREQUENCY 915000000
 #endif
 
 // LoRa parameters for long-range agricultural use
-#define LORA_SPREADING_FACTOR 10    // SF10 for ~2km range
+#define LORA_SPREADING_FACTOR 9     // Align with proof server defaults
 #define LORA_BANDWIDTH 125          // 125kHz bandwidth
 #define LORA_CODING_RATE 5          // 4/5 coding rate
 #define LORA_TX_POWER 20            // Maximum power (20dBm)
 
 // Network ID (must match proof server)
-#define LORA_NETWORK_ID 7
+#define LORA_NETWORK_ID 6
+
+// LoRa addresses
+#define LORA_DEVICE_ADDRESS 2
+#define PROOF_SERVER_LORA_ADDRESS 1
 
 // ============= TIMING CONFIGURATION =============
 

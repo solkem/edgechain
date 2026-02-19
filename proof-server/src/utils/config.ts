@@ -4,6 +4,9 @@
 
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
+import { config as loadDotenv } from 'dotenv';
+
+loadDotenv();
 
 interface Config {
     server: {
@@ -85,7 +88,7 @@ function getDefaultConfig(): Config {
         lora: {
             serialPort: '/dev/ttyUSB0',
             baudRate: 115200,
-            networkId: 18,
+            networkId: 6,
             address: 1,
             frequency: 915000000,
             spreadingFactor: 9,
@@ -113,32 +116,75 @@ function getDefaultConfig(): Config {
 }
 
 function applyEnvOverrides(config: Config): void {
+    const env = process.env;
+    const parseIntEnv = (value: string | undefined): number | null => {
+        if (!value) return null;
+        const parsed = parseInt(value, 10);
+        return Number.isFinite(parsed) ? parsed : null;
+    };
+
     // Server
-    if (process.env.PORT) {
-        config.server.port = parseInt(process.env.PORT);
+    const serverPort = parseIntEnv(env.PORT ?? env.SERVER_PORT);
+    if (serverPort !== null) {
+        config.server.port = serverPort;
     }
-    if (process.env.HOST) {
-        config.server.host = process.env.HOST;
+    if (env.HOST ?? env.SERVER_HOST) {
+        config.server.host = env.HOST ?? env.SERVER_HOST ?? config.server.host;
     }
 
     // LoRa
-    if (process.env.LORA_PORT) {
-        config.lora.serialPort = process.env.LORA_PORT;
+    if (env.LORA_PORT ?? env.LORA_SERIAL_PORT) {
+        config.lora.serialPort = env.LORA_PORT ?? env.LORA_SERIAL_PORT ?? config.lora.serialPort;
     }
-    if (process.env.LORA_BAUD) {
-        config.lora.baudRate = parseInt(process.env.LORA_BAUD);
+    const loraBaud = parseIntEnv(env.LORA_BAUD ?? env.LORA_BAUD_RATE);
+    if (loraBaud !== null) {
+        config.lora.baudRate = loraBaud;
+    }
+    const loraNetworkId = parseIntEnv(env.LORA_NETWORK_ID);
+    if (loraNetworkId !== null) {
+        config.lora.networkId = loraNetworkId;
+    }
+    const loraAddress = parseIntEnv(env.LORA_ADDRESS);
+    if (loraAddress !== null) {
+        config.lora.address = loraAddress;
+    }
+    const loraFrequency = parseIntEnv(env.LORA_FREQUENCY);
+    if (loraFrequency !== null) {
+        config.lora.frequency = loraFrequency;
+    }
+    const loraSf = parseIntEnv(env.LORA_SF ?? env.LORA_SPREADING_FACTOR);
+    if (loraSf !== null) {
+        config.lora.spreadingFactor = loraSf;
+    }
+    const loraBw = parseIntEnv(env.LORA_BW ?? env.LORA_BANDWIDTH);
+    if (loraBw !== null) {
+        config.lora.bandwidth = loraBw;
+    }
+    const loraTxPower = parseIntEnv(env.LORA_TX_POWER);
+    if (loraTxPower !== null) {
+        config.lora.txPower = loraTxPower;
     }
 
     // Midnight
-    if (process.env.MIDNIGHT_NODE_URL) {
-        config.midnight.nodeUrl = process.env.MIDNIGHT_NODE_URL;
+    if (env.MIDNIGHT_NODE_URL) {
+        config.midnight.nodeUrl = env.MIDNIGHT_NODE_URL;
     }
-    if (process.env.MIDNIGHT_CONTRACT) {
-        config.midnight.contractAddress = process.env.MIDNIGHT_CONTRACT;
+    if (env.MIDNIGHT_CONTRACT ?? env.MIDNIGHT_CONTRACT_ADDRESS) {
+        config.midnight.contractAddress = env.MIDNIGHT_CONTRACT ?? env.MIDNIGHT_CONTRACT_ADDRESS ?? config.midnight.contractAddress;
+    }
+    if (env.MIDNIGHT_WALLET_PATH) {
+        config.midnight.walletPath = env.MIDNIGHT_WALLET_PATH;
     }
 
     // Logging
-    if (process.env.LOG_LEVEL) {
-        config.logging.level = process.env.LOG_LEVEL;
+    if (env.LOG_LEVEL) {
+        config.logging.level = env.LOG_LEVEL;
+    }
+    if (env.LOG_FILE) {
+        config.logging.file = env.LOG_FILE;
+    }
+
+    if (env.MERKLE_STORAGE_PATH) {
+        config.merkleTree.storagePath = env.MERKLE_STORAGE_PATH;
     }
 }

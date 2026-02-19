@@ -1,309 +1,241 @@
-# EdgeChain 🌾
+# EdgeChain
 
-**Privacy-Preserving IoT and AI for Farmers on Midnight Network**
+Privacy-preserving IoT + federated learning infrastructure for smallholder farming use cases, built around the Msingi architecture.
 
-EdgeChain is a decentralized IoT and federated learning platform that brings AI-powered agricultural predictions to farmers while protecting sensitive farm data through zero-knowledge proofs and hardware-backed security.
+## Overview
 
-## 🏗️ Architecture: Msingi
+EdgeChain combines:
+- IoT sensor devices with hardware-backed keys (ESP32-S3 + ATECC608B)
+- Farmer-owned proof servers (Freedom Nodes)
+- Privacy-preserving submission and reward flows (BRACE/ACR concepts)
+- Federated learning pipelines and dashboards
 
-EdgeChain uses the **Msingi** architecture (Swahili: *foundation*) for device-level privacy:
+## Msingi Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  Layer 3: Midnight Network                                       │
-│  - ZK proof verification on-chain                                │
-│  - Nullifier-based replay prevention                             │
-│  - NIGHT-DUST tokenomics (zero marginal cost transactions)       │
-└─────────────────────────────────────────────────────────────────┘
-                              ▲
-                              │ ZK proofs
-┌─────────────────────────────────────────────────────────────────┐
-│  Layer 2: Proof Server (Raspberry Pi 5)                          │
-│  - Farmer-owned (critical for privacy)                           │
-│  - Generates ZK proofs locally                                   │
-│  - Receives LoRa transmissions from devices                      │
-└─────────────────────────────────────────────────────────────────┘
-                              ▲
-                              │ LoRa (encrypted)
-┌─────────────────────────────────────────────────────────────────┐
-│  Layer 1: IoT Device                                             │
-│  - ESP32-S3-WROOM-1 microcontroller                              │
-│  - ATECC608B secure element (P-256 keys)                         │
-│  - RYLR896 LoRa module (2+ km range)                             │
-│  - Environmental sensors (BME280, soil)                          │
-└─────────────────────────────────────────────────────────────────┘
+Layer 3: Midnight Network
+  - Proof verification and private-state contract workflows
+  - Nullifier-based replay resistance
+
+Layer 2: Freedom Node (farmer-owned proof server)
+  - Receives LoRa packets from devices
+  - Verifies packets and manages commitment Merkle tree
+  - Generates/submits proofs (currently mixed real/mock integration)
+
+Layer 1: IoT Device
+  - ESP32-S3 + ATECC608B + RYLR896
+  - Collects sensor readings and transmits attestations over LoRa
 ```
 
-### Why Farmer-Owned Proof Servers?
+Why farmer-owned proof servers: the proof-generation step can expose witness-level data at Layer 2, so ownership of the proof server is part of the privacy model.
 
-**Privacy cannot be compromised even for cost considerations.**
+## Current State (February 2026)
 
-Shared gateways/browsers see device identity before ZK proofs are generated—destroying anonymity. With farmer-owned proof servers, device identity and raw data never leave farmer control.
+What is implemented:
+- ESP32 firmware path (`firmware/esp32-msingi`) with ATECC608B + RYLR896 integration
+- Proof server with LoRa receiver, Merkle tree, and API/WebSocket surface
+- Unified backend (`server`) for FL and IoT flows
+- UI dashboards for FL + IoT workflows
+- Contract workspace scaffolding in `packages/contract`
 
-## 💡 Core Privacy Guarantees
+What is still partially mock or in-progress:
+- Parts of Midnight proof generation/submission paths are simulated in code paths (not full production-grade cryptographic flow end-to-end)
+- Operational failover/queueing and production observability are incomplete
+- Several research/economic decisions (e.g., DUST/NIGHT operating model at scale) remain open
 
-| Guarantee | Description |
-|-----------|-------------|
-| **Device Anonymity** | Can't identify which device submitted (1/N probability) |
-| **Unlinkability** | Can't link submissions across time (epoch-based nullifiers) |
-| **Data Confidentiality** | Learn only predicate result, not raw sensor values |
-| **Replay Resistance** | Can't resubmit same attestation (nullifier tracking) |
-| **Key Secrecy** | Can't extract keys even with physical access (ATECC608B) |
+## Repository Layout
 
-## 🔐 Key Protocols
+- `server/`: Unified Express backend (FL + IoT), SQLite-backed
+- `proof-server/`: Farmer-owned proof server (Express + WebSocket + LoRa serial)
+- `firmware/esp32-msingi/`: ESP32-S3 firmware (ATECC608B, RYLR896, sensors)
+- `packages/ui/`: React frontend
+- `packages/contract/`: Compact contracts and deployment scripts
+- `ipfs-service/`: Storacha/IPFS microservice (with mock fallback mode)
+- `gateway/`: Legacy/browser gateway tooling
+- `arduino/`: Deprecated BLE-era firmware path
 
-### BRACE (Blind Registration via Anonymous Commitment Enrollment)
+## Prerequisites
 
-1. Device generates P-256 keypair inside ATECC608B secure element
-2. Device samples random blinding factor `r`
-3. Device computes commitment `C = H(pk || r)`
-4. Only `C` is transmitted—`pk` and `r` remain secret
-5. Proof server adds `C` to Merkle tree
+- Node.js 22+ (root workspace expects this)
+- Yarn 4.x (workspace manager)
+- npm (used in non-workspace service folders)
+- PlatformIO (for firmware work)
+- Optional hardware for full integration tests:
+  - RYLR896 + CP2102 USB-UART
+  - Huawei E3372-325 LTE modem
 
-### ACR (Anonymous Contribution Rewards)
+## Local Development
 
-Devices earn rewards for data contributions without revealing identity:
-- Data buyers post bounties with predicates (e.g., "temperature > 30°C")
-- Device generates ZK proof that their data satisfies predicate
-- Device claims reward using nullifier (no identity linkage)
+Run services in separate terminals.
 
-## 📦 Hardware Requirements
-
-### IoT Device (~$50)
-
-| Component | Purpose | Cost |
-|-----------|---------|------|
-| ESP32-S3-WROOM-1 | Microcontroller | $8 |
-| ATECC608B | Secure element (P-256) | $2.50 |
-| RYLR896 | LoRa transceiver (2+ km) | $6 |
-| BME280 | Temperature/humidity/pressure | $4 |
-| Capacitive Soil Sensor | Soil moisture | $2 |
-| Solar + Battery | Power | $16 |
-| Enclosure | Weather protection | $10 |
-
-### Proof Server (~$110)
-
-| Component | Purpose | Cost |
-|-----------|---------|------|
-| Raspberry Pi 5 / CM5 | ZK proof generation | $110 |
-
-**Total per farmer: ~$160**
-
-## 🚀 Quick Start
-
-### 1. Flash ESP32-S3 Firmware
+### 1) UI/workspace dependencies
 
 ```bash
-# Requires PlatformIO
-cd firmware/esp32-msingi
-pio run --target upload
+cd /Users/solomonkembo/Downloads/edgechain
+yarn install
 ```
 
-### 2. Start Proof Server (Raspberry Pi 5 or Dev Machine)
+### 2) Backend API (port 3001)
 
 ```bash
-cd proof-server
+cd /Users/solomonkembo/Downloads/edgechain/server
 npm install
 npm run dev
 ```
 
-The server starts on http://localhost:3002 with:
-- `/health` - Health check
-- `/status` - Server statistics
-- `/register-commitment` - Register device commitment
-- `/claim-reward` - ACR reward claims
-- WebSocket at `/ws` for real-time updates
-
-### 3. Start Backend API Server
+### 3) Proof server (port 3002)
 
 ```bash
-cd server
+cd /Users/solomonkembo/Downloads/edgechain/proof-server
 npm install
 npm run dev
 ```
 
-### 4. Start Web Interface
+If LoRa hardware is not connected, the proof server falls back to API-only mode.
+
+### 4) UI (port 5173)
 
 ```bash
-cd packages/ui
+cd /Users/solomonkembo/Downloads/edgechain
+yarn workspace edgechain-ui dev
+```
+
+### 5) Optional IPFS service (port 3003)
+
+```bash
+cd /Users/solomonkembo/Downloads/edgechain/ipfs-service
 npm install
 npm run dev
 ```
 
-Open http://localhost:5173
-
-## 📁 Project Structure
-
-```
-edgechain/
-├── firmware/
-│   └── esp32-msingi/              # ESP32-S3 firmware
-│       ├── src/
-│       │   ├── main.cpp           # Entry point
-│       │   ├── secure_element.cpp # ATECC608B driver
-│       │   ├── lora_comm.cpp      # LoRa communication
-│       │   └── brace_client.cpp   # BRACE protocol
-│       └── platformio.ini
-├── proof-server/                   # Farmer-owned proof server (NEW)
-│   ├── circuits/
-│   │   └── attestation.compact    # ZK attestation circuit
-│   ├── src/
-│   │   ├── index.ts               # Express API + WebSocket
-│   │   ├── lora-receiver.ts       # RYLR896 LoRa interface
-│   │   ├── midnight-prover.ts     # Midnight SDK integration
-│   │   ├── brace-verifier.ts      # BRACE protocol handler
-│   │   ├── acr-handler.ts         # ACR reward processing
-│   │   └── merkle-tree.ts         # Device registry
-│   └── MIDNIGHT_INTEGRATION.md    # SDK setup guide
-├── packages/
-│   ├── contract/                  # Compact smart contracts
-│   │   └── src/
-│   │       ├── device-iot.compact # IoT registration + attestation
-│   │       ├── bounty.compact     # ACR bounty contract (NEW)
-│   │       └── edgechain.compact  # Federated learning
-│   └── ui/                        # React frontend
-├── server/                        # Express.js backend API
-└── Msingi.md                      # Architecture reference
-```
-
-## 🔧 Smart Contracts
-
-### device-iot.compact
-
-- **Merkle Proof Verification**: 20-level binary tree (supports 1M+ devices)
-- **Nullifier Storage**: Map-based (prevents race conditions)
-- **Admin Authentication**: Signature verification for root updates
-
-### bounty.compact (ACR Protocol)
-
-- **createBounty()**: Data buyers post predicate-based bounties
-- **claimBounty()**: Devices claim rewards anonymously with ZK proofs
-- **Nullifier Tracking**: Prevents double-claiming per epoch
-
-### edgechain.compact
-
-- **Federated Learning**: Private witness functions for farmer identity
-- **Aggregation**: Threshold-triggered model aggregation
-- **Privacy**: Only aggregated model hash stored on-chain
-
-## 🧪 Testing the API
-
-### Register a Device Commitment
+### Basic health checks
 
 ```bash
-curl -X POST http://localhost:3002/register-commitment \
-  -H "Content-Type: application/json" \
-  -d '{"commitment": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"}'
+curl http://localhost:3001/health
+curl http://localhost:3002/health
+curl http://localhost:3003/health
 ```
 
-### Claim a Reward (ACR)
+Open UI at `http://localhost:5173`.
+
+## Freedom Node Hardware Baseline
+
+Current procurement baseline reflected in this repo's docs:
+
+- Compute: Dell OptiPlex 7060 Micro class (i5-8500T, 16GB RAM)
+- LoRa bridge: RYLR896 + CP2102 USB-UART (3.3V)
+- LTE modem: Huawei E3372-325 (Band 3 capable)
+- Typical compute stack cost target: about $255 (excluding new solar install)
+
+## LoRa Baseline Configuration
+
+These defaults are aligned across firmware and proof-server configs:
+
+- Frequency: `915000000`
+- Network ID: `6`
+- Proof server address: `1`
+- Spreading factor: `9`
+- Bandwidth: `125`
+- TX power: `20`
+
+Relevant files:
+- `proof-server/config/default.json`
+- `proof-server/src/utils/config.ts`
+- `firmware/esp32-msingi/include/config.h`
+- `firmware/esp32-msingi/platformio.ini`
+
+## Service Ports
+
+- Backend API: `3001`
+- Proof server: `3002`
+- IPFS service: `3003`
+- UI (Vite): `5173`
+
+## Key Environment Variables
+
+### Backend (`server`)
+
+- `PORT` (default `3001`)
+- `CORS_ORIGINS`
+- `DEMO_MODE`
+- `STORACHA_EMAIL`
+- `STORACHA_TOKEN`
+
+### Proof server (`proof-server`)
+
+- `PORT`, `HOST`
+- `LORA_PORT`, `LORA_BAUD`
+- `LORA_NETWORK_ID`, `LORA_ADDRESS`, `LORA_FREQUENCY`
+- `LORA_SF`, `LORA_BW`, `LORA_TX_POWER`
+- `MIDNIGHT_NODE_URL`, `MIDNIGHT_CONTRACT`, `MIDNIGHT_WALLET_PATH`
+- `MERKLE_STORAGE_PATH`
+- `LOG_LEVEL`, `LOG_FILE`
+
+Compatibility: legacy env names (`SERVER_PORT`, `LORA_SERIAL_PORT`, `LORA_BAUD_RATE`) are still accepted in proof-server config loading.
+
+## High-Value Endpoints
+
+### Backend API (`server`)
+
+- `GET /health`
+- `GET /api/fl/status`
+- `POST /api/fl/submit`
+- `POST /api/arduino/zk/generate-proof`
+- `POST /api/arduino/zk/submit-private-reading`
+
+### Proof server (`proof-server`)
+
+- `GET /health`
+- `GET /status`
+- `POST /register-commitment`
+- `GET /merkle-proof/:commitment`
+- `POST /claim-reward`
+- `WS /ws`
+
+## Freedom Node Deployment (Linux host)
+
+Use the deployment script:
 
 ```bash
-curl -X POST http://localhost:3002/claim-reward \
-  -H "Content-Type: application/json" \
-  -d '{
-    "nullifier": "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
-    "proof": "base64encodedproof...",
-    "sensorDataHash": "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
-  }'
+cd /Users/solomonkembo/Downloads/edgechain/proof-server
+bash deploy/install.sh
 ```
 
-### Check Server Status
+What it does:
+- Installs Node/tooling dependencies
+- Clones/updates repo under user home
+- Builds proof-server
+- Creates `.env` defaults (aligned LoRa settings)
+- Renders and installs systemd unit with user/home paths
 
-```bash
-curl http://localhost:3002/status
-```
+Systemd template:
+- `proof-server/deploy/edgechain-proof-server.service`
 
-## 🎯 Deployment
+## Security Notes
 
-### Service Ports
+- Do not commit wallet seeds, private keys, or deployment secrets.
+- Treat proof-server wallet storage as sensitive; encrypt/segment host access.
+- Restrict CORS and disable demo/test endpoints in production.
+- Keep firmware/proof-server LoRa settings synchronized across deployments.
 
-| Service | Default Port | Environment Variable |
-|---------|--------------|---------------------|
-| Backend API Server | 3001 | `PORT` |
-| Proof Server | 3002 | `PORT` |
-| IPFS Service | 3003 | `IPFS_SERVICE_PORT` |
-| Web Interface (Vite) | 5173 | `VITE_PORT` |
+## Related Documentation
 
-### Environment Variables
+- `Msingi.md`: Architecture and research context
+- `HARDWARE_GUIDE.md`: Device + Freedom Node hardware guidance
+- `proof-server/README.md`: Proof server operations and config details
+- `proof-server/MIDNIGHT_INTEGRATION.md`: Midnight integration notes
+- `CLAUDE.md`: Contributor/dev guidance
+- `AUDIT_REPORT.md`: Codebase audit snapshot
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PORT` | Server port | `3001` (server) / `3002` (proof-server) |
-| `DEMO_MODE` | Enable demo endpoints (reset, etc.) | `false` |
-| `CORS_ORIGINS` | Comma-separated allowed origins | `http://localhost:5173` |
-| `STORACHA_EMAIL` | w3up.storage email (IPFS) | - |
-| `STORACHA_TOKEN` | w3up.storage token (IPFS) | - |
-| `LORA_PORT` | Serial port for LoRa module | `/dev/ttyUSB0` |
-| `NODE_ENV` | Environment mode | `development` |
+## Contributing
 
-### Midnight Testnet
+1. Create a branch.
+2. Make focused changes with tests where feasible.
+3. Open a PR with:
+   - behavior change summary
+   - validation evidence
+   - operational/security impact notes
 
-| Contract | Address |
-|----------|---------|
-| Device IoT | `02001d62...b30a` |
-| Bounty (ACR) | TBD |
-| Federated Learning | `02002f44...be39` |
+## License
 
-### Raspberry Pi 5 Deployment
-
-See [proof-server/MIDNIGHT_INTEGRATION.md](proof-server/MIDNIGHT_INTEGRATION.md) for:
-- Docker setup for local proof generation
-- Wallet configuration
-- Circuit compilation
-- Real ZK proof enablement
-
-## 🛡️ Security Considerations
-
-> **Production Deployment Checklist**
-
-### Critical
-- [x] Remove wallet/seed files from repository (C1)
-- [x] Fix DB schema/query mismatches (C2)
-- [x] Ensure deterministic Merkle roots (C3)
-- [x] Resolve service port conflicts (C4)
-
-### High Priority
-- [x] Add authentication to sensitive endpoints (H1)
-- [x] Configure restrictive CORS origins (H2)
-- [x] Standardize epoch calculations (H4)
-
-### Medium Priority
-- [x] Persist ACR nullifiers to survive restarts (M2)
-- [x] Rate limit auto-registration (M3)
-- [x] Consolidate signature schema (M1)
-
-### Deployment Readiness
-- [ ] Deploy proof server on Raspberry Pi 5
-- [ ] Provision ATECC608B devices with unique keys
-- [ ] Set `DEMO_MODE=false` to disable test endpoints
-- [ ] Set `CORS_ORIGINS` to production domains
-- [ ] Configure LoRa network parameters for deployment region
-- [ ] Set up systemd service for proof server auto-start
-
-## 📚 Documentation
-
-- [Msingi Architecture](Msingi.md) - Detailed architecture and protocols
-- [Midnight Integration](proof-server/MIDNIGHT_INTEGRATION.md) - SDK setup guide
-- [Hardware Guide](HARDWARE_GUIDE.md) - Bill of materials and wiring
-- [CLAUDE.md](CLAUDE.md) - Development guide
-- [ZK_IOT_PROOF.md](ZK_IOT_PROOF.md) - ZK proof flow documentation
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open Pull Request
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE) for details.
-
----
-
-**Built for Zimbabwe's smallholder farmers** 🇿🇼
-
-*Privacy that grows with every device that joins.*
-
+MIT

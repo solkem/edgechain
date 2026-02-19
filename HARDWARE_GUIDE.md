@@ -24,19 +24,17 @@ Complete bill of materials and assembly instructions for EdgeChain IoT devices.
 
 **Subtotal: ~$41**
 
-### Proof Server (~$110)
+### Proof Server / Freedom Node (~$255 with existing solar)
 
 | Component | Model | Qty | Price | Source |
 |-----------|-------|-----|-------|--------|
-| Computer | Raspberry Pi 5 (4GB) | 1 | $60 | [RPi Foundation](https://raspberrypi.com) |
-| LoRa Module | RYLR896 (868/915MHz) | 1 | $6 | [AliExpress](https://aliexpress.com) |
-| USB-Serial | CP2102 USB-TTL | 1 | $2 | [AliExpress](https://aliexpress.com) |
-| Power Supply | 5V 3A USB-C | 1 | $10 | [Amazon](https://amazon.com) |
-| SD Card | 32GB Class 10 | 1 | $8 | [Amazon](https://amazon.com) |
-| Case | Raspberry Pi 5 case | 1 | $10 | [Amazon](https://amazon.com) |
-| Antenna | 868/915MHz SMA + pigtail | 1 | $5 | [AliExpress](https://aliexpress.com) |
+| Computer | Dell OptiPlex 7060 Micro (i5-8500T, 16GB, 256GB) | 1 | $209 | Amazon Renewed |
+| LTE Modem | Huawei E3372-325 (Band 3) | 1 | $21 | Amazon |
+| LTE Antennas | CRC9 antenna pair | 1 | $18 | eBay |
+| USB-Serial | CP2102 USB-UART (3.3V) | 1 | $7 | Amazon |
+| LoRa Module | RYLR896 (existing) | 1 | $0 | Already owned |
 
-**Subtotal: ~$101**
+**Subtotal: ~$255**
 
 ---
 
@@ -113,7 +111,8 @@ Complete bill of materials and assembly instructions for EdgeChain IoT devices.
 
 1. RYLR896 uses UART at 115200 baud
 2. Connect TX→RX and RX→TX (cross-over)
-3. Attach SMA antenna before powering on (to protect RF stage)
+3. Use 3.3V on CP2102 VCC (5V can damage RYLR896)
+4. Attach antenna before powering on (to protect RF stage)
 
 ### Step 3: Connect Sensors
 
@@ -142,11 +141,11 @@ Complete bill of materials and assembly instructions for EdgeChain IoT devices.
 
 | Parameter | Value | AT Command |
 |-----------|-------|------------|
-| Frequency | 868MHz (EU) / 915MHz (US) | `AT+BAND=868000000` |
+| Frequency | 915MHz baseline (Freedom Node deployment) | `AT+BAND=915000000` |
 | Spreading Factor | SF9 | `AT+PARAMETER=9,7,1,12` |
 | Bandwidth | 125kHz | (part of PARAMETER) |
-| Network ID | 18 | `AT+NETWORKID=18` |
-| Address | Unique per device | `AT+ADDRESS=1` |
+| Network ID | 6 | `AT+NETWORKID=6` |
+| Proof Server Address | 1 | `AT+ADDRESS=1` |
 
 ### Range Testing
 
@@ -196,7 +195,7 @@ Complete bill of materials and assembly instructions for EdgeChain IoT devices.
 
 ### Zimbabwe
 
-For deployment in Zimbabwe, use **868 MHz** band. POTRAZ does not have specific LoRa regulations, but ISM band usage is generally permitted for low-power devices.
+For deployment in Zimbabwe, use the project baseline **915 MHz** profile unless local site testing or regulatory guidance requires otherwise. POTRAZ does not have specific LoRa regulations, but ISM band usage is generally permitted for low-power devices.
 
 ---
 

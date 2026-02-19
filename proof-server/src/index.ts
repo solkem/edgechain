@@ -1,7 +1,7 @@
 /**
  * EdgeChain Proof Server - Entry Point
  * 
- * Farmer-owned proof server running on Raspberry Pi 5
+ * Farmer-owned Freedom Node proof server (Linux, x86 or ARM)
  * Receives LoRa transmissions from ESP32-S3 devices and generates ZK proofs
  */
 

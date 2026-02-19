@@ -83,10 +83,14 @@ void setup() {
     Serial.println("✗ LoRa module initialization failed!");
     while (1) { delay(1000); }
   }
+  loraComm.setNetworkId(LORA_NETWORK_ID);
+  loraComm.setAddress(LORA_DEVICE_ADDRESS);
   loraComm.configure(LORA_FREQUENCY, LORA_SPREADING_FACTOR, LORA_BANDWIDTH);
   Serial.println("✓ LoRa RYLR896 ready");
   Serial.printf("  Frequency: %d MHz, SF: %d\n", 
                 LORA_FREQUENCY / 1000000, LORA_SPREADING_FACTOR);
+  Serial.printf("  Network ID: %d, Device Address: %d, Proof Server Address: %d\n",
+                LORA_NETWORK_ID, LORA_DEVICE_ADDRESS, PROOF_SERVER_LORA_ADDRESS);
   
   // Initialize sensors
   if (!sensors.begin()) {

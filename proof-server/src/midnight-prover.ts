@@ -342,7 +342,7 @@ export class MidnightProver {
     }
 
     /**
-     * Simulate proof generation time (~2-5 seconds on Pi 5)
+     * Simulate proof generation time (~2-5 seconds on a mid-range Freedom Node)
      */
     private async simulateProofGeneration(): Promise<void> {
         const delay = 2000 + Math.random() * 3000;
