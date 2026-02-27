@@ -1,331 +1,194 @@
-# EdgeChain Codebase Audit Report
+# EdgeChain Repository Audit Report
 
-Date: 2026-02-03
+Date: 2026-02-27
+Scope: Full repository static review + targeted build/runtime validation
 
-## Executive summary
+## Publication Status
 
-This repo is a monorepo (Yarn 4 + Turbo) containing:
+This report revision is currently committed on the working branch and is intended to be merged to `main` through a standard pull request workflow.
 
-- `server/`: unified Express backend (FL + Arduino/IoT + SQLite) on port 3001.
-- `ipfs-service/`: IPFS/Storacha microservice (ESM Express) on port 3002.
-- `proof-server/`: farmer-owned Raspberry Pi proof server (Express + WebSocket + LoRa serial) with Merkle tree persistence.
-- `packages/ui`, `packages/contract`, etc.
+Until that PR is merged and the branch is pushed to GitHub, users browsing `main` may continue to see the previous report revision.
 
-The codebase is **hackathon-stage** with multiple “mock” proof paths and several places where production-looking endpoints exist without strong gating.
+## 1) Executive Summary
 
-Top issues:
+EdgeChain currently implements a broad prototype of the stated Msingi architecture (ESP32 firmware, proof server, unified backend, UI, contract scaffolding), but there are several **production-blocking correctness and assurance gaps** across the backend and operational pipeline.
 
-- **Critical secret exposure risk**: wallet seed/address files exist in the repo root.
-- **Correctness drift**: DB schema vs query mismatch (`spent_nullifiers.collection_mode`).
-- **Merkle root non-determinism**: registry Merkle root/proofs can change across restarts due to unstable device ordering.
-- **Port collision**: `proof-server` and `ipfs-service` both default to 3002.
+Overall maturity assessment:
 
----
+- **Architecture completeness:** Medium (major components exist)
+- **Cryptographic/data-path correctness:** Low-Medium (mock paths still active in core flows)
+- **Operational hardening:** Low-Medium (auth, test coverage, CI confidence not yet at production level)
+- **Build health:** Medium (proof-server builds; server build currently fails)
 
-## Architecture map
+Top priority findings from this audit:
 
-### Tooling / build
-
-- Root `package.json`: Yarn 4.9.2 workspaces + Turbo.
-- Node engine at root: `>=22`, but docker and workflows use Node 20; proof-server engine says `>=18`. This creates potential runtime API differences.
-
-### Runtime services
-
-#### 1) `server/` (Unified backend)
-
-- Entry point: `server/src/index.ts`
-- Port: `process.env.PORT || 3001`
-- Responsibilities:
-  - Federated Learning routes: `/api/fl/*`
-  - Arduino/IoT + ZK flows: `/api/arduino/*`
-  - SQLite persistence via `better-sqlite3` at `data/edgechain.db`
-  - Serves:
-    - `/gateway` static files from `../gateway`
-    - SPA static from `../packages/ui/dist`
-
-#### 2) `ipfs-service/` (IPFS microservice)
-
-- Entry point: `ipfs-service/index.mjs`
-- Default port: `3002` (hardcoded)
-- Responsibilities:
-  - `POST /upload`: stores ZK proof submissions in IPFS (Storacha) or returns mock CID
-  - `GET /retrieve/:cid`: fetches from gateway or returns mock
-  - `GET /health`
-
-#### 3) `proof-server/` (Farmer-owned proof server)
-
-- Entry point: `proof-server/src/index.ts`
-- Default port: `3002` (from `proof-server/src/utils/config.ts`)
-- Responsibilities:
-  - Receives LoRa packets via `serialport`
-  - BRACE commitment registry via Merkle tree
-  - (Mock) proof generation & (mock) submission to Midnight
-  - WebSocket updates
-  - Persists Merkle leaves list to `./data/merkle-tree.json`
-
-### Deployment / CI
-
-- GitHub Actions contains a Fly.io deploy workflow (`.github/workflows/deploy-flyio.yml`).
-- `server/fly.toml` deploys `Dockerfile.unified`, mounts `/app/data` volume, and sets `IPFS_SERVICE_URL=https://edgechain-ipfs.fly.dev`.
-- No CI workflow is present for tests/lint/typecheck on PRs.
+1. **Schema–code drift in `server` causes runtime SQL failures** for multiple write paths.
+2. **`server` TypeScript build fails** due to invalid type import paths.
+3. **Mock proof/reward behavior is still active on critical routes**, with limited hard fail gating.
+4. **Sensitive reset/control routes are inconsistently protected** (`/api/fl/reset` open).
+5. **Validation/test posture is weak** (proof-server has no tests; backend test script target is missing).
 
 ---
 
-## Critical findings
+## 2) Requirements-to-Implementation Traceability
 
-### C1) Wallet seed material is present in the repository
+Reference requirements were taken from `README.md` (architecture, current-state claims, ports/endpoints, and implementation caveats).
 
-Evidence:
+### Requirement A: Msingi 3-layer architecture present
 
-- Repo root contains `DEPLOYMENT_WALLET_SEED.txt` and `DEPLOYMENT_WALLET_ADDRESS.txt`.
+Status: **Partially satisfied**
 
-Impact:
+- Layered components exist in repo structure:
+  - Layer 1 firmware (`firmware/esp32-msingi`)
+  - Layer 2 proof server (`proof-server`)
+  - Layer 3 contract workspace (`packages/contract`)
+- However, proof generation/submission still includes mock fallback behavior in core flows, so end-to-end cryptographic guarantees are not yet consistently “real mode.”
 
-- Treat as **full compromise** of that wallet.
-- If the repo is public (or becomes public), funds can be drained and deployments can be impersonated.
+### Requirement B: Unified backend (FL + IoT) with SQLite persistence
 
-Recommendation:
+Status: **Partially satisfied (with critical correctness defects)**
 
-- Rotate keys immediately and remove from git history.
-- Move secrets into a secret manager and/or environment variables.
-- Add defensive ignore rules (e.g. `*SEED*`, `*WALLET*`, `*.mnemonic`, etc.).
+- Unified backend routing and DB initialization are present.
+- But schema and query/write code are out of sync in multiple places (details in Findings F1), resulting in runtime failure for some table writes.
 
-### C2) DB schema vs code mismatch: `spent_nullifiers` query references nonexistent column
+### Requirement C: Proof server + LoRa + Merkle + API/WebSocket surface
 
-Evidence:
+Status: **Mostly satisfied**
 
-- Schema `server/src/database/schema.sql` defines table `spent_nullifiers` with columns:
-  - `nullifier`, `epoch`, `data_hash`, `reward`, `spent_at`.
-- `server/src/services/nullifierTracking.ts` method `getNullifierDistribution()` queries `collection_mode`, which does not exist.
+- Proof server starts with API and WebSocket surfaces, LoRa receiver integration, Merkle state load/save.
+- Still allows operation in API-only/offline/mock modes, which is useful for demos but not a hard-assurance production mode.
 
-Impact:
+### Requirement D: Explicit documentation that parts are still mock/in-progress
 
-- Any endpoint that calls this will throw SQL errors at runtime.
+Status: **Satisfied**
 
-Recommendation:
-
-- Either:
-  - add `collection_mode` column to `spent_nullifiers` and write it in `markNullifierSpent()`, or
-  - remove that dimension from the query.
-
-### C3) Merkle root / proof generation is non-deterministic across restarts (server registry)
-
-Evidence:
-
-- `DeviceRegistryService` builds leaves and computes `leaf_index` based on `Array.from(this.devices.values())`.
-- Devices are loaded from DB using `SELECT * FROM devices` without `ORDER BY`.
-
-Impact:
-
-- Merkle root can change between restarts even when device set is identical.
-- Proofs and root-matching checks can intermittently fail.
-
-Recommendation:
-
-- Enforce deterministic ordering:
-  - Load devices with `ORDER BY device_pubkey` (or `created_at`), and
-  - Sort `allDevices` before building leaves/proofs.
-
-### C4) Port collision: proof-server and ipfs-service both default to port 3002
-
-Evidence:
-
-- `ipfs-service/index.mjs` uses `PORT = 3002`.
-- `proof-server/src/utils/config.ts` default config uses `port: 3002`.
-
-Impact:
-
-- Both services cannot run locally simultaneously with defaults; documentation becomes ambiguous.
-
-Recommendation:
-
-- Standardize ports via env vars and update docs:
-  - `server`: 3001
-  - `proof-server`: 3002
-  - `ipfs-service`: 3003 (or swap, but pick one consistent scheme)
+- README acknowledges mixed real/mock state.
+- Code behavior aligns with that caveat (mock proof generation and mock tx results are in active paths).
 
 ---
 
-## High severity findings
+## 3) Detailed Findings
 
-### H1) Missing authentication/authorization for sensitive endpoints
+## F1 (Critical): Server schema-code drift causes runtime SQL errors
 
-Evidence:
-
-- `server`:
-  - `/api/fl/reset` resets aggregation state.
-  - `/api/arduino/reset` resets in-memory registry.
-  - Device registration and proof endpoints are generally open.
-- `proof-server`:
-  - `/register-commitment` is open.
-
-Impact:
-
-- Anyone can reset state, spam registries, and abuse resources.
-
-Recommendation:
-
-- Add a minimal admin gate:
-  - `DEMO_MODE` gating (default false) for reset endpoints,
-  - or API key / shared secret header,
-  - or bind admin endpoints to localhost.
-
-### H2) CORS is fully open across services
+Severity: **Critical**  
+Impact: Proof submission, aggregation persistence, and Merkle root persistence code paths can fail at runtime despite successful service startup.
 
 Evidence:
 
-- `app.use(cors())` is used without restrictions in `server`, `proof-server`, and `ipfs-service`.
-
-Impact:
-
-- Increases attack surface and enables browser-origin abuse.
+- `server/src/database/index.ts` inserts/queries columns that are not present in `server/src/database/schema.sql`:
+  - `batch_proofs.collection_mode` referenced by insert but not defined.
+  - `merkle_roots.collection_mode` referenced by insert/query but not defined.
+  - `zk_proof_submissions.collection_mode` inserted in route code but not defined.
+- Reproduction check (executed in this audit) confirms SQL exceptions:
+  - `table batch_proofs has no column named collection_mode`
+  - `table zk_proof_submissions has no column named collection_mode`
 
 Recommendation:
 
-- Restrict allowed origins via `CORS_ORIGIN` allowlist.
+- Reconcile schema and data access layer immediately.
+- Add migration strategy and schema-version guard at startup.
+- Add integration tests that execute representative insert/query paths against a fresh DB.
 
-### H3) “ZK proof” flows are mostly mock implementations but exposed as normal endpoints
+## F2 (High): Server TypeScript build currently fails
+
+Severity: **High**  
+Impact: Reduces release confidence; can mask additional regressions.
 
 Evidence:
 
-- `/api/arduino/prove` returns mock structures.
-- `ZKProofService.generateProof()` generates a mock proof string.
-- `proof-server/MidnightProver` generates mock proofs and mock tx results.
-
-Impact:
-
-- Easy to accidentally treat mock proofs as real, leading to insecure acceptance/reward behavior.
+- `npm run build` in `server/` fails due to unresolved imports from `../types/arduino` while only `server/src/types/iot.ts` exists.
 
 Recommendation:
 
-- Introduce a global feature flag `REAL_ZK_ENABLED`.
-- If false, return `501 Not Implemented` unless `DEMO_MODE=true`.
+- Fix type import paths in affected services (`bleReceiver.ts`, `databasePersistence.ts`) to existing type modules.
+- Add CI gate to fail PRs on backend build/typecheck failure.
 
-### H4) Time/epoch semantics are inconsistent across code paths and DB
+## F3 (High): Mock cryptographic and reward paths remain in critical APIs
+
+Severity: **High**  
+Impact: Users/integrators can mistake demo behavior for verifiable cryptographic enforcement.
 
 Evidence:
 
-- `NullifierTrackingService` epoch is days since epoch.
-- `proof-server` computes epoch from device timestamp (seconds) and uses seconds-vs-millis in other areas.
-- `DatabasePersistenceService.registerDevice` stores `registration_epoch` and `expiry_epoch` as Unix seconds, but `DeviceRegistryService` uses “epoch days”.
-
-Impact:
-
-- Replay protection and expiry/consistency logic can be wrong or bypassed.
+- IoT proof generation route explicitly returns mock proof structures.
+- IoT submit/claim and proof-server components include mock verification/proof/tx fallback behavior.
 
 Recommendation:
 
-- Pick canonical units (seconds recommended for DB) and distinguish:
-  - `*_ts` for timestamps (seconds)
-  - `epoch_day` for daily epochs
+- Introduce explicit mode controls:
+  - `DEMO_MODE=true` enables mock routes.
+  - Default production mode should reject mock-only operations with clear `501/503` responses.
+- Add response metadata fields indicating `assurance_level` (`mock`, `simulated`, `verified`).
+
+## F4 (Medium): Control-plane reset routes are inconsistently protected
+
+Severity: **Medium**  
+Impact: Remote callers can reset state in exposed environments.
+
+Evidence:
+
+- `/api/arduino/reset` is gated behind `DEMO_MODE`.
+- `/api/fl/reset` remains openly callable without auth or mode checks.
+
+Recommendation:
+
+- Apply consistent admin gating pattern across all reset/admin routes.
+- Add optional API key or local-only binding for administrative endpoints.
+
+## F5 (Medium): Validation/test posture is insufficient for production confidence
+
+Severity: **Medium**  
+Impact: Regressions can ship undetected.
+
+Evidence:
+
+- `proof-server` test command returns “No tests found”.
+- `server` package test script points to a missing file (`src/test-single-tree.ts`).
+- Root build requires unavailable external tool (`compact`) without fallback, limiting full CI reproducibility in generic environments.
+
+Recommendation:
+
+- Add smoke tests for core backend routes and DB writes.
+- Add at least one proof-server unit test suite (Merkle, nullifier, API contracts).
+- Split contract compilation into optional job or provide deterministic tool bootstrap in CI.
 
 ---
 
-## Medium severity findings
+## 4) Positive Observations
 
-### M1) Schema/design drift around signatures
-
-Evidence:
-
-- Schema stores `signature_r` and `signature_s`.
-- Code stores full signature in `signature_r` and empty in `signature_s`.
-
-Impact:
-
-- Confusing invariants; easy to break consumers.
-
-Recommendation:
-
-- Store as a single `signature` column, or store properly split values.
-
-### M2) Critical state kept only in memory
-
-Evidence:
-
-- FL aggregation state in `AggregationService` is in-memory.
-- Device auth challenges are in-memory.
-- Proof-server spent nullifiers are in-memory in `AcrHandler`.
-
-Impact:
-
-- Restarts reset state and allow replay/duplication.
-
-Recommendation:
-
-- Persist critical state (DB/Redis) or explicitly gate as demo-only.
-
-### M3) proof-server auto-registers unknown commitments
-
-Evidence:
-
-- `BraceVerifier.verifyPacket()` auto-registers a commitment if it is unknown.
-
-Impact:
-
-- Enables registry growth/spam. Weakens enrollment controls.
-
-Recommendation:
-
-- Add rate-limiting and/or an explicit enrollment policy.
+- The repository clearly documents architectural intent and openly states mock/in-progress areas.
+- LoRa baseline config values are aligned across proof-server and firmware defaults.
+- Several prior hardening improvements appear present (e.g., deterministic sorting in device registry Merkle root rebuild; partial CORS tightening in backend).
 
 ---
 
-## Low severity / hygiene
+## 5) Priority Remediation Plan
 
-### L1) Missing CI workflow for PR validation
+### Phase 0 (Immediate: correctness blockers)
 
-Evidence:
+1. Fix schema-code drift (`collection_mode` and other mismatches).
+2. Fix server build/type import errors.
+3. Add startup self-check that validates required table/column presence.
 
-- Only deploy workflow exists.
+### Phase 1 (Security + assurance)
 
-Recommendation:
+1. Lock all reset/admin endpoints behind explicit auth or DEMO_MODE gates.
+2. Enforce strict production mode that disallows mock proof/reward routes.
+3. Standardize and enforce CORS policy across all services.
 
-- Add CI on PRs that runs:
-  - install
-  - typecheck
-  - lint
-  - unit tests
+### Phase 2 (Quality + operability)
 
-### L2) Node version inconsistency
-
-Evidence:
-
-- Root engine `>=22`, docker uses Node 20, proof-server engine `>=18`.
-
-Impact:
-
-- Potential runtime differences (`fetch`, `Blob`, ESM behaviors).
-
-Recommendation:
-
-- Standardize to one version and enforce in all package `engines` + Docker + workflows.
+1. Add CI for typecheck/build/tests across server/proof-server/ui.
+2. Add deterministic integration tests for DB schema and key route paths.
+3. Add operational metrics for mode status (`mock vs real`), proof success ratio, and replay rejection counts.
 
 ---
 
-## Suggested remediation roadmap
+## 6) Validation Commands Run During This Audit
 
-### Phase 0 (immediate)
-
-- Remove/rotate wallet seed material.
-- Fix `spent_nullifiers` query/schema mismatch.
-- Resolve port collisions and update documentation.
-
-### Phase 1 (hardening)
-
-- Deterministic Merkle ordering for roots/proofs.
-- Gate sensitive endpoints with auth or `DEMO_MODE`.
-- Restrict CORS.
-
-### Phase 2 (correctness alignment)
-
-- Normalize timestamp/epoch semantics across services and DB.
-- Consolidate proof pipeline and enforce `REAL_ZK_ENABLED`.
-
----
-
-## Appendix: key files reviewed
-
-- Root: `package.json`, `turbo.json`, `.env.example`, `.github/workflows/deploy-flyio.yml`, `Dockerfile.unified`, `README.md`
-- Server: `server/src/index.ts`, `server/src/routes/aggregation.ts`, `server/src/routes/iot.ts`, `server/src/database/index.ts`, `server/src/database/schema.sql`, `server/src/services/*`
-- IPFS: `ipfs-service/index.mjs`, `ipfs-service/package.json`, `ipfs-service/fly.toml`
-- Proof-server: `proof-server/src/index.ts`, `proof-server/src/utils/config.ts`, `proof-server/src/merkle-tree.ts`, `proof-server/src/brace-verifier.ts`, `proof-server/src/acr-handler.ts`, `proof-server/src/midnight-prover.ts`, `proof-server/src/lora-receiver.ts`
+- `npm run build` (in `server/`) → failed (type import path errors)
+- `npm run build` (in `proof-server/`) → passed
+- `npm test` (in `proof-server/`) → failed (no tests discovered)
+- `yarn build` (repo root) → failed in contract package (`compact` command not found)
+- In-memory SQLite reproduction script against `server/src/database/schema.sql` → confirmed missing column runtime failures for `collection_mode` writes
