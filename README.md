@@ -1,5 +1,7 @@
 # EdgeChain
 
+This project is built on the Midnight Network.
+
 Privacy-preserving IoT + federated learning infrastructure for smallholder farming use cases, built around the Msingi architecture and implemented on the Midnight network.
 
 ## Overview
