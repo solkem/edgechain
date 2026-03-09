@@ -42,12 +42,15 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
+      - name: Check CompactC toolchain
+        run: node scripts/check-toolchain.mjs
+
       - name: Build UI package
         run: yarn workspace edgechain-ui build
         env:
           NODE_ENV: production
           # Deployed contract address (set in GitHub Secrets)
-          # To set: GitHub → Settings → Secrets and variables → Actions → New repository secret
+          # To set: GitHub -> Settings -> Secrets and variables -> Actions -> New repository secret
           # Name: VITE_CONTRACT_ADDRESS
           # Value: 02002f44e466b8c8a1422e269156a6bb4e098cde1007203adf7181eb6659211dbe39
           VITE_CONTRACT_ADDRESS: ${{ secrets.VITE_CONTRACT_ADDRESS }}
