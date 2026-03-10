@@ -22,7 +22,7 @@ Layer 3: Midnight Network
 Layer 2: Freedom Node (farmer-owned proof server)
   - Receives LoRa packets from devices
   - Verifies packets and manages commitment Merkle tree
-  - Generates/submits proofs (currently mixed real/mock integration)
+  - Generates/submits proofs 
 
 Layer 1: IoT Device
   - ESP32-S3 + ATECC608B + RYLR896
