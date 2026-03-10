@@ -31,7 +31,7 @@ Layer 1: IoT Device
 
 Why farmer-owned proof servers: the proof-generation step can expose witness-level data at Layer 2, so ownership of the proof server is part of the privacy model.
 
-## Current State (February 2026)
+## Current State
 
 What is implemented:
 - ESP32 firmware path (`firmware/esp32-msingi`) with ATECC608B + RYLR896 integration
@@ -73,14 +73,14 @@ Run services in separate terminals.
 ### 1) UI/workspace dependencies
 
 ```bash
-cd /Users/solomonkembo/Downloads/edgechain
+cd /edgechain
 yarn install
 ```
 
 ### 2) Backend API (port 3001)
 
 ```bash
-cd /Users/solomonkembo/Downloads/edgechain/server
+cd /edgechain/server
 npm install
 npm run dev
 ```
@@ -88,7 +88,7 @@ npm run dev
 ### 3) Proof server (port 3002)
 
 ```bash
-cd /Users/solomonkembo/Downloads/edgechain/proof-server
+cd /edgechain/proof-server
 npm install
 npm run dev
 ```
@@ -98,14 +98,14 @@ If LoRa hardware is not connected, the proof server falls back to API-only mode.
 ### 4) UI (port 5173)
 
 ```bash
-cd /Users/solomonkembo/Downloads/edgechain
+cd /edgechain
 yarn workspace edgechain-ui dev
 ```
 
 ### 5) Optional IPFS service (port 3003)
 
 ```bash
-cd /Users/solomonkembo/Downloads/edgechain/ipfs-service
+cd /edgechain/ipfs-service
 npm install
 npm run dev
 ```
@@ -199,7 +199,7 @@ Compatibility: legacy env names (`SERVER_PORT`, `LORA_SERIAL_PORT`, `LORA_BAUD_R
 Use the deployment script:
 
 ```bash
-cd /Users/solomonkembo/Downloads/edgechain/proof-server
+cd /edgechain/proof-server
 bash deploy/install.sh
 ```
 
