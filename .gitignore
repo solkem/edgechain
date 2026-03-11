@@ -45,7 +45,10 @@ compile-output.log
 .DS_Store
 *.pem
 
-# Private documentation
+# Private documentation: keep only README markdown files tracked/public
+**/*.md
+!README.md
+!**/README.md
 private-docs/
 
 # Build artifacts and cache
