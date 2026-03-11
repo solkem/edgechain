@@ -12,7 +12,7 @@ export function Login({
   isDeploying,
   setIsDeploying,
 }: {
-  onConnect: () => void;
+  onConnect: () => Promise<void>;
   isConnecting?: boolean;
   isMidnightPreviewInstalled?: boolean;
   error?: string | null;
@@ -23,35 +23,27 @@ export function Login({
 }) {
   const [deployError, setDeployError] = useState<string | null>(null);
 
-  const handleDeploy = async () => {
+  const connectAndMaybeDeploy = async () => {
     setDeployError(null);
+    setIsDeploying(false);
 
-    // Step 1: Connect wallet if not connected
-    if (!walletContext.isConnected) {
-      try {
-        setIsDeploying(true);
-        await onConnect();
-        // Wait a moment for wallet to connect
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-      } catch (err: any) {
-        console.error("Wallet connection failed:", err);
-        setDeployError(err.message || "Failed to connect wallet");
-        setIsDeploying(false);
-        return;
-      }
-    } else {
-      setIsDeploying(true);
-    }
-
-    // Step 2: Deploy contract
     try {
-      console.log("🚀 Starting contract deployment...");
-      await contractContext.deployContract();
-      console.log("✅ Contract deployed successfully!");
-      setIsDeploying(false);
+      // Step 1: Connect wallet if not connected
+      if (!walletContext.isConnected) {
+        await onConnect();
+      }
+
+      // Step 2: Deploy contract only when no deployed address is configured
+      if (!contractContext.isDeployed) {
+        setIsDeploying(true);
+        console.log("🚀 Starting contract deployment...");
+        await contractContext.deployContract();
+        console.log("✅ Contract deployed successfully!");
+      }
     } catch (err: any) {
-      console.error("Deployment failed:", err);
-      setDeployError(err.message || "Deployment failed");
+      console.error("Connect/deploy failed:", err);
+      setDeployError(err?.message || "Failed to connect wallet or deploy contract");
+    } finally {
       setIsDeploying(false);
     }
   };
@@ -61,7 +53,7 @@ export function Login({
       toast.warning("Please install Lace Midnight Preview first");
       return;
     }
-    handleDeploy();
+    await connectAndMaybeDeploy();
   };
 
   return (
@@ -89,7 +81,7 @@ export function Login({
           <div className="text-xl font-[orbitron] font-bold text-end  absolute bottom-6 right-6 z-20">
             <button
               onClick={connectToWallet}
-              disabled={isConnecting}
+              disabled={isConnecting || isDeploying}
               className=" bg-[#0000ff] text-white w-[280px] font-semibold py-4 px-6 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer"
             >
               {!isMidnightPreviewInstalled ? (
@@ -108,12 +100,22 @@ export function Login({
                       <span className="animate-spin">⏳</span>
                       Connecting ...
                     </span>
+                  ) : isDeploying ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="animate-spin">⏳</span>
+                      Deploying ...
+                    </span>
                   ) : (
                     "Connect Lace"
                   )}
                 </>
               )}
             </button>
+            {(error || deployError) && (
+              <p className="mt-3 max-w-[420px] text-right text-sm text-red-700">
+                {error || deployError}
+              </p>
+            )}
           </div>
 
           <div className="relative w-full overflow-hidden p-12">
