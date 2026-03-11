@@ -49,6 +49,7 @@ compile-output.log
 **/*.md
 !README.md
 !**/README.md
+**/*.pdf
 private-docs/
 
 # Build artifacts and cache
