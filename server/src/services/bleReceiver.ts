@@ -7,7 +7,7 @@
  * For the actual demo, use the browser-based implementation in gateway/ble_receiver.ts
  */
 
-import { SignedReading, ArduinoReading } from '../types/arduino';
+import { SignedReading, ArduinoReading } from '../types/iot';
 
 export class BLEReceiverService {
   private onReadingCallback?: (reading: SignedReading) => void;

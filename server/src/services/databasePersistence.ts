@@ -6,7 +6,7 @@
  */
 
 import { getDatabase } from '../database';
-import { SignedReading } from '../types/arduino';
+import { SignedReading } from '../types/iot';
 
 export interface DeviceRecord {
   device_pubkey: string;
