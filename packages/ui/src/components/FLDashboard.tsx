@@ -27,7 +27,7 @@ import {
   hasValidArduinoData,
   getArduinoDataSummary,
   clearArduinoSensorData,
-} from '../fl/arduinoIntegration';
+} from '../fl/iotIntegration';
 import {
   storeSubmission,
   checkAggregationReadiness,
