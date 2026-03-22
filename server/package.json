@@ -7,7 +7,7 @@
     "dev": "ts-node src/index.ts",
     "start": "node dist/index.js",
     "build": "tsc",
-    "test": "ts-node src/test-single-tree.ts"
+    "test": "node test-privacy-simple.js"
   },
   "keywords": [
     "federated-learning",

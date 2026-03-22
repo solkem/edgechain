@@ -18,7 +18,7 @@ echo ""
 echo "1️⃣  Checking backend server..."
 if ! curl -s "${BACKEND_URL}/health" > /dev/null; then
     echo "❌ Backend server not running at ${BACKEND_URL}"
-    echo "   Start with: cd server && npm run dev"
+    echo "   Start with: yarn dev:server"
     exit 1
 fi
 echo "✅ Backend server is running"

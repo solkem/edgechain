@@ -4,6 +4,15 @@
   "license": "MIT",
   "scripts": {
     "dev": "turbo run dev",
+    "dev:stack:check": "bash scripts/dev-stack-check.sh",
+    "dev:stack:check:full": "bash scripts/dev-stack-check.sh --with-ipfs",
+    "dev:stack": "bash scripts/dev-stack.sh",
+    "dev:stack:full": "bash scripts/dev-stack.sh --with-ipfs",
+    "dev:server": "npm --prefix server run dev",
+    "dev:proof-server": "npm --prefix proof-server run dev",
+    "dev:ui": "yarn workspace edgechain-ui dev",
+    "dev:ipfs": "npm --prefix ipfs-service run dev",
+    "dev:health": "curl -fsS http://localhost:3001/health && curl -fsS http://localhost:3002/health && curl -fsS http://localhost:3003/health",
     "predev": "node scripts/check-toolchain.mjs",
     "build": "turbo run build",
     "prebuild": "node scripts/check-toolchain.mjs",
@@ -72,7 +81,7 @@
     "typescript": "^5.8.3"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.12.0"
   },
   "packageManager": "yarn@4.9.2",
   "workspaces": [

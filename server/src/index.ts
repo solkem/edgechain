@@ -21,7 +21,7 @@ initializeDatabase();
 
 // Middleware
 // H2 FIX: Restrict CORS in production
-const corsOrigins = process.env.CORS_ORIGINS?.split(',') || ['http://localhost:5173', 'http://localhost:3000'];
+const corsOrigins = process.env.CORS_ORIGINS?.split(',') || ['http://localhost:8080', 'http://localhost:3000'];
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' ? corsOrigins : true,
   credentials: true

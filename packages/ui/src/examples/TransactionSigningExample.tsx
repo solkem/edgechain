@@ -80,8 +80,8 @@ export function TransactionSigningExample() {
 
       console.log('✅ Model weights signed:', signedTx);
 
-      // In production, submit to FL aggregator:
-      // await fetch('/api/fl/submit-weights', {
+      // In production, submit to unified FL API surface (`server`):
+      // await fetch('/api/fl/submit', {
       //   method: 'POST',
       //   body: JSON.stringify({ ...txData, signature: signedTx }),
       // });

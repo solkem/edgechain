@@ -25,14 +25,14 @@ This React application provides the farmer-facing interface for:
 
 ### Required Software
 
-1. **Node.js v22.17.0+** (or v20.19+)
+1. **Node.js v22.12.0+**
    ```bash
    # Check your version
    node --version
 
    # If you need to upgrade, use nvm:
-   nvm install 22.17.0
-   nvm use 22.17.0
+   nvm install 22.12.0
+   nvm use 22.12.0
    ```
 
 2. **Lace Midnight Preview Extension**
@@ -68,23 +68,25 @@ This React application provides the farmer-facing interface for:
 # From the root of the monorepo
 yarn install
 
-# Or from packages/ui directory
-cd packages/ui
-yarn install
+# Install non-workspace service deps used by the local stack
+npm --prefix server install
+npm --prefix proof-server install
+npm --prefix ipfs-service install   # Optional
 ```
 
 ### Development
 
 ```bash
-# Start the dev server (from monorepo root)
-yarn dev
-
-# Or from packages/ui directory
-cd packages/ui
-yarn dev
+# Start only the UI (from monorepo root)
+yarn dev:ui
 ```
 
 The app will be available at: **http://localhost:8080**
+
+For full-stack local development commands (backend, proof server, UI, optional IPFS),
+use the canonical matrix at:
+
+- [`../../docs/README.md`](../../docs/README.md#local-dev-command-matrix)
 
 Features:
 - ✅ Hot module reloading (HMR)
@@ -246,11 +248,11 @@ You are using Node.js 18.x. Vite requires Node.js version 20.19+ or 22.12+
 **Solution:**
 ```bash
 # Switch to Node 22
-nvm use 22.17.0
+nvm use 22.12.0
 
 # Or install it first
-nvm install 22.17.0
-nvm use 22.17.0
+nvm install 22.12.0
+nvm use 22.12.0
 ```
 
 ### Port 8080 already in use
@@ -270,20 +272,20 @@ lsof -ti:8080 | xargs kill -9
 # Clear Vite cache and rebuild
 rm -rf packages/ui/.vite
 rm -rf packages/ui/node_modules/.vite
-yarn dev
+yarn dev:ui
 ```
 
 ## Environment Variables
 
-Currently, the app doesn't require environment variables. Configuration is handled through:
+Current local runtime variable:
+
+- `VITE_API_BASE_URL` - Backend base URL (default local: `http://localhost:3001`)
+
+Other configuration is handled through:
+
 - Midnight Preview extension (injected at runtime)
 - LocalStorage (for session persistence)
 - In-code constants (for network settings)
-
-Future versions may add:
-- `VITE_MIDNIGHT_NETWORK_ID` - Override network ID
-- `VITE_API_ENDPOINT` - Backend API URL
-- `VITE_INDEXER_URL` - Midnight indexer endpoint
 
 ## Contributing
 

@@ -27,7 +27,7 @@ import {
   hasValidArduinoData,
   getArduinoDataSummary,
   clearArduinoSensorData,
-} from '../fl/arduinoIntegration';
+} from '../fl/iotIntegration';
 import {
   storeSubmission,
   checkAggregationReadiness,
@@ -302,7 +302,7 @@ export function FLDashboard() {
 
       // Store submission locally using aggregationService
       console.log('📡 Storing submission...');
-      await storeSubmission(submission);
+      const submissionResult = await storeSubmission(submission);
 
       setFlState((prev) => ({
         ...prev,
@@ -317,9 +317,9 @@ export function FLDashboard() {
 
       console.log(`📊 Current submissions: ${status.currentSubmissions}/${status.requiredSubmissions}`);
 
-      // Trigger aggregation if threshold reached
-      if (status.canAggregate) {
-        console.log('🚀 Threshold reached! Starting aggregation...');
+      // Trigger model refresh only when backend confirms an aggregation happened.
+      if (submissionResult.aggregated) {
+        console.log('🚀 Backend aggregated this round. Fetching latest global model...');
         setAggregationProgress({ running: true, progress: 0, message: 'Starting aggregation...' });
 
         try {
@@ -344,12 +344,8 @@ export function FLDashboard() {
 
           setAggregationProgress({ running: false, progress: 100, message: 'Aggregation complete!' });
 
-          // Reset status
-          setAggregationStatus({
-            canAggregate: false,
-            currentSubmissions: 0,
-            requiredSubmissions: 2,
-          });
+          // Refresh status from backend after round completion.
+          setAggregationStatus(await checkAggregationReadiness());
         } catch (aggError: any) {
           console.error('❌ Aggregation failed:', aggError);
           setError(`Aggregation failed: ${aggError.message}`);

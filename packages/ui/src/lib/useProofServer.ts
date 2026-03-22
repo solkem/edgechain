@@ -3,7 +3,8 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { proofServer, HealthStatus, ProofServerStatus, RewardClaimResult } from './proofServerClient';
+import { proofServer } from './proofServerClient';
+import type { HealthStatus, ProofServerStatus, RewardClaimResult } from './proofServerClient';
 
 /**
  * Hook for proof server connection status

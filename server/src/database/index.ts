@@ -24,6 +24,24 @@ const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
+interface TableInfoRow {
+  name: string;
+}
+
+function hasColumn(table: string, column: string): boolean {
+  const rows = db.prepare(`PRAGMA table_info(${table})`).all() as TableInfoRow[];
+  return rows.some((row) => row.name === column);
+}
+
+function ensureColumn(table: string, column: string, definition: string): void {
+  if (hasColumn(table, column)) {
+    return;
+  }
+
+  db.prepare(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`).run();
+  console.log(`   🧩 Added missing column ${table}.${column}`);
+}
+
 // Initialize schema
 export function initializeDatabase() {
   console.log('🗄️  Initializing EdgeChain database...');
@@ -38,6 +56,19 @@ export function initializeDatabase() {
       }
     }
   })();
+
+  // Lightweight startup migrations for existing local databases.
+  ensureColumn('sensor_readings', 'signature', 'TEXT');
+  ensureColumn('batch_proofs', 'collection_mode', "TEXT DEFAULT 'auto'");
+  ensureColumn('merkle_roots', 'collection_mode', "TEXT DEFAULT 'auto'");
+  ensureColumn('zk_proof_submissions', 'collection_mode', "TEXT DEFAULT 'auto'");
+
+  // Backfill consolidated signature from legacy signature_r if needed.
+  db.prepare(`
+    UPDATE sensor_readings
+    SET signature = signature_r
+    WHERE signature IS NULL AND signature_r IS NOT NULL
+  `).run();
 
   console.log(`   ✅ Database initialized at: ${DB_PATH}`);
 }

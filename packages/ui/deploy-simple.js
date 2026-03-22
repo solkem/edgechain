@@ -211,7 +211,7 @@ VITE_MIDNIGHT_PROOF_SERVER=${DEVNET_CONFIG.proverServerUrl}
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
     console.log('🎯 Next Steps:\n');
     console.log('1. Implement real circuit calls in ContractProvider');
-    console.log('2. Restart UI: cd packages/ui && npm run dev');
+    console.log('2. Restart UI: yarn dev:ui');
     console.log('3. Connect your Lace wallet in the browser');
     console.log('4. Test the FL workflow with real transactions!\n');
 

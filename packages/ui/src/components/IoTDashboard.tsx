@@ -289,7 +289,7 @@ export function IoTDashboard() {
 
       setDeviceInfo(prev => ({
         ...prev!,
-        merkleRoot: registryData.dual_roots?.auto_root || 'pending',
+        merkleRoot: registryData.global_device_root || 'pending',
         lastProofTime: Date.now(),
       }));
 

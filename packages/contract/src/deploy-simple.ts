@@ -276,10 +276,9 @@ VITE_MIDNIGHT_PROOF_SERVER=${TESTNET_CONFIG.proofServer}
     console.log("1. Keep the proof server running (Terminal 1)");
     console.log("");
     console.log("2. Start the UI:");
-    console.log("   cd packages/ui");
-    console.log("   npm run dev");
+    console.log("   yarn dev:ui");
     console.log("");
-    console.log("3. Open http://localhost:5173 in your browser");
+    console.log("3. Open http://localhost:8080 in your browser");
     console.log("");
     console.log("4. Connect your Lace Midnight Preview wallet");
     console.log("   (The one with 1,000 tDUST)");

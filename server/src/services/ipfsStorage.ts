@@ -2,7 +2,7 @@
  * IPFS Storage Service using Microservice Architecture
  *
  * Provides decentralized storage for ZK proofs and IoT sensor readings.
- * - Calls separate ESM-based IPFS microservice on port 3002
+ * - Calls separate ESM-based IPFS microservice (default local: port 3003)
  * - FREE unlimited storage via Storacha
  * - Content-addressed (CID-based)
  * - Censorship-resistant
@@ -55,7 +55,7 @@ export class IPFSStorageService {
 
   constructor() {
     // IPFS microservice endpoint
-    this.ipfsServiceUrl = process.env.IPFS_SERVICE_URL || 'http://localhost:3002';
+    this.ipfsServiceUrl = process.env.IPFS_SERVICE_URL || 'http://localhost:3003';
   }
 
   /**

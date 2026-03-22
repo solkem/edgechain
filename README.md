@@ -51,6 +51,7 @@ What is still partially mock or in-progress:
 - `proof-server/`: Farmer-owned proof server (Express + WebSocket + LoRa serial)
 - `firmware/esp32-msingi/`: ESP32-S3 firmware (ATECC608B, RYLR896, sensors)
 - `packages/ui/`: React frontend
+- `packages/api/`: Shared workspace constants/types (no standalone FL HTTP server)
 - `packages/contract/`: Compact contracts and deployment scripts
 - `ipfs-service/`: Storacha/IPFS microservice (with mock fallback mode)
 - `gateway/`: Legacy/browser gateway tooling
@@ -68,57 +69,46 @@ What is still partially mock or in-progress:
 
 ## Local Development
 
+Canonical local development commands and ports are maintained in:
+- [`docs/README.md`](docs/README.md#local-dev-command-matrix)
+
 Run services in separate terminals.
 
-### 1) UI/workspace dependencies
+### 1) Install dependencies (from repository root)
 
 ```bash
-cd /edgechain
 yarn install
+npm --prefix server install
+npm --prefix proof-server install
+npm --prefix ipfs-service install   # Optional
 ```
 
-### 2) Backend API (port 3001)
+### 2) Start services (from repository root)
 
 ```bash
-cd /edgechain/server
-npm install
-npm run dev
-```
+# Optional preflight check (dependencies + ports)
+yarn dev:stack:check
+yarn dev:stack:check:full   # includes local IPFS checks
 
-### 3) Proof server (port 3002)
+# Single-command launcher (required local stack)
+yarn dev:stack
 
-```bash
-cd /edgechain/proof-server
-npm install
-npm run dev
+# Or run services individually
+yarn dev:server
+yarn dev:proof-server
+yarn dev:ui
+yarn dev:ipfs   # Optional
 ```
 
 If LoRa hardware is not connected, the proof server falls back to API-only mode.
 
-### 4) UI (port 5173)
-
-```bash
-cd /edgechain
-yarn workspace edgechain-ui dev
-```
-
-### 5) Optional IPFS service (port 3003)
-
-```bash
-cd /edgechain/ipfs-service
-npm install
-npm run dev
-```
-
 ### Basic health checks
 
 ```bash
-curl http://localhost:3001/health
-curl http://localhost:3002/health
-curl http://localhost:3003/health
+yarn dev:health
 ```
 
-Open UI at `http://localhost:5173`.
+Open UI at `http://localhost:8080`.
 
 ## Freedom Node Hardware Baseline
 
@@ -151,7 +141,14 @@ Relevant files:
 - Backend API: `3001`
 - Proof server: `3002`
 - IPFS service: `3003`
-- UI (Vite): `5173`
+- UI (Vite): `8080`
+
+## FL API Surface
+
+EdgeChain now uses a single FL HTTP API surface:
+- `server` on port `3001` (`/api/fl/*`)
+
+The legacy standalone FL API runtime in `packages/api` has been deprecated and removed.
 
 ## Key Environment Variables
 

@@ -1,141 +1,193 @@
 /**
  * Aggregation Service - Automated FedAvg Execution
  *
- * This service monitors contract submissions and automatically triggers
- * Federated Averaging when enough farmers have submitted.
+ * This service now treats the unified backend (`/api/fl/*`) as the
+ * source of truth for submissions and aggregation state.
  *
- * In production, this would run as:
- * - A dedicated node.js service
- * - AWS Lambda / Cloud Function
- * - Decentralized compute (Akash, Bacalhau)
- *
- * For demo: Runs client-side in browser
+ * The UI still keeps a lightweight local history for stats/visualization.
  */
 
 import {
-  aggregateModelUpdates,
-  createGlobalModel,
   saveGlobalModel,
-  saveAggregationHistory,
-  loadAggregationHistory,
   DEFAULT_AGGREGATION_CONFIG,
 } from './aggregation';
 import type {
   ModelSubmission,
   AggregationConfig,
   GlobalModel,
-  AggregationResult,
 } from './types';
 
 // ============================================================================
 // API CONFIGURATION
 // ============================================================================
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://edgechain-api.fly.dev';
+const isLocalDev =
+  window.location.hostname === 'localhost' ||
+  window.location.hostname.includes('githubpreview.dev') ||
+  window.location.hostname.includes('codespaces') ||
+  window.location.hostname.startsWith('10.') ||
+  window.location.hostname.startsWith('127.');
 
-// ============================================================================
-// SUBMISSION STORAGE (Backend API - shared across devices)
-// ============================================================================
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.VITE_API_URL ||
+  (isLocalDev ? 'http://localhost:3001' : '');
 
-const SUBMISSIONS_KEY = 'edgechain_pending_submissions';
-const CURRENT_ROUND_KEY = 'edgechain_current_round';
+const SERVER_HISTORY_KEY = 'edgechain_server_aggregation_history';
 
-/**
- * Store model submission (encrypted)
- * Sends to backend API for shared storage across devices
- */
-export async function storeSubmission(submission: ModelSubmission): Promise<void> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/submissions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(submission),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to store submission: ${response.statusText}`);
-    }
-
-    const result = await response.json();
-    console.log(`📥 Stored submission from ${submission.farmerId.slice(0, 10)}...`);
-    console.log(`📊 Total submissions: ${result.currentSubmissions}/${result.requiredSubmissions}`);
-  } catch (error) {
-    console.error('Failed to store submission via API:', error);
-    // Fallback to localStorage
-    const submissions = loadPendingSubmissionsLocal();
-    submissions.push(submission);
-    localStorage.setItem(SUBMISSIONS_KEY, JSON.stringify(submissions));
-    console.log('⚠️ Stored submission locally (API unavailable)');
-  }
+interface FLStatusResponse {
+  currentRound: number;
+  currentVersion: number;
+  pendingSubmissions: number;
+  minSubmissions: number;
+  globalModelAvailable: boolean;
+  globalModelVersion: number | null;
 }
 
-/**
- * Load pending submissions for current round from API
- */
-export async function loadPendingSubmissions(): Promise<ModelSubmission[]> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/submissions`);
-    if (!response.ok) {
-      throw new Error(`Failed to load submissions: ${response.statusText}`);
-    }
-    const data = await response.json();
-    return data.submissions || [];
-  } catch (error) {
-    console.error('Failed to load submissions from API:', error);
-    // Fallback to localStorage
-    return loadPendingSubmissionsLocal();
-  }
+interface SubmissionResponse {
+  success: boolean;
+  submissionCount: number;
+  aggregated: boolean;
+  globalModelVersion: number | null;
 }
 
-/**
- * Load from localStorage (fallback)
- */
-function loadPendingSubmissionsLocal(): ModelSubmission[] {
+export interface SubmissionResult {
+  submissionCount: number;
+  aggregated: boolean;
+  globalModelVersion: number | null;
+  globalModel?: GlobalModel;
+}
+
+interface ServerAggregationSnapshot {
+  round: number;
+  version: number;
+  createdAt: number;
+  trainedBy: number;
+  averageAccuracy: number;
+}
+
+async function fetchFLStatus(): Promise<FLStatusResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/fl/status`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch FL status: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+async function fetchGlobalModelFromServer(): Promise<GlobalModel> {
+  const response = await fetch(`${API_BASE_URL}/api/fl/global-model`);
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || err.message || `Failed to fetch global model: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+function loadServerHistory(): ServerAggregationSnapshot[] {
   try {
-    const data = localStorage.getItem(SUBMISSIONS_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch (error) {
-    console.error('Failed to load submissions:', error);
+    const raw = localStorage.getItem(SERVER_HISTORY_KEY);
+    return raw ? (JSON.parse(raw) as ServerAggregationSnapshot[]) : [];
+  } catch {
     return [];
   }
 }
 
-/**
- * Clear submissions after aggregation
- */
-export function clearPendingSubmissions(): void {
-  localStorage.removeItem(SUBMISSIONS_KEY);
-  console.log('🗑️ Cleared pending submissions (round complete)');
+function saveServerHistory(history: ServerAggregationSnapshot[]): void {
+  localStorage.setItem(SERVER_HISTORY_KEY, JSON.stringify(history));
+}
+
+function addSnapshot(model: GlobalModel): void {
+  const history = loadServerHistory();
+  const exists = history.some((h) => h.round === model.round && h.version === model.version);
+  if (exists) {
+    return;
+  }
+
+  history.push({
+    round: model.round,
+    version: model.version,
+    createdAt: model.metadata.createdAt,
+    trainedBy: model.metadata.trainedBy,
+    averageAccuracy: model.metadata.averageAccuracy,
+  });
+  saveServerHistory(history);
 }
 
 /**
- * Get current round number from API
+ * Store model submission on the unified backend.
+ */
+export async function storeSubmission(submission: ModelSubmission): Promise<SubmissionResult> {
+  const response = await fetch(`${API_BASE_URL}/api/fl/submit`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(submission),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || `Failed to submit model: ${response.statusText}`);
+  }
+
+  const result = (await response.json()) as SubmissionResponse;
+  console.log(`📥 Stored submission from ${submission.farmerId.slice(0, 10)}...`);
+  console.log(`📊 Pending submissions: ${result.submissionCount}`);
+
+  const submissionResult: SubmissionResult = {
+    submissionCount: result.submissionCount,
+    aggregated: result.aggregated,
+    globalModelVersion: result.globalModelVersion,
+  };
+
+  // If backend already aggregated, cache the latest global model immediately.
+  if (result.aggregated) {
+    try {
+      const model = await fetchGlobalModelFromServer();
+      saveGlobalModel(model);
+      addSnapshot(model);
+      submissionResult.globalModel = model;
+    } catch (error) {
+      console.warn('Submission accepted, but failed to cache aggregated model:', error);
+    }
+  }
+
+  return submissionResult;
+}
+
+/**
+ * The unified backend does not expose pending submission payloads;
+ * keep a compatibility shape for existing callers.
+ */
+export async function loadPendingSubmissions(): Promise<ModelSubmission[]> {
+  return [];
+}
+
+/**
+ * Kept for API compatibility; server owns submission lifecycle.
+ */
+export function clearPendingSubmissions(): void {
+  console.log('ℹ️ clearPendingSubmissions is managed by backend /api/fl');
+}
+
+/**
+ * Get current round number from unified backend status.
  */
 export async function getCurrentRound(): Promise<number> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/round`);
-    if (!response.ok) {
-      throw new Error(`Failed to get round: ${response.statusText}`);
-    }
-    const data = await response.json();
-    return data.currentRound || 1;
+    const status = await fetchFLStatus();
+    return status.currentRound || 1;
   } catch (error) {
-    console.error('Failed to get round from API:', error);
-    // Fallback to localStorage
-    const round = localStorage.getItem(CURRENT_ROUND_KEY);
-    return round ? parseInt(round, 10) : 1;
+    console.error('Failed to get round from /api/fl/status:', error);
+    return 1;
   }
 }
 
 /**
- * Increment round number (called after aggregation)
+ * Kept for API compatibility; round progression is backend-managed.
  */
 export function incrementRound(): void {
-  const newRound = parseInt(localStorage.getItem(CURRENT_ROUND_KEY) || '1', 10) + 1;
-  localStorage.setItem(CURRENT_ROUND_KEY, newRound.toString());
-  console.log(`📈 Advanced to Round ${newRound}`);
+  console.log('ℹ️ incrementRound is managed by backend /api/fl');
 }
 
 // ============================================================================
@@ -151,35 +203,28 @@ export interface AggregationStatus {
 }
 
 /**
- * Check if we have enough submissions to run aggregation
+ * Check if aggregation is ready on backend.
  */
 export async function checkAggregationReadiness(
   config: AggregationConfig = DEFAULT_AGGREGATION_CONFIG
 ): Promise<AggregationStatus> {
-  const submissions = await loadPendingSubmissions();
-  const canAggregate = submissions.length >= config.minSubmissions;
+  const status = await fetchFLStatus();
+  const required = status.minSubmissions || config.minSubmissions;
+  const canAggregate = status.pendingSubmissions >= required;
 
   return {
     canAggregate,
-    currentSubmissions: submissions.length,
-    requiredSubmissions: config.minSubmissions,
-    pendingSubmissions: submissions,
+    currentSubmissions: status.pendingSubmissions,
+    requiredSubmissions: required,
+    pendingSubmissions: [],
     message: canAggregate
-      ? `✅ Ready to aggregate! (${submissions.length} submissions)`
-      : `⏳ Waiting for more submissions (${submissions.length}/${config.minSubmissions})`,
+      ? `✅ Ready to aggregate (${status.pendingSubmissions}/${required})`
+      : `⏳ Waiting for more submissions (${status.pendingSubmissions}/${required})`,
   };
 }
 
 /**
- * Run aggregation pipeline
- *
- * Steps:
- * 1. Load pending submissions
- * 2. Run FedAvg algorithm
- * 3. Create global model
- * 4. Save to storage (local for demo, IPFS for production)
- * 5. Update contract with new model hash
- * 6. Clear submissions and advance round
+ * Fetch the latest aggregated model from backend and cache it locally.
  */
 export async function runAggregation(
   config: AggregationConfig = DEFAULT_AGGREGATION_CONFIG,
@@ -189,70 +234,30 @@ export async function runAggregation(
   console.log('║   FEDERATED AVERAGING - STARTING      ║');
   console.log('╚════════════════════════════════════════╝\n');
 
-  onProgress?.(10, 'Loading submissions...');
+  onProgress?.(10, 'Checking backend aggregation status...');
 
-  // Step 1: Load submissions
-  const submissions = await loadPendingSubmissions();
-  if (submissions.length < config.minSubmissions) {
-    throw new Error(
-      `Not enough submissions: ${submissions.length} < ${config.minSubmissions}`
-    );
+  const status = await fetchFLStatus();
+  const required = status.minSubmissions || config.minSubmissions;
+  const canFetchModel =
+    status.globalModelAvailable || status.pendingSubmissions >= required;
+
+  if (!canFetchModel) {
+    throw new Error(`Not enough submissions: ${status.pendingSubmissions}/${required}`);
   }
 
-  console.log(`📥 Loaded ${submissions.length} submissions`);
-  onProgress?.(20, `Processing ${submissions.length} submissions...`);
+  onProgress?.(60, 'Fetching global model from backend...');
+  const globalModel = await fetchGlobalModelFromServer();
 
-  // Step 2: Run FedAvg algorithm
-  const currentRound = await getCurrentRound();
-  const history = loadAggregationHistory();
-  const currentVersion = history.length > 0 ? history[history.length - 1].modelVersion : 0;
-
-  console.log(`📊 Current Round: ${currentRound}, Version: ${currentVersion}`);
-  onProgress?.(30, 'Running Federated Averaging algorithm...');
-
-  const aggregationResult: AggregationResult = await aggregateModelUpdates(
-    submissions,
-    currentRound,
-    currentVersion,
-    config
-  );
-
-  onProgress?.(60, 'Creating global model...');
-
-  // Step 3: Create global model package
-  const globalModel = createGlobalModel(aggregationResult, submissions);
-
-  console.log(`✅ Global Model v${globalModel.version} created`);
-  console.log(`   Trained by: ${globalModel.metadata.trainedBy} farmers`);
-  console.log(`   Total samples: ${globalModel.metadata.totalSamples}`);
-  console.log(`   Avg accuracy: ${(globalModel.metadata.averageAccuracy * 100).toFixed(2)}%`);
-
-  onProgress?.(80, 'Saving global model...');
-
-  // Step 4: Save global model
+  onProgress?.(85, 'Caching global model locally...');
   saveGlobalModel(globalModel);
-
-  // Step 5: Save aggregation history
-  history.push(aggregationResult);
-  saveAggregationHistory(history);
-
-  onProgress?.(90, 'Updating blockchain...');
-
-  // Step 6: Update contract (mock for now)
-  // In production: await contract.completeAggregation(modelHash)
-  console.log('📝 Would call: contract.completeAggregation(modelHash)');
-
-  onProgress?.(95, 'Finalizing round...');
-
-  // Step 7: Clear submissions and advance round
-  clearPendingSubmissions();
-  incrementRound();
+  addSnapshot(globalModel);
 
   onProgress?.(100, 'Aggregation complete!');
 
   console.log('\n╔════════════════════════════════════════╗');
   console.log('║   AGGREGATION SUCCESSFUL ✅            ║');
   console.log('╚════════════════════════════════════════╝\n');
+  console.log(`🌐 Global model v${globalModel.version} (round ${globalModel.round}) cached`);
 
   return globalModel;
 }
@@ -279,20 +284,25 @@ export function startAggregationWatcher(
 
   console.log(`👁️ Starting aggregation watcher (checking every ${intervalSeconds}s)...`);
 
+  let lastVersion: number | null = null;
+
   aggregationWatcher = setInterval(async () => {
-    const status = await checkAggregationReadiness(config);
+    try {
+      const status = await fetchFLStatus();
+      const hasNewGlobalModel =
+        status.globalModelAvailable &&
+        status.globalModelVersion !== null &&
+        status.globalModelVersion !== lastVersion;
 
-    if (status.canAggregate) {
-      console.log('🚀 Threshold reached! Triggering automatic aggregation...');
-
-      try {
-        const globalModel = await runAggregation(config);
-        onAggregationTriggered?.(globalModel);
-      } catch (error) {
-        console.error('❌ Auto-aggregation failed:', error);
+      if (!hasNewGlobalModel) {
+        return;
       }
-    } else {
-      console.log(status.message);
+
+      const model = await runAggregation(config);
+      lastVersion = model.version;
+      onAggregationTriggered?.(model);
+    } catch (error) {
+      console.error('❌ Auto-aggregation check failed:', error);
     }
   }, intervalSeconds * 1000);
 }
@@ -316,39 +326,38 @@ export function stopAggregationWatcher(): void {
  * Get aggregation statistics
  */
 export async function getAggregationStats() {
-  const history = loadAggregationHistory();
+  const history = loadServerHistory();
   const currentRound = await getCurrentRound();
-  const pendingSubmissions = await loadPendingSubmissions();
+  const status = await checkAggregationReadiness();
 
-  if (history.length === 0) {
+  if (history.length === 0 && !status.canAggregate) {
     return {
       totalRounds: 0,
       currentRound,
-      latestVersion: 0,
-      pendingSubmissions: pendingSubmissions.length,
+      latestVersion: status.requiredSubmissions > 0 ? 1 : 0,
+      pendingSubmissions: status.currentSubmissions,
       averageParticipation: 0,
       totalFarmersServed: 0,
     };
   }
 
-  const totalParticipants = history.reduce((sum, r) => sum + r.numSubmissions, 0);
-  const uniqueFarmers = new Set(history.flatMap(r => r.participatingFarmers));
+  const totalParticipants = history.reduce((sum, r) => sum + r.trainedBy, 0);
 
   return {
     totalRounds: history.length,
     currentRound,
-    latestVersion: history[history.length - 1].modelVersion,
-    latestAccuracy: history[history.length - 1].aggregationMetrics.weightedAccuracy,
-    pendingSubmissions: pendingSubmissions.length,
-    averageParticipation: totalParticipants / history.length,
-    totalFarmersServed: uniqueFarmers.size,
+    latestVersion: history.length > 0 ? history[history.length - 1].version : 0,
+    latestAccuracy: history.length > 0 ? history[history.length - 1].averageAccuracy : 0,
+    pendingSubmissions: status.currentSubmissions,
+    averageParticipation: history.length > 0 ? totalParticipants / history.length : 0,
+    totalFarmersServed: totalParticipants,
     history: history.map(r => ({
       round: r.round,
-      version: r.modelVersion,
-      farmers: r.numSubmissions,
-      accuracy: r.aggregationMetrics.weightedAccuracy,
-      loss: r.aggregationMetrics.averageLoss,
-      timestamp: new Date(r.timestamp).toLocaleString(),
+      version: r.version,
+      farmers: r.trainedBy,
+      accuracy: r.averageAccuracy,
+      loss: 0,
+      timestamp: new Date(r.createdAt).toLocaleString(),
     })),
   };
 }
@@ -357,9 +366,7 @@ export async function getAggregationStats() {
  * Reset all aggregation data (for testing)
  */
 export function resetAggregationSystem(): void {
-  clearPendingSubmissions();
-  localStorage.removeItem(CURRENT_ROUND_KEY);
   localStorage.removeItem('edgechain_global_model');
-  localStorage.removeItem('edgechain_aggregation_history');
+  localStorage.removeItem(SERVER_HISTORY_KEY);
   console.log('🔄 Reset aggregation system');
 }

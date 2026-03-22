@@ -105,11 +105,18 @@ Edit `config/local.json`:
 
 Compatibility note: legacy installer variable names (`SERVER_PORT`, `LORA_SERIAL_PORT`, `LORA_BAUD_RATE`) are still accepted.
 
+For the canonical local full-stack command matrix, see:
+- [`../docs/README.md`](../docs/README.md#local-dev-command-matrix)
+
 ## Running
 
 ### Development
 
 ```bash
+# From repository root
+yarn dev:proof-server
+
+# Or from this directory
 npm run dev
 ```
 
