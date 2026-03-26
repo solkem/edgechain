@@ -1,0 +1,2 @@
+survey_week,date,collected_by,farmer_id,used_app_this_week_yes_no,submitted_records_count,perceived_usefulness_1_5,ease_of_use_1_5,trust_data_not_changed_1_5,trust_receipt_as_proof_1_5,would_recommend_1_5,top_confusion_point,top_value_seen,incident_reported_yes_no,incident_details,next_week_intent_yes_no
+1,YYYY-MM-DD,StaffName,F001,yes,3,4,4,4,5,4,Unsure about one screen,Receipt helps for record proof,no,,yes

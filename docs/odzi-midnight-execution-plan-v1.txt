@@ -1,0 +1,295 @@
+Odzi x Midnight Execution Plan (Lean Startup, Field-First)
+
+Owner: EdgeChain team
+Location: Odzi, Zimbabwe
+Plan start date: TBD (set with cooperative operations calendar)
+Plan horizon: 6 weeks from kickoff
+
+==================================================
+0) Objective
+==================================================
+
+Validate a real-world Midnight use case with farmers before seeking scale funding.
+
+What success means in this phase:
+- farmers use a field recording tool to capture real harvest-to-auction events;
+- app returns deterministic receipts for each record (Phase A off-chain);
+- trust + repeat behavior are measured and improving;
+- the pilot produces clean evidence for Phase B Midnight anchoring.
+- field tool performs reliably on low-cost Android phones.
+- daily Merkle roots are anchored via an initial custodial desktop operator flow with verifiable tx logs.
+
+Out of scope in this phase:
+- lending, credit underwriting, or DeFi product rollout;
+- complex token mechanics;
+- per-farmer IoT hardware deployment.
+
+==================================================
+0.1) Artifact Boundaries (Do Not Conflate)
+==================================================
+
+A) Field recording tool (pilot-critical, must work at kickoff)
+- Start session -> record event -> receipt -> history
+- Android-runnable, offline-tolerant, deterministic receipt generation
+- optimized for low-cost Android constraints (data, memory, battery)
+
+B) Learning Explorer (reviewer/funder education artifact)
+- Not required for kickoff-day farmer operations
+- Should be updated post-pilot with real data
+
+C) Midnight integration layer
+- Phase A: off-chain deterministic receipt generation + custodial desktop anchoring lane
+- Phase B: daily root anchoring + inclusion proofs under a mobile-constrained trust model
+
+==================================================
+0.2) Mobile-Constrained Trust Model (MCTM)
+==================================================
+
+Given current device/wallet constraints:
+- farmer phones are not required to run native trustless wallet flows
+- farmers use mobile app for event capture + receipts
+- operator desktop performs daily Midnight root anchoring in an initial custodial model
+- each receipt maps to an inclusion proof under anchored root
+
+Phase A trust posture:
+- custody exists at anchor submission, but verification outputs remain trust-minimized
+- deterministic receipts, tx-hash references, and inclusion proofs remain independently checkable
+- two-person anchor control and anchoring SLA are mandatory controls
+
+Reference:
+- docs/MOBILE_CONSTRAINED_TRUST_MODEL.md
+
+==================================================
+1) Phase A Field Recording Tool Scope (v0)
+==================================================
+
+Farmer-facing workflow:
+1. Start session
+   - Farmer ID (or coop ID mapping), consent checkbox.
+2. Record event
+   - Event type: HARVEST, BALE_PREP, DISPATCH.
+   - Required fields:
+     - crop lot ID
+     - date/time
+     - notes (short)
+   - Conditional fields:
+     - BALE_PREP: bale tag, est weight, est grade
+     - DISPATCH: destination floor, transporter, departure time
+3. Receipt screen
+   - Record ID
+   - Timestamp
+   - Receipt fingerprint (deterministic hash-like ID)
+   - "Show this receipt when you need to verify this record."
+4. History view
+   - Last 10 records with receipt IDs and status.
+
+Technical note:
+- Phase A receipts are off-chain deterministic artifacts (not on-chain proofs yet).
+- Phase B anchors these artifacts to Midnight commitments and nullifier rules.
+- In MCTM, anchoring runs through a controlled desktop custodial lane until mobile-native wallet flows are practical.
+
+==================================================
+2) Team Roles
+==================================================
+
+Minimum field team:
+- 1 Field Lead (session control, consent, escalations)
+- 1 Product Operator (app support and bug triage)
+- 1 Enumerator (forms and survey capture)
+- 1 Community Liaison (local language clarity and trust)
+
+Daily close owner:
+- Field Lead compiles KPI summary by 18:00 local time.
+
+==================================================
+3) Day 1 Plan (Kickoff Day)
+==================================================
+
+08:00-09:00 Setup
+- Device checks, charging, backup hotspot, printed forms.
+- Confirm all templates and backup paper flow are ready.
+- Run 5-minute low-end Android smoke test (open, submit, offline queue, resync).
+
+09:00-10:00 Group briefing
+- Message: "Today we test digital proof of farm events."
+- Message: "No financing promises today."
+- Explain receipt concept with one example.
+
+10:00-12:00 Cohort A (10-12 farmers)
+- Each farmer records one real event from current harvest workflow.
+- Capture time-to-complete and confusion points.
+
+12:00-13:00 Midday review
+- Fix copy/UX friction immediately (same-day iteration).
+
+13:00-15:00 Cohort B (10-12 farmers)
+- Run improved flow.
+- Continue trust survey capture.
+
+15:00-16:00 Comprehension + baseline calibration block
+- Run 5-question baseline digital-trust mini survey.
+- Capture same-day receipt comprehension responses.
+- Log top confusion points for week-1 fixes.
+
+16:00-17:30 Data consolidation
+- Update baseline, trust survey, and KPI tracker.
+- Daily decision: GO (continue), ITERATE (patch), HOLD (blocker).
+
+Day 1 success thresholds:
+- >= 20 farmers submit at least one valid event.
+- >= 50% can explain what a receipt means in their own words.
+- >= 60% say they will use it again this week.
+
+==================================================
+4) Week-by-Week Lean Plan
+==================================================
+
+Week 0 (Kickoff Week): Problem + Workflow Fit
+- Goal: prove farmers can use and understand receipt workflow.
+- Outputs:
+  - baseline data collected
+  - first trust/behavior signal
+  - top 5 friction points list
+
+Week 1: Activation Reliability
+- Goal: raise valid submissions and reduce support burden.
+- Actions:
+  - simplify form labels
+  - improve error messages
+  - retrain on most confusing step
+
+Week 2: Trust Reinforcement
+- Goal: ensure farmers perceive receipts as credible proof.
+- Actions:
+  - add receipt lookup demonstration
+  - run "verify my record" exercises in group
+  - start daily root anchoring runbook and anchor log publication
+  - enforce two-person custodial anchor sign-off process
+
+Week 3: Behavior Stability
+- Goal: consistent weekly usage without heavy hand-holding.
+- Actions:
+  - lightweight reminders via liaison
+  - measure drop-off reasons by segment
+
+Week 4: Anchoring Integrity + Optional Wallet Lane
+- Goal: validate anchoring reliability and optional connector lane where feasible.
+- Actions:
+  - inclusion proof spot-checks against anchored roots
+  - publish reproducibility check outcomes for sampled receipts
+  - optional wallet/connector trials on extension-capable devices only
+
+Week 5: Evidence Packaging
+- Goal: produce readiness dossier for Midnight discussion.
+- Outputs:
+  - KPI trend summary
+  - user evidence and quotes (anonymized)
+  - product changes made and rationale
+  - clear funded next-step proposal
+
+==================================================
+5) Metrics and Gates
+==================================================
+
+Core gates:
+- Activation (week 1): >= 75%
+- Retention (week 4): >= 40% (recalibrate after baseline)
+- Retention (week 6): >= 35% (recalibrate after baseline)
+- Completeness: >= 90%
+- Invalid rate: <= 5%
+- Avg trust score: baseline + >= 0.7 lift by week 6
+- Trust score 4 or 5: >= 60% (recalibrate after baseline)
+- Anchoring coverage: >= 90% of active pilot days
+- Anchoring timeliness: >= 80% anchored within 24h
+- Inclusion proof verification success: >= 99% on sampled checks
+
+Optional lane metrics (not blocking GO in this phase):
+- Wallet/connector setup success on compatible devices
+- Sign-without-help in small champion subgroup
+
+Custodial control metrics (blocking in this phase):
+- Anchor sign-off compliance: >= 95%
+- Receipt reproducibility on sampled checks: >= 99%
+
+Calibration rule:
+- Treat week-0 baseline as denominator context.
+- Final thresholds are locked after baseline review and documented in tracker notes.
+
+Decision logic:
+- GO: all critical trust/behavior/data gates pass.
+- ITERATE: one critical gate missed, no critical incident.
+- NO-GO: trust failure or safety/compliance critical issue.
+
+==================================================
+6) Tools to Use (Already Prepared)
+==================================================
+
+- Baseline form:
+  docs/baseline-form-template.csv
+- Baseline mini survey (5 questions):
+  docs/baseline-trust-mini-survey-5q.csv
+- Weekly trust survey:
+  docs/trust-survey-template.csv
+- KPI tracker:
+  docs/kpi-tracker-template.csv
+- Daily anchor log:
+  docs/daily-anchor-log-template.csv
+- Weekly ops checklist:
+  docs/weekly-field-checklist.txt
+- Field app build spec:
+  docs/FIELD_RECORDING_TOOL_BUILD_SPEC_v1.md
+- Mobile-constrained trust model:
+  docs/MOBILE_CONSTRAINED_TRUST_MODEL.md
+
+==================================================
+7) Daily Operating Rhythm (Field Version)
+==================================================
+
+Every day in pilot week:
+1. Morning (15 min): brief team on focus metric.
+2. During sessions: log support requests and confusion points.
+3. End of day (30 min): KPI update + one product fix decision.
+4. End of day anchor routine: build daily root, anchor, and log tx hash.
+5. Publish one-line status:
+   - "today we learned..."
+   - "tomorrow we change..."
+
+==================================================
+8) Risk Controls
+==================================================
+
+Hard stops:
+- any report of lost funds
+- unresolved data tampering allegation
+- coercion or misleading finance claims
+
+Mitigations:
+- explicit non-financial consent language
+- backup paper capture flow
+- immediate incident log and escalation owner
+- custodial anchor controls: dual sign-off + tx hash publication + daily exception review
+
+==================================================
+9) Immediate Actions (Tonight)
+==================================================
+
+1. Freeze v0 fields for HARVEST, BALE_PREP, DISPATCH.
+2. Prepare 2 Android devices + 1 fallback laptop.
+3. Validate app on at least 2 low-end Android devices and confirm offline queue/resync.
+4. Print 30 baseline forms, 5-question mini surveys, and consent summary sheets.
+5. Assign day-one team roles by name.
+6. Pre-fill KPI tracker headers for kickoff week.
+7. Prepare anchor-operator desktop flow and initialize daily anchor log template.
+8. Confirm custodial anchor sign-off template is ready (operator + reviewer).
+
+==================================================
+10) Output by End of Week 1
+==================================================
+
+You should have:
+- evidence that farmers can perform real event recording;
+- measurable trust and repeat-intent data;
+- known UX blockers prioritized by impact;
+- first daily anchors logged with tx references;
+- reproducibility spot-check results linked to anchored receipts;
+- clear decision on whether to expand optional wallet testing in week 2.

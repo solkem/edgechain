@@ -1,0 +1,2 @@
+survey_date,farmer_id,enumerator,q1_current_recordkeeping_confidence_1_5,q2_trust_digital_records_1_5,q3_phone_comfort_1_5,q4_understands_receipt_concept_1_5,q5_willing_to_use_weekly_yes_no,notes
+YYYY-MM-DD,F001,StaffName,3,2,4,2,yes,Short context note

@@ -1,0 +1,194 @@
+Midnight Ecosystem Concept Note (Draft v1)
+
+Working Title
+Odzi Privacy Pilot: Real-World Validation of Midnight for Smallholder Agriculture
+
+Author
+EdgeChain team (Odzi, Zimbabwe)
+
+Date
+2026-03-21
+
+==================================================
+1) Executive Summary
+==================================================
+
+This proposal is not a DeFi lending product pitch.
+It is a real-world, farmer-grounded validation program for Midnight.
+
+We will:
+- run a time-boxed pilot with a smallholder farming cooperative in Odzi, Zimbabwe;
+- deploy a minimum Midnight interaction app focused on privacy-preserving records;
+- measure real usage, trust, and operational behavior;
+- present evidence-backed results and a funded roadmap for expansion.
+
+Core thesis:
+Midnight can demonstrate tangible adoption when privacy technology is applied to practical, low-friction workflows in communities that already value trust minimization and control over records.
+
+==================================================
+2) Context and Problem
+==================================================
+
+Smallholder farmers in Odzi operate in an environment where trust in formal systems is limited, records are fragmented, and proof of activity is difficult to standardize.
+
+Current pain points observed in early discussions:
+- paper-first records that are easy to lose or dispute;
+- weak digital continuity of farm events (inputs, observations, deliveries);
+- limited confidence that records are immutable and independently verifiable;
+- low appetite for heavy technical onboarding unless immediate value is visible.
+
+Important scope statement:
+- We are not claiming to solve financing at this stage.
+- We are validating the behavior and trust prerequisites required before any finance-linked use case.
+
+==================================================
+3) Why Midnight (and Why This Pilot)
+==================================================
+
+Midnight is uniquely suited to this stage because it enables:
+- private user interactions with verifiable outcomes;
+- selective disclosure models that fit agricultural cooperative workflows;
+- trust-minimized record anchors without exposing sensitive participant details.
+
+This pilot gives Midnight:
+- a grounded, non-speculative use-case in a real underserved community;
+- measurable field evidence beyond hackathon demos;
+- reusable patterns for privacy-first adoption in emerging markets.
+
+==================================================
+4) What We Will Build (Minimum Midnight App)
+==================================================
+
+We will build a minimum workflow that farmers can use with support from field facilitators.
+
+Feature set (strictly minimal):
+1. Mobile-constrained trust model (phase-appropriate)
+   - farmer mobile capture + deterministic receipts
+   - daily initial custodial desktop root anchoring on Midnight
+   - optional champion wallet lane on compatible devices
+2. Record submission
+   - farmer submits a simple field finding (structured form).
+3. Verifiable receipt
+   - each submission generates a proof-linked receipt identifier.
+4. Personal history view
+   - farmer and facilitator can see prior records and receipt statuses.
+5. Selective disclosure control (basic)
+   - farmer chooses what is shareable to cooperative officers.
+
+Non-goals in this phase:
+- no lending, no credit underwriting, no token speculation mechanics;
+- no complex financial promises to participants.
+- no mandatory per-farmer trustless wallet flow on low-cost Android in phase 1.
+- no claim of non-custodial farmer-side wallet execution in phase 1.
+
+==================================================
+5) Pilot Design (Pre-Funding Traction Phase)
+==================================================
+
+Pilot size and duration:
+- cohort: 20-30 farmers in one Odzi cooperative;
+- duration: 6 weeks;
+- format: weekly guided sessions + between-session usage.
+
+Approach:
+- week 0 baseline and consent;
+- weeks 1-6 usage cycles, weekly trust survey, and KPI tracking;
+- champion subgroup handles deeper wallet interaction tests.
+
+Primary hypotheses:
+H1 Trust: farmers perceive digital receipts as credible proof.
+H2 Behavior: farmers repeatedly use the workflow without heavy hand-holding.
+H3 Data discipline: records are complete and valid enough for future use-case expansion.
+H4 Anchoring integrity in initial custodial lane: roots/proofs remain consistently verifiable.
+H5 Wallet readiness: champion subgroup can onboard/sign reliably.
+
+Pass thresholds (initial):
+- activation >= 75% (week 1);
+- week 4 retention >= 50%;
+- week 6 retention >= 40%;
+- completeness >= 90%;
+- invalid submissions <= 5%;
+- average trust >= 4.0/5;
+- trust score 4 or 5 >= 70%;
+- anchoring coverage >= 90%;
+- inclusion proof check success >= 99%;
+- wallet setup success (champions) >= 80%.
+
+==================================================
+6) Deliverables to Midnight
+==================================================
+
+At the end of the pilot, we will produce a Readiness Dossier:
+
+1. Pilot outcomes report
+   - KPI trends, threshold pass/fail, and decision analysis.
+2. Farmer evidence pack
+   - anonymized user journey snapshots and structured feedback.
+3. Product learning memo
+   - friction points, UX changes, and architecture implications.
+4. Technical brief
+   - Midnight integration details and operational constraints.
+5. Scale plan
+   - clear next-phase scope requiring ecosystem funding.
+
+==================================================
+7) Proposed Ask to Midnight (Post-Evidence)
+==================================================
+
+After pre-funding traction is demonstrated, we propose a funded 4-6 month expansion phase.
+
+Funding objective:
+- move from single-coop validation to multi-coop replication and stronger product instrumentation.
+
+Indicative funded workstreams:
+- product hardening and support tooling;
+- cooperative onboarding kit and facilitator training;
+- data quality and observability improvements;
+- independent evaluation of trust/behavior outcomes;
+- compliance and governance support for future expansion pathways.
+
+Indicative budget framing (to refine with Midnight):
+- Option A (lean): USD 40k-60k
+- Option B (full validation): USD 80k-120k
+
+We are open to milestone-based disbursement tied to clear KPI gates.
+
+==================================================
+8) Why This Is a Strong Midnight Opportunity
+==================================================
+
+- Real users, real constraints, real behavior data.
+- A non-hype use-case aligned to Midnight's privacy strengths.
+- A credible path from pilot evidence to ecosystem-level learning.
+- Reusability for other geographies and sectors with similar trust constraints.
+
+==================================================
+9) Risk Register and Mitigation
+==================================================
+
+Risk: wallet onboarding friction causes early drop-off.
+Mitigation: champion-first rollout; facilitator-assisted onboarding; simplified flows.
+
+Risk: pilot mistaken as financial promise.
+Mitigation: clear consent language and non-financial positioning in all sessions.
+
+Risk: weak data quality from manual errors.
+Mitigation: strict field templates, weekly quality audits, guided form design.
+
+Risk: regulatory ambiguity for future finance-linked expansion.
+Mitigation: keep current phase non-financial; introduce legal/compliance track before any financial use-case stage.
+
+==================================================
+10) Immediate Next Steps
+==================================================
+
+1. finalize pilot instruments and session scripts;
+2. run 6-week Odzi pilot and produce readiness dossier;
+3. submit evidence-led proposal to Midnight for expansion support;
+4. begin funded phase only against agreed milestones.
+
+==================================================
+Annex A: One-Line Positioning
+==================================================
+
+"EdgeChain in Odzi is a real-world validation program for Midnight privacy technology: start with verifiable farmer interactions, measure trust and behavior, then scale what works."

@@ -1,0 +1,26 @@
+Odzi Pilot Weekly Field Checklist
+
+Before session
+- Confirm participant list and consent status.
+- Confirm devices, connectivity options, and backup paper forms.
+- Prepare one-page recap of last week's findings for transparency.
+- Confirm custodial anchor sign-off pair (operator + reviewer) is assigned.
+
+During session
+- Record attendance and farmer IDs.
+- Observe one live record submission end-to-end.
+- Ask trust survey questions and capture exact responses.
+- Log incidents immediately (confusion, errors, trust concerns).
+
+After session
+- Reconcile submission counts with system logs.
+- Update trust survey sheet and KPI tracker.
+- Run receipt reproducibility spot-checks on sampled records.
+- Complete daily anchor sign-off record with tx hash reference.
+- Classify week as GO / ITERATE / NO-GO candidate.
+- Capture top 3 blockers and assign owner + due date.
+
+Hard stop escalation
+- Any report of lost funds.
+- Any unresolved allegation of data tampering.
+- Any coercion or misleading claims about financing outcomes.

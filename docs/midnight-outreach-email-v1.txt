@@ -1,0 +1,28 @@
+Subject: Evidence-Led Midnight Use-Case Pilot in Odzi, Zimbabwe
+
+Hello Midnight team,
+
+We are building an evidence-first field pilot with a smallholder farming cooperative in Odzi, Zimbabwe to validate a practical privacy use-case on Midnight.
+
+This is intentionally not a DeFi lending pitch at this stage.
+Our current focus is to prove:
+- real user interaction with a minimum Midnight app,
+- trust in verifiable privacy-preserving records,
+- repeat behavior in a real cooperative context.
+- an initial custodial desktop anchor lane that still produces independently verifiable trustless artifacts.
+
+We are self-funding an initial 6-week traction phase and collecting structured adoption evidence (activation, retention, trust, data quality, anchoring integrity, wallet readiness in an optional champion lane).
+
+If this aligns with Midnight's ecosystem priorities, we would value a short call to:
+1) share the pilot design;
+2) align on milestone criteria;
+3) discuss a post-evidence funding pathway for scaled validation.
+
+Attached: concept note draft
+Title: "Odzi Privacy Pilot: Real-World Validation of Midnight for Smallholder Agriculture"
+
+Best regards,
+[Your Name]
+[Role]
+[Project: EdgeChain]
+[Phone/Email]

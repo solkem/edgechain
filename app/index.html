@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>EdgeChain Pilot Simulator</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-nav">
+      <div class="nav-inner">
+        <div class="brand-lockup">
+          <p class="brand-mini">EDGECHAIN</p>
+          <p class="brand-main">Pilot Experience</p>
+        </div>
+
+        <nav class="nav-links" aria-label="Primary">
+          <a href="#" aria-current="page">Home</a>
+          <a href="#">Sensors</a>
+          <a href="#">Training</a>
+          <a href="#">Proofs</a>
+        </nav>
+
+        <button class="profile-button" type="button">Profile</button>
+      </div>
+    </header>
+
+    <main class="app-shell">
+      <section id="home-screen" class="screen active">
+        <div class="hero-grid" aria-hidden="true"></div>
+
+        <div class="hero-layout">
+          <div class="hero-copy-block">
+            <p class="hero-kicker">EDGECHAIN ON MIDNIGHT FOR ODZI FARMERS</p>
+            <h1>Prove Quality.Keep Privacy.Own Rewards.</h1>
+            <p class="hero-subcopy">
+              A premium simulation journey for pilot demos: wallet connection, Arduino readings, local federated
+              training, global model updates, and proof slip issuance.
+            </p>
+
+            <div class="hero-actions">
+              <button id="connect-wallet" class="btn-primary" type="button">Connect Lace (Simulated)</button>
+              <button id="open-simulator" class="btn-secondary" type="button">Open Simulator</button>
+            </div>
+
+            <div class="hero-lane">
+              <span>Wallet</span>
+              <span>Sensors</span>
+              <span>Local Model</span>
+              <span>Global Model</span>
+              <span>Download</span>
+              <span>Proof</span>
+            </div>
+          </div>
+
+          <aside class="hero-preview-card" aria-label="Preview">
+            <div class="preview-head">
+              <p>Live Pilot Preview</p>
+              <span>6-step visual run</span>
+            </div>
+            <div class="preview-orbit" aria-hidden="true"></div>
+            <ul class="preview-list">
+              <li>Connect farmer wallet</li>
+              <li>Generate Arduino packet stream</li>
+              <li>Train local model on-device</li>
+              <li>Aggregate co-op global model</li>
+              <li>Download improved model</li>
+              <li>Issue proof slip output</li>
+            </ul>
+          </aside>
+        </div>
+      </section>
+
+      <section id="sim-screen" class="screen">
+        <div class="card command-card">
+          <div>
+            <h2>Simulation Command Center</h2>
+            <p class="command-subcopy">Run a single stage or execute the full farmer-facing flow.</p>
+          </div>
+
+          <div class="command-actions">
+            <span id="wallet-pill" class="pill offline">Wallet not connected</span>
+            <button id="run-full-flow" class="btn-primary" type="button">Run Full Simulation</button>
+            <button id="reset-flow" class="btn-secondary" type="button">Reset</button>
+            <button id="back-home" class="btn-secondary" type="button">Home</button>
+          </div>
+        </div>
+
+        <section class="sim-grid">
+          <section class="card journey-card tile-journey">
+            <h3>Guided Run Steps</h3>
+            <ol class="stepper">
+              <li id="step-wallet" class="step-item active">
+                <div class="step-copy">
+                  <span class="step-num">1</span>
+                  <div>
+                    <strong>Connect Wallet</strong>
+                    <p>Simulated Lace onboarding.</p>
+                  </div>
+                </div>
+                <button id="run-step-wallet" class="step-btn" type="button">Run</button>
+              </li>
+
+              <li id="step-sensor" class="step-item">
+                <div class="step-copy">
+                  <span class="step-num">2</span>
+                  <div>
+                    <strong>Sensor Readings</strong>
+                    <p>Arduino-style packet stream.</p>
+                  </div>
+                </div>
+                <button id="run-step-sensor" class="step-btn" type="button">Run</button>
+              </li>
+
+              <li id="step-local" class="step-item">
+                <div class="step-copy">
+                  <span class="step-num">3</span>
+                  <div>
+                    <strong>Local Training</strong>
+                    <p>On-device model update.</p>
+                  </div>
+                </div>
+                <button id="run-step-local" class="step-btn" type="button">Run</button>
+              </li>
+
+              <li id="step-global" class="step-item">
+                <div class="step-copy">
+                  <span class="step-num">4</span>
+                  <div>
+                    <strong>Global Aggregation</strong>
+                    <p>Co-op model round.</p>
+                  </div>
+                </div>
+                <button id="run-step-global" class="step-btn" type="button">Run</button>
+              </li>
+
+              <li id="step-download" class="step-item">
+                <div class="step-copy">
+                  <span class="step-num">5</span>
+                  <div>
+                    <strong>Download Model</strong>
+                    <p>Sync global update.</p>
+                  </div>
+                </div>
+                <button id="run-step-download" class="step-btn" type="button">Run</button>
+              </li>
+
+              <li id="step-proof" class="step-item">
+                <div class="step-copy">
+                  <span class="step-num">6</span>
+                  <div>
+                    <strong>Inference + Proof</strong>
+                    <p>Improved result + proof slip.</p>
+                  </div>
+                </div>
+                <button id="run-step-proof" class="step-btn" type="button">Run</button>
+              </li>
+            </ol>
+          </section>
+
+          <article class="card panel tile-sensor">
+            <div class="panel-head">
+              <h3>Sensor Stream</h3>
+              <span id="sensor-state" class="tag">idle</span>
+            </div>
+
+            <div class="metric-grid">
+              <div class="metric-box">
+                <p>Moisture</p>
+                <strong id="sensor-moisture">-</strong>
+              </div>
+              <div class="metric-box">
+                <p>Humidity</p>
+                <strong id="sensor-humidity">-</strong>
+              </div>
+              <div class="metric-box">
+                <p>Temperature</p>
+                <strong id="sensor-temp">-</strong>
+              </div>
+            </div>
+
+            <div id="sensor-bars" class="bar-chart"></div>
+
+            <div class="sensor-log-wrap">
+              <h4>Latest packets</h4>
+              <ul id="sensor-log" class="sensor-log"></ul>
+            </div>
+          </article>
+
+          <article class="card panel tile-training">
+            <div class="panel-head">
+              <h3>Federated Training</h3>
+              <span id="train-state" class="tag">waiting</span>
+            </div>
+
+            <div class="flow-row">
+              <span>Local training</span>
+              <strong id="train-progress-text">0%</strong>
+            </div>
+            <div class="progress-track">
+              <span id="train-progress-fill" class="progress-fill"></span>
+            </div>
+
+            <div class="flow-row">
+              <span>Aggregation</span>
+              <strong id="aggregation-progress-text">0%</strong>
+            </div>
+            <div class="progress-track">
+              <span id="aggregation-progress-fill" class="progress-fill alt"></span>
+            </div>
+
+            <div class="model-grid">
+              <div class="model-pill">
+                <p>Local</p>
+                <strong id="local-model">local-v0.0</strong>
+              </div>
+              <div class="model-pill">
+                <p>Global</p>
+                <strong id="global-model">global-v0.0</strong>
+              </div>
+              <div class="model-pill">
+                <p>Download</p>
+                <strong id="download-status">Pending</strong>
+              </div>
+            </div>
+          </article>
+
+          <article class="card panel tile-dashboard">
+            <div class="panel-head">
+              <h3>Pilot Dashboard</h3>
+              <span class="tag">simulation</span>
+            </div>
+
+            <div class="kpi-grid">
+              <div class="kpi-card">
+                <p>Farmers</p>
+                <strong id="kpi-farmers">0</strong>
+              </div>
+              <div class="kpi-card">
+                <p>Packets</p>
+                <strong id="kpi-packets">0</strong>
+              </div>
+              <div class="kpi-card">
+                <p>Round</p>
+                <strong id="kpi-round">0</strong>
+              </div>
+            </div>
+
+            <div class="inference-grid">
+              <div>
+                <p class="inference-label">Before</p>
+                <strong id="inference-before">0%</strong>
+                <div class="progress-track slim">
+                  <span id="inference-before-fill" class="progress-fill warn"></span>
+                </div>
+              </div>
+              <div>
+                <p class="inference-label">After</p>
+                <strong id="inference-after">0%</strong>
+                <div class="progress-track slim">
+                  <span id="inference-after-fill" class="progress-fill"></span>
+                </div>
+              </div>
+            </div>
+
+            <p id="inference-delta" class="delta-text">Run the flow to see prediction improvement.</p>
+          </article>
+
+          <article class="card panel proof-panel tile-proof">
+            <div class="panel-head">
+              <h3>Proof Slip</h3>
+              <span id="proof-state" class="tag">unissued</span>
+            </div>
+
+            <div class="proof-card">
+              <p class="proof-label">Proof Slip ID</p>
+              <p id="proof-id" class="proof-id">-</p>
+              <p class="proof-note">Trustless verification output for the pilot lane.</p>
+            </div>
+
+            <div class="anchor-grid">
+              <div>
+                <p class="anchor-label">Anchor lane</p>
+                <strong id="anchor-lane">Pending</strong>
+              </div>
+              <div>
+                <p class="anchor-label">Last update</p>
+                <strong id="last-updated">-</strong>
+              </div>
+            </div>
+          </article>
+        </section>
+      </section>
+
+      <section id="status-screen" class="status"></section>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

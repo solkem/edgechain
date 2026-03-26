@@ -1,0 +1,2 @@
+event_day,records_count,merkle_root_hash,anchor_tx_hash,anchored_at_iso,anchored_by,reviewer_signoff_by,anchoring_within_24h_yes_no,inclusion_proofs_generated_count,reproducibility_checks_passed,reproducibility_checks_attempted,status,notes
+YYYY-MM-DD,0,0x...,0x...,YYYY-MM-DDTHH:MM:SSZ,OperatorName,ReviewerName,yes,0,0,0,PENDING,Initialize for kickoff week with custodial sign-off

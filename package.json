@@ -1,0 +1,15 @@
+{
+  "name": "edgechain-pilot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Phase A scaffold for the EdgeChain Odzi field recording tool.",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "NODE_ENV=development node --watch server/index.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "uuid": "^11.1.0"
+  }
+}
