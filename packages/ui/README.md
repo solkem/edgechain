@@ -1,11 +1,11 @@
 # EdgeChain UI
 
-The user interface for EdgeChain - a privacy-preserving federated learning platform for farmers on the Midnight Network.
+The user interface for EdgeChain, a privacy-preserving federated learning platform built on Midnight.
 
 ## Overview
 
 This React application provides the farmer-facing interface for:
-- Connecting Lace Midnight Preview wallet
+- Connecting a compatible Midnight wallet
 - Registering farmer profiles
 - Selecting training models
 - Monitoring federated learning progress
@@ -14,314 +14,131 @@ This React application provides the farmer-facing interface for:
 
 ## Tech Stack
 
-- **React 19** with TypeScript
-- **React Router v7** for client-side routing
-- **Tailwind CSS v4** for styling
-- **Vite v7** as build tool
-- **Lace Midnight Preview** for wallet integration
-- **Midnight Network SDK** for privacy features
+- React 19 with TypeScript
+- React Router v7
+- Tailwind CSS v4
+- Vite v7
+- Midnight wallet adapter layer with current Lace Midnight support
+- Midnight Network SDK packages
 
 ## Prerequisites
 
-### Required Software
+### Required software
 
-1. **Node.js v22.17.0+** (or v20.19+)
-   ```bash
-   # Check your version
-   node --version
+1. Node.js v22.17.0+ or v20.19+
+2. A compatible Midnight wallet
 
-   # If you need to upgrade, use nvm:
-   nvm install 22.17.0
-   nvm use 22.17.0
-   ```
+Recommended wallet setup:
+- Lace with Midnight/Beta features enabled, then add a Midnight wallet
+- Or use another compatible wallet such as 1AM Wallet
 
-2. **Lace Midnight Preview Extension**
-
-   **IMPORTANT:** This application requires **Lace Midnight Preview**, NOT the regular Lace wallet!
-
-   - **What is it?** Specialized browser extension for Midnight devnet development
-   - **Purpose:** Enables privacy-preserving DApps with zero-knowledge proofs
-   - **Network:** Midnight devnet only (not Cardano mainnet/testnet)
-   - **Tokens:** Uses tDUST (test DUST tokens), not ADA
-
-   **Installation:**
-   - Visit [Midnight Network Documentation](https://docs.midnight.network/)
-   - Download and install Lace Midnight Preview for your browser
-   - Create/restore a wallet
-   - Request tDUST tokens from the devnet faucet
-
-   **Key Differences from Regular Lace:**
-   ```
-   Regular Lace Wallet         →   Lace Midnight Preview
-   ───────────────────────────────────────────────────────
-   window.cardano.lace         →   window.cardano.midnight
-   Cardano mainnet/testnet     →   Midnight devnet
-   ADA tokens                  →   tDUST tokens
-   Standard transactions       →   Privacy-preserving ZK transactions
-   ```
+Installation references:
+- [Midnight installation guide](https://docs.midnight.network/getting-started/installation)
+- [Midnight documentation](https://docs.midnight.network/)
 
 ## Getting Started
 
 ### Installation
 
 ```bash
-# From the root of the monorepo
-yarn install
-
-# Or from packages/ui directory
-cd packages/ui
 yarn install
 ```
 
 ### Development
 
 ```bash
-# Start the dev server (from monorepo root)
-yarn dev
-
-# Or from packages/ui directory
-cd packages/ui
 yarn dev
 ```
 
-The app will be available at: **http://localhost:8080**
-
-Features:
-- ✅ Hot module reloading (HMR)
-- ✅ TypeScript type checking
-- ✅ Tailwind CSS with custom theme
-- ✅ Source maps for debugging
-
-### Build for Production
+### Build
 
 ```bash
-# From packages/ui
 yarn build
-
-# Output will be in packages/ui/dist/
-```
-
-## Project Structure
-
-```
-packages/ui/
-├── src/
-│   ├── App.tsx                    # Main app component with routing
-│   ├── main.tsx                   # App entry point
-│   ├── index.css                  # Global styles and Tailwind
-│   ├── providers/
-│   │   └── WalletProvider.tsx     # Midnight Preview wallet integration
-│   └── types/
-│       └── lace.d.ts              # TypeScript definitions for Midnight API
-├── index.html                     # HTML template
-├── vite.config.ts                 # Vite configuration
-├── tailwind.config.js             # Tailwind theme customization
-└── tsconfig.json                  # TypeScript configuration
 ```
 
 ## Wallet Integration
 
-### How It Works
+The UI now uses a pluggable wallet adapter interface instead of hard-coding the old Lace Midnight Preview flow.
 
-The wallet integration connects to **Lace Midnight Preview** to:
+Current adapter behavior:
+- Prefers Lace Midnight when available
+- Supports a clean integration point for 1AM Wallet
+- Stores the connected address, network, and wallet id in local storage for reconnects
+- Avoids assuming a single global injection path
 
-1. **Detect Installation**
-   ```typescript
-   const hasMidnightPreview = window.cardano?.midnight !== undefined;
-   ```
+Typical usage from components:
 
-2. **Request Connection**
-   ```typescript
-   const midnight = window.cardano.midnight;
-   const isEnabled = await midnight.enable();
-   ```
-
-3. **Get Midnight Address**
-   ```typescript
-   const addresses = await midnight.getUsedAddresses();
-   const address = addresses[0]; // Midnight-format address
-   ```
-
-4. **Network Detection**
-   ```typescript
-   // Midnight Preview always returns devnet
-   const network = 'devnet';
-   ```
-
-### Using the Wallet in Components
-
-```typescript
+```ts
 import { useWallet } from './providers/WalletProvider';
 
 function MyComponent() {
   const {
     isConnected,
     address,
-    isMidnightPreviewInstalled,
-    isConnecting,
-    error,
+    isWalletInstalled,
+    connectedWallet,
     connectWallet,
-    disconnectWallet,
   } = useWallet();
 
-  if (!isMidnightPreviewInstalled) {
-    return <InstallMidnightPreview />;
+  if (!isWalletInstalled) {
+    return <p>Install a compatible Midnight wallet first.</p>;
   }
 
   return (
-    <button onClick={connectWallet} disabled={isConnecting}>
-      {isConnected ? `Connected: ${address}` : 'Connect Midnight Preview'}
+    <button onClick={() => void connectWallet()}>
+      {isConnected ? `Connected: ${address}` : `Connect ${connectedWallet?.name ?? 'Wallet'}`}
     </button>
   );
 }
 ```
 
-### Important Notes
+## Important Notes
 
-- **Always use `window.cardano.midnight`**, NOT `window.cardano.lace`
-- **Network is always `'devnet'`**, there's no mainnet/testnet
-- **Addresses use Midnight format**, may differ from Cardano bech32
-- **Balances are in tDUST**, the smallest unit of test DUST tokens
-- **LocalStorage keys** use `midnightAddress` and `midnightNetwork`
-
-## Features & Screens
-
-### 1. Login (`/`)
-- Connect Lace Midnight Preview wallet
-- Installation detection and guidance
-- Error handling with user-friendly messages
-
-### 2. Registration (`/register`)
-- Create farmer profile
-- Input farm name, region, and crops
-- Links profile to Midnight wallet address
-
-### 3. Model Selection (`/selection`)
-- Choose AI models to train
-- View model descriptions and requirements
-- Navigate to training interface
-
-### 4. Training (`/train`)
-- Submit model updates with ZK-proofs
-- Real-time training status
-- View submission history
-
-### 5. Aggregation (`/aggregation`)
-- Monitor global model aggregation
-- View aggregation progress and status
-- See when new model versions are ready
-
-### 6. Predictions (`/predictions`)
-- Test AI predictions
-- Chat-based interface for queries
-- View prediction results and confidence
+- Prefer the adapter layer over direct `window` access in app code
+- Network may be preview, preprod, mainnet, or unknown depending on the wallet
+- Midnight addresses and assets differ from Cardano ADA flows
+- The adapter layer is the right place to add future wallet support
 
 ## Troubleshooting
 
-### "Midnight Preview is not installed"
+### "No compatible Midnight wallet was detected"
 
-**Solution:** Install Lace Midnight Preview extension (NOT regular Lace)
-- Visit Midnight Network documentation
-- Download the specialized devnet extension
-- Regular Lace wallet will NOT work for this app
+Try this:
+- Install Lace and enable Midnight/Beta support
+- Or install 1AM Wallet
+- Refresh the page after wallet installation
 
 ### "Failed to connect wallet"
 
-**Possible causes:**
-1. User denied permission in popup
-2. Midnight Preview extension is locked
-3. No accounts in Midnight Preview
+Possible causes:
+1. The wallet is locked
+2. The connection request was rejected
+3. No Midnight account is available in the selected wallet
 
-**Solution:**
-- Unlock Midnight Preview
-- Approve connection request
-- Ensure you have at least one account
+### Build verification
 
-### "Node.js version error"
-
-```
-You are using Node.js 18.x. Vite requires Node.js version 20.19+ or 22.12+
-```
-
-**Solution:**
-```bash
-# Switch to Node 22
-nvm use 22.17.0
-
-# Or install it first
-nvm install 22.17.0
-nvm use 22.17.0
-```
-
-### Port 8080 already in use
-
-**Solution:**
-```bash
-# Kill the process using port 8080
-lsof -ti:8080 | xargs kill -9
-
-# Or change the port in vite.config.ts
-```
-
-### TypeScript errors after pulling updates
-
-**Solution:**
-```bash
-# Clear Vite cache and rebuild
-rm -rf packages/ui/.vite
-rm -rf packages/ui/node_modules/.vite
-yarn dev
-```
-
-## Environment Variables
-
-Currently, the app doesn't require environment variables. Configuration is handled through:
-- Midnight Preview extension (injected at runtime)
-- LocalStorage (for session persistence)
-- In-code constants (for network settings)
-
-Future versions may add:
-- `VITE_MIDNIGHT_NETWORK_ID` - Override network ID
-- `VITE_API_ENDPOINT` - Backend API URL
-- `VITE_INDEXER_URL` - Midnight indexer endpoint
+This package uses Yarn via Corepack. If local verification fails with a missing install-state file, run the workspace install first so Yarn can rebuild its state.
 
 ## Contributing
 
-When modifying the wallet integration:
+When modifying wallet integration:
 
-1. **Never remove Midnight Preview checks**
-   - Always detect `window.cardano.midnight`
-   - Never assume regular Lace API compatibility
-
-2. **Keep extensive comments**
-   - This is a learning resource
-   - Explain WHY, not just WHAT
-
-3. **Test with actual Midnight Preview**
-   - Don't just check TypeScript compilation
-   - Verify with the real extension
-
-4. **Update documentation**
-   - Keep this README in sync with code
-   - Document breaking changes
-   - Add troubleshooting for new errors
+1. Do not hard-code a single wallet
+2. Use the wallet adapter layer for detection and connection
+3. Test with real Midnight wallets when possible
+4. Keep this README aligned with the current integration approach
 
 ## Resources
 
-- [Midnight Network Documentation](https://docs.midnight.network/)
-- [Lace Midnight Preview Guide](https://docs.midnight.network/develop/wallet-integration)
-- [Midnight SDK Reference](https://docs.midnight.network/develop/midnight-js)
-- [React Documentation](https://react.dev/)
-- [Vite Documentation](https://vite.dev/)
-- [Tailwind CSS](https://tailwindcss.com/)
-
-## License
-
-See root [LICENSE](../../LICENSE) file.
+- [Midnight documentation](https://docs.midnight.network/)
+- [Midnight installation guide](https://docs.midnight.network/getting-started/installation)
+- [React documentation](https://react.dev/)
+- [Vite documentation](https://vite.dev/)
 
 ## Support
 
 For issues specific to:
-- **EdgeChain UI:** Open issue in this repo
-- **Lace Midnight Preview:** Visit Midnight Network support
-- **Midnight devnet:** Check Midnight Network Discord/forum
+- EdgeChain UI: open an issue in this repo
+- Lace Midnight mode: check Midnight support channels
+- 1AM Wallet: check the 1AM project docs/support
+- Midnight network: check the Midnight forum or Discord

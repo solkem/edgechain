@@ -6,6 +6,8 @@
     "dev": "turbo run dev",
     "predev": "node scripts/check-toolchain.mjs",
     "build": "turbo run build",
+    "build:node": "turbo run build --filter=@edgechain/contract --filter=@edgechain/api --filter=@edgechain/cli",
+    "build:ui": "turbo run build --filter=edgechain-ui",
     "prebuild": "node scripts/check-toolchain.mjs",
     "build:all": "cd packages/contract && npx turbo run build && cd ../api && npx turbo run build && cd ../cli && npx turbo run build && cd ../ui && npx turbo run build",
     "prebuild:all": "node scripts/check-toolchain.mjs",

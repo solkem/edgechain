@@ -13,16 +13,16 @@ export function LoginRoute() {
   /**
    * Use the real Midnight wallet from WalletProvider instead of mock
    * This gives us:
-   * - Real Lace Midnight Preview wallet connection
-   * - Wallet installation detection
+   * - Real Midnight wallet connection through the active adapter
+   * - Compatible wallet detection
    * - Actual Midnight wallet address from extension
-   * - Connection to Midnight devnet with tDUST tokens
+   * - Support for current Lace Midnight flows and future wallets such as 1AM
    */
   const walletContext = useWallet();
   const {
     isConnected,
     address,
-    isMidnightPreviewInstalled,
+    isWalletInstalled,
     isConnecting,
     error,
     connectWallet,
@@ -63,7 +63,7 @@ export function LoginRoute() {
     <Login
       onConnect={connectWallet}
       isConnecting={isConnecting}
-      isMidnightPreviewInstalled={isMidnightPreviewInstalled}
+      isWalletInstalled={isWalletInstalled}
       error={error}
       contractContext={contractContext}
       walletContext={walletContext}

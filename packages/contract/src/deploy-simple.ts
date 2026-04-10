@@ -1,8 +1,9 @@
+// @ts-nocheck
 /**
  * Simple EdgeChain Deployment - Generate Fresh Wallet
  *
  * This script generates a new wallet seed and deploys the contract.
- * Your Lace wallet (with 1,000 tDUST) can be used for UI interaction after deployment.
+ * Your Midnight wallet can be used for UI interaction after deployment.
  */
 
 import { WalletBuilder } from "@midnight-ntwrk/wallet";
@@ -71,7 +72,7 @@ async function main() {
   console.log("   1. Generate a new wallet seed for deployment");
   console.log("   2. Request tDUST from the faucet");
   console.log("   3. Deploy the EdgeChain contract");
-  console.log("   4. Your Lace wallet (1,000 tDUST) can be used in the UI\n");
+  console.log("   4. Your Midnight wallet can be used in the UI\n");
 
   try {
     // Generate new wallet seed
@@ -89,7 +90,7 @@ async function main() {
 
     // Save to file
     const seedFilePath = path.join(__dirname, "..", "..", "..", "DEPLOYMENT_WALLET_SEED.txt");
-    fs.writeFileSync(seedFilePath, `EdgeChain Deployment Wallet Seed\n===============================\n\nSeed: ${walletSeed}\n\nGenerated: ${new Date().toISOString()}\n\nNOTE: This is for contract deployment only.\nYour Lace wallet (with 1,000 tDUST) should be used for UI interaction.\n`);
+    fs.writeFileSync(seedFilePath, `EdgeChain Deployment Wallet Seed\n===============================\n\nSeed: ${walletSeed}\n\nGenerated: ${new Date().toISOString()}\n\nNOTE: This is for contract deployment only.\nUse a compatible Midnight wallet in the UI.\n`);
     console.log(`✅ Seed saved to: ${seedFilePath}\n`);
 
     // Build wallet from seed
@@ -248,7 +249,7 @@ async function main() {
       network: "testnet",
       deploymentWalletAddress: state.address,
       deploymentWalletSeed: walletSeed,
-      note: "This wallet was used for deployment only. Use your Lace wallet for UI interaction."
+      note: "This wallet was used for deployment only. Use a compatible Midnight wallet for UI interaction."
     };
 
     const deploymentPath = path.join(__dirname, "..", "deployment.json");
@@ -281,8 +282,8 @@ VITE_MIDNIGHT_PROOF_SERVER=${TESTNET_CONFIG.proofServer}
     console.log("");
     console.log("3. Open http://localhost:5173 in your browser");
     console.log("");
-    console.log("4. Connect your Lace Midnight Preview wallet");
-    console.log("   (The one with 1,000 tDUST)");
+    console.log("4. Connect your Midnight wallet");
+    console.log("   (Lace with Midnight enabled or another compatible Midnight wallet)");
     console.log("");
     console.log("5. Test the EdgeChain federated learning workflow!");
     console.log("");

@@ -1,6 +1,6 @@
 
 import path from 'node:path';
-import { NetworkId, setNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
+import { setNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
 import { QuickStarterPrivateStateId } from '@edgechain/api';
 
 export interface Config {
@@ -27,7 +27,7 @@ export class StandaloneConfig implements Config {
   proofServer = 'http://127.0.0.1:6300';
 
   setNetworkId() {
-    setNetworkId(NetworkId.Undeployed);
+    setNetworkId('Undeployed');
   }
 }
 
@@ -41,6 +41,6 @@ export class TestnetRemoteConfig implements Config {
   proofServer = 'https://lace-dev.proof-pub.stg.midnight.tools';
 
   setNetworkId() {
-    setNetworkId(NetworkId.TestNet);
+    setNetworkId('TestNet');
   }
 }

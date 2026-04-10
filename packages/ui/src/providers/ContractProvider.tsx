@@ -146,7 +146,7 @@ export function ContractProvider({ children }: { children: ReactNode }) {
    * Get DApp Connector API from WalletProvider
    *
    * WalletProvider already handles detecting and enabling the Midnight API
-   * from the Lace Midnight Preview extension. We reuse that instead of
+   * from the active wallet adapter. We reuse that instead of
    * duplicating the detection logic.
    */
   const getDAppConnectorAPI = async (): Promise<DAppConnectorAPI | null> => {

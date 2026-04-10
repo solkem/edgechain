@@ -45,7 +45,7 @@ export function FLStatusPanel({ flState, error }: FLStatusPanelProps) {
           <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3">
             <h4 className="text-sm font-semibold text-gray-700">Deployment steps</h4>
             <ol className="space-y-2 text-sm text-gray-600 list-decimal list-inside">
-              <li>Install Lace Midnight Preview wallet</li>
+              <li>Install Lace with Midnight enabled, or use 1AM Wallet</li>
               <li>Request tDUST test tokens from the Midnight faucet</li>
               <li>Deploy the contract via CLI: <code className="rounded bg-white px-2 py-1 text-xs border border-gray-200">cd packages/contract && yarn deploy</code></li>
               <li>Save the contract address in your `.env` file</li>

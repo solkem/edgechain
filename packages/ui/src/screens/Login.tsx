@@ -5,7 +5,7 @@ import { toast } from "sonner";
 export function Login({
   onConnect,
   isConnecting = false,
-  isMidnightPreviewInstalled = true,
+  isWalletInstalled = true,
   error = null,
   contractContext,
   walletContext,
@@ -14,7 +14,7 @@ export function Login({
 }: {
   onConnect: () => Promise<void>;
   isConnecting?: boolean;
-  isMidnightPreviewInstalled?: boolean;
+  isWalletInstalled?: boolean;
   error?: string | null;
   contractContext: any;
   walletContext: any;
@@ -49,8 +49,8 @@ export function Login({
   };
 
   const connectToWallet = async () => {
-    if (!isMidnightPreviewInstalled) {
-      toast.warning("Please install Lace Midnight Preview first");
+    if (!isWalletInstalled) {
+      toast.warning("Install a compatible Midnight wallet first");
       return;
     }
     await connectAndMaybeDeploy();
@@ -84,14 +84,14 @@ export function Login({
               disabled={isConnecting || isDeploying}
               className=" bg-[#0000ff] text-white w-[280px] font-semibold py-4 px-6 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer"
             >
-              {!isMidnightPreviewInstalled ? (
+              {!isWalletInstalled ? (
                 <a
-                  href="https://docs.midnight.network/"
+                  href="https://docs.midnight.network/getting-started/installation"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block w-full font-semibold py-4 px-6 rounded-xl text-center transition-all"
                 >
-                  Install Lace
+                  Install Wallet
                 </a>
               ) : (
                 <>
@@ -106,7 +106,7 @@ export function Login({
                       Deploying ...
                     </span>
                   ) : (
-                    "Connect Lace"
+                    "Connect Wallet"
                   )}
                 </>
               )}

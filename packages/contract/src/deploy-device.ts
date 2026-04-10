@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Arduino IoT Contract Deployment Script
  *

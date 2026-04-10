@@ -10,7 +10,7 @@
     "standalone": "node --experimental-specifier-resolution=node dist/launcher/standalone.js",
     "test": "yarn test-e2e",
     "test-e2e": "NODE_OPTIONS=--experimental-vm-modules jest  --detectOpenHandles --forceExit",
-    "build": "rm -rf dist && tsc --project tsconfig.build.json",
+    "build": "node ./scripts/build.mjs",
     "lint": "eslint src"
   },
   "dependencies": {
