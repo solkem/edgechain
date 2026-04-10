@@ -133,10 +133,6 @@ ESP32-S3 + ATECC608B + LoRa + environmental sensors, with keys protected in hard
 | PG5 | Limited metadata exposure at the proof-server layer |
 | PG6 | Hardware-backed key protection via ATECC608B |
 
-### Honest Scope
-
-These are cryptographic and architectural guarantees, not a claim to defeat every form of coercion. EdgeChain improves privacy in specific technical interactions. It does not claim to solve physical coercion, account seizure, or hostile legal process by itself.
-
 ---
 
 ## What Is Built vs What Is Next
