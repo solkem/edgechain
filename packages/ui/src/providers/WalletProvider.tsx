@@ -126,6 +126,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         isConnected: false,
         error: error.message || 'Failed to connect to a Midnight wallet',
       }));
+      throw error;
     }
   };
 

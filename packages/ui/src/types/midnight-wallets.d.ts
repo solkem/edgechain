@@ -2,7 +2,22 @@ import type { DAppConnectorAPI } from '@midnight-ntwrk/dapp-connector-api';
 
 type MidnightBrowserWalletApi = Partial<DAppConnectorAPI> & {
   enable?: () => Promise<MidnightBrowserWalletApi>;
-  state?: () => Promise<{ address?: string; network?: string | number } | undefined>;
+  connect?: (networkId?: string) => Promise<MidnightBrowserWalletApi>;
+  state?: () => Promise<{
+    address?: string;
+    coinPublicKey?: string;
+    encryptionPublicKey?: string;
+    network?: string | number;
+  } | undefined>;
+  getShieldedAddresses?: () => Promise<{
+    shieldedAddress?: string;
+    shieldedCoinPublicKey?: string;
+    shieldedEncryptionPublicKey?: string;
+  }>;
+  getUnshieldedAddress?: () => Promise<{ unshieldedAddress?: string }>;
+  getDustAddress?: () => Promise<{ dustAddress?: string }>;
+  getConnectionStatus?: () => Promise<{ status: string; networkId?: string }>;
+  getConfiguration?: () => Promise<{ networkId?: string }>;
   getUsedAddresses?: () => Promise<string[]>;
   getUnusedAddresses?: () => Promise<string[]>;
   getChangeAddress?: () => Promise<string>;
@@ -25,8 +40,11 @@ declare global {
       midnight?: MidnightBrowserWalletApi;
     };
     midnight?: MidnightBrowserWalletApi & {
+      mnLace?: MidnightBrowserWalletApi;
+      mLace?: MidnightBrowserWalletApi;
       wallet?: MidnightBrowserWalletApi;
       connector?: MidnightBrowserWalletApi;
+      [key: string]: unknown;
     };
     oneam?: MidnightBrowserWalletApi;
     cardano?: {

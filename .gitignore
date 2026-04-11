@@ -65,6 +65,7 @@ packages/ui/.vite/
 # Secrets - NEVER commit these
 *SEED*
 *WALLET*
+!packages/ui/src/lib/walletAdapters.ts
 *SECRET*
 *.mnemonic
 wallet.json
