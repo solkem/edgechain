@@ -97,8 +97,8 @@ EdgeChain was not invented as a hackathon concept and then reverse-fitted into a
 
 | Year | Venue | Contribution |
 |------|-------|--------------|
-| 2020 | IEOM | Freedom Node / LoRa / K3S edge pattern that later informed Layer 2 |
-| 2020 | IEOM | Privacy and adversarial-environment reasoning for Zimbabwean agricultural IoT |
+| 2020 | IEOM | [Privacy-Preserving IoT Edge and Fog Architecture](https://index.ieomsociety.org/index.cfm/item/47585) |
+| 2020 | IEOM | [GDPR-inspired “data portability” and personal data monetization opportunities](https://index.ieomsociety.org/index.cfm/item/47584) |
 | 2023 | Emerald IJIEOM | [Privacy-preserving federated learning on edge endpoints](https://doi.org/10.1108/IJIEOM-02-2023-0020) |
 | 2023 | Emerald IJIEOM | [Attribute-based credentials and permissioned blockchain design](https://doi.org/10.1108/IJIEOM-02-2023-0021) |
 
