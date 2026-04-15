@@ -2,7 +2,7 @@
 
 > **Prove quality. Keep privacy. Own rewards.**
 >
-> Privacy-preserving microclimate intelligence for smallholder farmers, built on Midnight's zero-knowledge infrastructure.
+> Privacy-preserving microclimate intelligence platform for smallholder farmers, built on Midnight's zero-knowledge infrastructure.
 
 EdgeChain is built on the Midnight Network.
 
