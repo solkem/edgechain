@@ -4,6 +4,8 @@
 >
 > Privacy-preserving agricultural intelligence for smallholder farmers, built on Midnight's zero-knowledge infrastructure.
 
+EdgeChain is built on the Midnight Network.
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Midnight Testnet](https://img.shields.io/badge/Midnight-testnet02-8B5CF6)](https://midnight.network)
 [![Midnight Summit Hackathon](https://img.shields.io/badge/Midnight%20Summit%20Hackathon-Top%2016%20of%2046-gold)](https://midnight.network)
