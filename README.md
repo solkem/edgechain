@@ -146,39 +146,49 @@ The circuit attests *"I know a valid P-256 signature from a registered device"* 
 
 ---
 
-## What Is Built vs What Is Next
+## Pilot Phasing
 
-### Phase A - Built Today
+The Odzi pilot is split into two phases by **what Midnight is structurally required for**, not by implementation milestone.
 
-This is the current, demonstrable system footprint:
+### Phase A - Off-chain field recording (no Midnight dependency)
 
-- ESP32 firmware path in [`firmware/esp32-msingi`](firmware/esp32-msingi)
-- Freedom Node / proof-server stack in [`proof-server`](proof-server)
+Phase A delivers immediate farmer value and funder-grade documentation without requiring any Midnight transaction. Cohort topology:
+
+- **1 hardware site:** full sensor node (ESP32-S3 + ATECC608B + LoRa) feeding a Freedom Node
+- **6 WhatsApp manual-observation sites:** structured weekly/monthly forms distributed by an on-ground coordinator in Odzi
+- **7 farmers total** — 5 horticulture (weekly observations), 2 tobacco (monthly off-season reflections)
+
+### Phase B - First load-bearing Midnight transaction
+
+Phase B introduces Midnight at the precise point where its guarantees become structurally irreplaceable: an anonymous contribution proof that simultaneously verifies data quality, prevents double-claiming, and distributes rewards **without revealing device-to-farmer linkage**. That specific combination is what makes Midnight a structural requirement, not a branding choice.
+
+### Current implementation footprint
+
+Demonstrable today:
+
+- ESP32 firmware scaffolding in [`firmware/esp32-msingi`](firmware/esp32-msingi)
+- In-repo Node.js proof server in [`proof-server`](proof-server)
 - Unified backend flows in [`server`](server)
 - React UI in [`packages/ui`](packages/ui)
 - IPFS integration in [`ipfs-service`](ipfs-service)
 - Compact contracts and deployment artifacts in [`packages/contract`](packages/contract)
-- Contracts deployed on Midnight testnet/testnet-02
+- Two contracts deployed on Midnight testnet02
 - Live demo services on Fly.io
+- Freedom Node validated end-to-end in Maryland (Ubuntu Server 24.04 LTS + Docker + `midnightntwrk/proof-server:7.0.0`)
 
-### Phase B - In Progress
 
-These are the most important remaining steps before a stronger field-grade Midnight integration:
+In progress before Phase B:
 
 - end-to-end ZK proof generation and submission across all live flows
 - full anonymous device registration and reward-claim path
 - reduction of simulated contract paths in the UI/backend
 - production observability, queueing, and failure handling
-- a smallholder pilot in Odzi, Manicaland
-
-### Phase C - Cooperative Scale
 
 Longer-term directions:
 
 - cooperative risk pools
 - attestation marketplace services
 - offline-first farmer knowledge agents
-
 ---
 
 ## Repository Layout
