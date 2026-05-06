@@ -121,6 +121,15 @@ Receives LoRa packets, manages commitment state, generates or coordinates proofs
 Layer 1 - Sensor Node
 ESP32-S3 + ATECC608B + LoRa + environmental sensors, with keys protected in hardware.
 ```
+### Curve separation
+
+ATECC608B is a NIST-curve part (P-256). Midnight uses Pluto-Eris for ZK circuits. The two coexist by separation, not bridging:
+
+1. Devices sign sensor packets with P-256 inside the secure element. The private key never leaves the chip.
+2. P-256 verification happens **outside** the circuit, on the Freedom Node, in normal code.
+3. Inside the circuit, the device pubkey bytes are treated as arbitrary input data and hashed with Poseidon (~250 constraints), not verified as a curve point (which would force ~25k constraints via SHA-256).
+
+The circuit attests *"I know a valid P-256 signature from a registered device"* without performing P-256 curve operations on Pluto-Eris. The secure element's NIST constraint and Midnight's curve choice are mutually compatible without replacing either.
 
 **Critical design choice:** proof generation can expose witness-level information. Because of that, the proof server is part of the privacy model. EdgeChain is designed around a farmer-owned "Freedom Node" rather than a trusted third-party gateway.
 
