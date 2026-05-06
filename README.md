@@ -290,32 +290,47 @@ yarn lint
 
 ### Sensor Node
 
-| Component | Part | Cost |
-|-----------|------|------|
-| MCU | ESP32-S3-DevKitC-1 | about $8 |
-| Secure element | ATECC608B breakout | about $2.50 |
-| Radio | RYLR896 | about $6 |
-| Sensors | BME280 + capacitive soil sensor | about $6 |
-| Power | CN3065 + 18650 + solar | about $16 |
-| Enclosure | IP65 polycarbonate | about $10 |
+| Component | Part | Notes |
+|-----------|------|-------|
+| MCU | ESP32-S3-DevKitC-1 | I2C on GPIO8/9, UART on GPIO17/18 |
+| Secure element | ATECC608B (Adafruit breakout) | P-256 key, never leaves chip |
+| Radio | RYLR896 | LoRa, SMA antenna |
+| Air | BME280 | I2C; temp / humidity / pressure |
+| Soil moisture | Songhe capacitive (5-pack) | analog GPIO1 |
+| Soil temp | DROK DS18B20 waterproof (5-pack) | 1-Wire on GPIO3, **requires 4.7 kΩ pullup to 3V3** — without it the library silently returns `-127.0 °C` |
+| Light | HiLetgo BH1750 | I2C |
+| Rain | DIYables (5-pack) | analog GPIO2 |
+| Power | solar + battery | per-site sizing |
+| Enclosure | qBox DIY IOT Enclosure | weatherproof, IP-rated |
+
+Soil pH/NPK sensors are deferred to Phase 2; a manual Luster Leaf Rapitest kit is the interim.
 
 ### Freedom Node
 
-| Component | Cost |
-|-----------|------|
-| Dell OptiPlex 7060 Micro | about $80 |
-| SMA extension cable | about $8 |
-| Huawei E3372-325 LTE modem | about $25 |
+| Component | Notes |
+|-----------|-------|
+| Compute | Dell OptiPlex 7060 Micro (i5-8500T, 16 GB RAM) |
+| OS | Ubuntu Server 24.04 LTS |
+| Stack | Docker + `midnightntwrk/proof-server:7.0.0` (6 workers) + in-repo proof-server service |
+| Database | PostgreSQL on a LUKS-encrypted `/var/lib/postgresql` partition |
+| Disk scheme | Two-tier: root unencrypted (unattended auto-boot after solar power loss), DB partition encrypted (theft protection) |
+| Hostname | `freedom-node-0001` |
+| Network | Tailscale (key expiry disabled — critical for unattended solar nodes) |
+| LoRa bridge | RYLR896 Module 2 via CP2102 USB-UART (4 jumper wires, TX/RX crossed) |
+| Antenna | OptiPlex stays indoors; 3 m SMA extension cable routes the LoRa antenna to a window |
+| LTE | Huawei E3372-325 (Band 3 capable) |
+
+The Phase 2 Freedom Node target is a Raspberry Pi 5 (~60% power-system cost reduction). Pi 5 is **not** the Phase A platform.
 
 ### LoRa Baseline
 
 ```text
-Frequency: 915000000
-Network ID: 6
-Proof-server address: 1
-Spreading factor: 9
-Bandwidth: 125
-TX power: 20
+Frequency:          915000000
+Network ID:         6
+Proof-server addr:  1
+Spreading factor:   9
+Bandwidth:          125
+TX power:           20
 ```
 
 ---
