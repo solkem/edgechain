@@ -143,12 +143,12 @@ ESP32-S3 + ATECC608B + LoRa + environmental sensors, with keys protected in hard
 
 This is the current, demonstrable system footprint:
 
-- ESP32 firmware path in [`firmware/esp32-msingi`](/C:/Users/s.kembo.SEVERN/Downloads/edgechain/firmware/esp32-msingi)
-- Freedom Node / proof-server stack in [`proof-server`](/C:/Users/s.kembo.SEVERN/Downloads/edgechain/proof-server)
-- Unified backend flows in [`server`](/C:/Users/s.kembo.SEVERN/Downloads/edgechain/server)
-- React UI in [`packages/ui`](/C:/Users/s.kembo.SEVERN/Downloads/edgechain/packages/ui)
-- IPFS integration in [`ipfs-service`](/C:/Users/s.kembo.SEVERN/Downloads/edgechain/ipfs-service)
-- Compact contracts and deployment artifacts in [`packages/contract`](/C:/Users/s.kembo.SEVERN/Downloads/edgechain/packages/contract)
+- ESP32 firmware path in [`firmware/esp32-msingi`](firmware/esp32-msingi)
+- Freedom Node / proof-server stack in [`proof-server`](proof-server)
+- Unified backend flows in [`server`](server)
+- React UI in [`packages/ui`](packages/ui)
+- IPFS integration in [`ipfs-service`](ipfs-service)
+- Compact contracts and deployment artifacts in [`packages/contract`](packages/contract)
 - Contracts deployed on Midnight testnet/testnet-02
 - Live demo services on Fly.io
 
@@ -192,7 +192,7 @@ edgechain/
 
 ### Deployed Contracts
 
-Current deployment artifacts recorded in [`packages/contract/deployment.json`](/C:/Users/s.kembo.SEVERN/Downloads/edgechain/packages/contract/deployment.json):
+Current deployment artifacts recorded in [`packages/contract/deployment.json`](packages/contract/deployment.json):
 
 | Contract | Address |
 |----------|---------|
@@ -364,10 +364,10 @@ The design principle is simple: day-one value should not require blockchain lite
 
 | File | Contents |
 |------|----------|
-| [`docs/README.md`](/C:/Users/s.kembo.SEVERN/Downloads/edgechain/docs/README.md) | project documentation entry point |
-| [`docs/codex-handoff.md`](/C:/Users/s.kembo.SEVERN/Downloads/edgechain/docs/codex-handoff.md) | architecture and handoff notes |
-| [`docs/codex-handoff-quick.md`](/C:/Users/s.kembo.SEVERN/Downloads/edgechain/docs/codex-handoff-quick.md) | shorter handoff summary |
-| [`proof-server/README.md`](/C:/Users/s.kembo.SEVERN/Downloads/edgechain/proof-server/README.md) | proof-server operations |
+| [`docs/README.md`](docs/README.md) | project documentation entry point |
+| [`docs/codex-handoff.md`](docs/codex-handoff.md) | architecture and handoff notes |
+| [`docs/codex-handoff-quick.md`](docs/codex-handoff-quick.md) | shorter handoff summary |
+| [`proof-server/README.md`](proof-server/README.md) | proof-server operations |
 
 ---
 
