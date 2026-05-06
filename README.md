@@ -205,6 +205,7 @@ edgechain/
 |- firmware/      ESP32 firmware
 |- ipfs-service/  Storacha/IPFS microservice
 |- docs/          Project and handoff documentation
+|- arduino/       Deprecated BLE-era firmware path (kept for reference)
 |- gateway/       Legacy gateway tooling
 |- compact/       Contract compilation artifacts
 ```
