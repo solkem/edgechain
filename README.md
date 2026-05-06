@@ -366,6 +366,7 @@ TX power:           20
 | **Solomon Hopewell Kembo** | Architecture, strategy, integration | Bethesda, Maryland, US |
 | **Shankar Rao Mata** | Blockchain / Compact contracts | India |
 | **Lokesh Yadav** | Frontend / React UI | India |
+| Odzi Coordinator | Farmer relationships, WhatsApp form distribution | Odzi, Manicaland |
 
 Solomon Kembo is the originating researcher behind EdgeChain's privacy architecture and has been building IoT systems for emerging-market contexts since 2016.
 
