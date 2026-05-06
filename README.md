@@ -109,8 +109,8 @@ The core problem definition predates Midnight's public developer tooling. Midnig
 ## Architecture
 
 ```text
-Layer 4 - Settlement (pluggable)
-Cardano-linked treasury and reward rails are the current direction, but settlement is intentionally adaptable.
+Layer 4 - Settlement (forward-looking)
+Cardano-linked treasury and reward rails are a direction under exploration. Phase A and Phase B both run on Midnight testnet02 today; nothing in the current code path requires a separate settlement layer.
 
 Layer 3 - Midnight Network (non-negotiable)
 Private contract state, Compact contracts, nullifier-based replay prevention, and ZK-aware reward logic.
