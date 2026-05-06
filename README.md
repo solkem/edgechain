@@ -201,7 +201,7 @@ edgechain/
 |  |- api/        Workspace API package
 |  |- cli/        CLI tools and scripts
 |- server/        Unified backend
-|- proof-server/  Farmer-owned proof server
+|- proof-server/  In-repo Node.js service (Express + WS + LoRa serial). Distinct from the official `midnightntwrk/proof-server:7.0.0` Docker container (Midnight's ZK prover, 6 workers); both run on the Freedom Node alongside each other.
 |- firmware/      ESP32 firmware
 |- ipfs-service/  Storacha/IPFS microservice
 |- docs/          Project and handoff documentation
