@@ -22,9 +22,10 @@ type MidnightBrowserWalletApi = Partial<DAppConnectorAPI> & {
   getUnusedAddresses?: () => Promise<string[]>;
   getChangeAddress?: () => Promise<string>;
   getNetworkId?: () => Promise<number>;
-  signData?: (address: string, payload: string) => Promise<{
+  signData?: (...args: any[]) => Promise<{
     signature: string;
     key?: string;
+    verifyingKey?: string;
   }>;
   on?: (event: string, handler: (...args: any[]) => void) => void;
   off?: (event: string, handler: (...args: any[]) => void) => void;
@@ -40,6 +41,7 @@ declare global {
       midnight?: MidnightBrowserWalletApi;
     };
     midnight?: MidnightBrowserWalletApi & {
+      '1am'?: MidnightBrowserWalletApi;
       mnLace?: MidnightBrowserWalletApi;
       mLace?: MidnightBrowserWalletApi;
       wallet?: MidnightBrowserWalletApi;

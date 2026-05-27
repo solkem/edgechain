@@ -88,7 +88,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const availableWallets = refreshAvailableWallets();
       if (availableWallets.length === 0) {
         throw new Error(
-          'No compatible Midnight wallet was detected. Install Lace with Midnight enabled or 1AM Wallet, then refresh the page.',
+          'No compatible Midnight wallet was detected. Install 1AM Wallet, then refresh the page.',
         );
       }
 
@@ -183,9 +183,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       let txHash: string;
 
       if (typeof api.signData === 'function') {
-        const signResult = await api.signData(walletState.address, message);
+        const signResult = await signDataWithConnectedWallet(api, message, walletState.address);
         signature = signResult.signature;
-        txHash = signResult.key || generateTxHash(message, signature);
+        txHash = signResult.verifyingKey || signResult.key || generateTxHash(message, signature);
       } else {
         console.warn('Midnight signData not available, using fallback signing');
         signature = await generateFallbackSignature(message, walletState.address);
@@ -288,6 +288,25 @@ const generateTxHash = (message: string, signature: string): string => {
     hash &= hash;
   }
   return `0x${Math.abs(hash).toString(16).padStart(64, '0')}`;
+};
+
+const signDataWithConnectedWallet = async (
+  api: ConnectedWallet['api'],
+  message: string,
+  address: string,
+): Promise<{ signature: string; key?: string; verifyingKey?: string }> => {
+  try {
+    return await api.signData!(message, {
+      encoding: 'text',
+      keyType: 'unshielded',
+    });
+  } catch (connectorV4Error) {
+    try {
+      return await api.signData!(address, message);
+    } catch {
+      throw connectorV4Error;
+    }
+  }
 };
 
 const generateFallbackSignature = async (message: string, address: string | null): Promise<string> => {

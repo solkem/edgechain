@@ -25,7 +25,7 @@ export interface MidnightWalletApi extends Partial<DAppConnectorAPI> {
   getUnusedAddresses?: () => Promise<string[]>;
   getChangeAddress?: () => Promise<string>;
   getNetworkId?: () => Promise<number>;
-  signData?: (address: string, payload: string) => Promise<{ signature: string; key?: string }>;
+  signData?: (...args: any[]) => Promise<{ signature: string; key?: string; verifyingKey?: string }>;
   on?: (event: string, handler: (...args: any[]) => void) => void;
   off?: (event: string, handler: (...args: any[]) => void) => void;
   name?: string;
@@ -64,6 +64,11 @@ const hasConnect = (value: unknown): value is MidnightWalletApi =>
 
 const hasConnector = (value: unknown): value is MidnightWalletApi =>
   hasConnect(value) || hasEnable(value);
+
+const supportsConnectorV4 = (value: unknown): boolean => {
+  if (!isRecord(value) || typeof value.apiVersion !== 'string') return false;
+  return value.apiVersion.startsWith('4.');
+};
 
 const withTimeout = async <T,>(promise: Promise<T>, message: string, timeoutMs = 30_000): Promise<T> => {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -134,7 +139,7 @@ const inferWalletNetworkId = (): string | undefined => {
   );
 };
 
-const getWalletNetworkIds = (): string[] => {
+const getWalletNetworkIds = (adapter: DetectedWallet): string[] => {
   const configuredNetwork = import.meta.env.VITE_MIDNIGHT_WALLET_NETWORK;
   if (configuredNetwork && configuredNetwork !== 'auto') {
     const currentConnectorNetworks = ['mainnet', 'preview', 'preprod', 'undeployed'];
@@ -143,9 +148,13 @@ const getWalletNetworkIds = (): string[] => {
       : [configuredNetwork, ...currentConnectorNetworks];
   }
 
+  if (adapter.id === '1am') {
+    return ['mainnet', 'preview', 'preprod', 'undeployed'];
+  }
+
   const inferredNetwork = inferWalletNetworkId();
 
-  // Keep the full current Lace list as fallbacks because wallet/network names changed across Midnight releases.
+  // Keep the full connector network list as fallbacks because wallet/network names changed across Midnight releases.
   const candidates = [
     inferredNetwork,
     'preview',
@@ -159,7 +168,7 @@ const getWalletNetworkIds = (): string[] => {
 
 const isNetworkSelectionError = (error: unknown): boolean => {
   const message = error instanceof Error ? error.message : String(error);
-  return /network/i.test(message) && /(mismatch|unsupported|invalid)/i.test(message);
+  return /network/i.test(message) && /(mismatch|unsupported|invalid|unknown)/i.test(message);
 };
 
 const isAccessDeniedError = (error: unknown): boolean => {
@@ -167,19 +176,25 @@ const isAccessDeniedError = (error: unknown): boolean => {
   return /(denied|rejected|cancelled|canceled|unauthorized|permission)/i.test(message);
 };
 
-const connectWithNetworkFallback = async (api: MidnightWalletApi): Promise<MidnightWalletApi> => {
+const connectWithNetworkFallback = async (
+  api: MidnightWalletApi,
+  adapter: DetectedWallet,
+): Promise<MidnightWalletApi> => {
   if (!hasConnect(api)) {
     return api.enable!();
   }
 
   let lastNetworkError: unknown;
 
-  for (const networkId of getWalletNetworkIds()) {
+  for (const networkId of getWalletNetworkIds(adapter)) {
     try {
       return await api.connect(networkId);
     } catch (error) {
       if (isAccessDeniedError(error)) {
-        throw new Error('Access to the Lace Midnight wallet API was denied. Open Lace, approve EdgeChain/127.0.0.1 if prompted, or remove the site from Lace connected apps and try again.');
+        throw new Error(
+          `Access to ${adapter.name} was denied. Unlock the wallet, approve EdgeChain/127.0.0.1 if prompted, ` +
+            'or remove the site from connected apps and try again.',
+        );
       }
       if (!isNetworkSelectionError(error)) {
         throw error;
@@ -275,13 +290,13 @@ const connectWithApi = async (
   if (!api || (!hasConnect(api) && !hasEnable(api))) {
     throw new Error(
       `${adapter.name} was detected, but its Midnight connector is not available. ` +
-        'Open Lace settings and enable Midnight/Beta support, then refresh EdgeChain.',
+        'Open the wallet, enable Midnight dApp access if needed, then refresh EdgeChain.',
     );
   }
 
   const enabledApi = await withTimeout(
-    connectWithNetworkFallback(api),
-    `${adapter.name} did not finish connecting. If the Lace popup is still loading, unlock Lace, enable Midnight/Beta support, and try again.`,
+    connectWithNetworkFallback(api, adapter),
+    `${adapter.name} did not finish connecting. Unlock the wallet, confirm the connection prompt, and try again.`,
   );
   const address = await resolveAddress(enabledApi);
 
@@ -352,39 +367,24 @@ const getOneAMSource = () => {
 
   const cardano = (window as Window & { cardano?: Record<string, unknown> }).cardano;
   const cardanoMidnight = isRecord(cardano?.midnight) ? cardano.midnight : null;
-  const directMidnight = (window as Window & { midnight?: MidnightWalletApi }).midnight;
+  const directMidnight = (window as Window & { midnight?: Record<string, unknown> }).midnight;
+  const oneAmInitialApi = isRecord(directMidnight) ? directMidnight['1am'] : null;
 
   return pickApi(
+    supportsConnectorV4(oneAmInitialApi) ? oneAmInitialApi : null,
     (window as Window & { oneam?: unknown }).oneam,
     findMidnightWallet((key, candidate) => {
       const name = String(candidate.name ?? '');
       const rdns = String(candidate.rdns ?? '');
-      return /(^|[^a-z0-9])1am([^a-z0-9]|$)|oneam/i.test(`${key} ${name} ${rdns}`);
+      return supportsConnectorV4(candidate) && /(^|[^a-z0-9])1am([^a-z0-9]|$)|oneam/i.test(`${key} ${name} ${rdns}`);
     }),
-    directMidnight,
-    isRecord(directMidnight) ? directMidnight.wallet : null,
-    isRecord(directMidnight) ? directMidnight.connector : null,
+    isRecord(directMidnight) && supportsConnectorV4(directMidnight.wallet) ? directMidnight.wallet : null,
+    isRecord(directMidnight) && supportsConnectorV4(directMidnight.connector) ? directMidnight.connector : null,
     cardanoMidnight ? { wallet: cardanoMidnight.wallet, connector: cardanoMidnight.connector } : null,
   );
 };
 
 export const midnightWalletAdapters: MidnightWalletAdapter[] = [
-  {
-    id: 'lace',
-    name: 'Lace Midnight',
-    installUrl: 'https://docs.midnight.network/getting-started/installation',
-    detect: isLaceInstalled,
-    connect: () =>
-      connectWithApi(
-        {
-          id: 'lace',
-          name: 'Lace Midnight',
-          installUrl: 'https://docs.midnight.network/getting-started/installation',
-        },
-        getLaceSource(),
-      ),
-    getEventSource: () => getLaceSource(),
-  },
   {
     id: '1am',
     name: '1AM Wallet',
@@ -400,6 +400,22 @@ export const midnightWalletAdapters: MidnightWalletAdapter[] = [
         getOneAMSource(),
       ),
     getEventSource: () => getOneAMSource(),
+  },
+  {
+    id: 'lace',
+    name: 'Lace Midnight',
+    installUrl: 'https://docs.midnight.network/getting-started/installation',
+    detect: isLaceInstalled,
+    connect: () =>
+      connectWithApi(
+        {
+          id: 'lace',
+          name: 'Lace Midnight',
+          installUrl: 'https://docs.midnight.network/getting-started/installation',
+        },
+        getLaceSource(),
+      ),
+    getEventSource: () => getLaceSource(),
   },
 ];
 

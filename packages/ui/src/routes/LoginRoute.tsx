@@ -16,7 +16,7 @@ export function LoginRoute() {
    * - Real Midnight wallet connection through the active adapter
    * - Compatible wallet detection
    * - Actual Midnight wallet address from extension
-   * - Support for current Lace Midnight flows and future wallets such as 1AM
+   * - 1AM Wallet by default, with Lace retained as a fallback adapter
    */
   const walletContext = useWallet();
   const {

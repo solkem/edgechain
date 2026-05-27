@@ -18,7 +18,7 @@ This React application provides the farmer-facing interface for:
 - React Router v7
 - Tailwind CSS v4
 - Vite v7
-- Midnight wallet adapter layer with current Lace Midnight support
+- Midnight wallet adapter layer with 1AM Wallet as the default
 - Midnight Network SDK packages
 
 ## Prerequisites
@@ -29,11 +29,11 @@ This React application provides the farmer-facing interface for:
 2. A compatible Midnight wallet
 
 Recommended wallet setup:
-- Lace with Midnight/Beta features enabled, then add a Midnight wallet
-- Or use another compatible wallet such as 1AM Wallet
+- 1AM Wallet for Midnight dApp access
+- Lace with Midnight enabled can still be used as a fallback during transition
 
 Installation references:
-- [Midnight installation guide](https://docs.midnight.network/getting-started/installation)
+- [1AM Wallet](https://1am.xyz/)
 - [Midnight documentation](https://docs.midnight.network/)
 
 ## Getting Started
@@ -58,11 +58,11 @@ yarn build
 
 ## Wallet Integration
 
-The UI now uses a pluggable wallet adapter interface instead of hard-coding the old Lace Midnight Preview flow.
+The UI uses a pluggable wallet adapter interface instead of hard-coding the old Lace Midnight Preview flow.
 
 Current adapter behavior:
-- Prefers Lace Midnight when available
-- Supports a clean integration point for 1AM Wallet
+- Prefers 1AM Wallet when available
+- Keeps Lace Midnight as an explicit fallback adapter
 - Stores the connected address, network, and wallet id in local storage for reconnects
 - Avoids assuming a single global injection path
 
@@ -81,7 +81,7 @@ function MyComponent() {
   } = useWallet();
 
   if (!isWalletInstalled) {
-    return <p>Install a compatible Midnight wallet first.</p>;
+    return <p>Install 1AM Wallet first.</p>;
   }
 
   return (
@@ -104,9 +104,9 @@ function MyComponent() {
 ### "No compatible Midnight wallet was detected"
 
 Try this:
-- Install Lace and enable Midnight/Beta support
-- Or install 1AM Wallet
+- Install 1AM Wallet
 - Refresh the page after wallet installation
+- If needed, use Lace with Midnight enabled as a fallback wallet
 
 ### "Failed to connect wallet"
 
@@ -131,7 +131,7 @@ When modifying wallet integration:
 ## Resources
 
 - [Midnight documentation](https://docs.midnight.network/)
-- [Midnight installation guide](https://docs.midnight.network/getting-started/installation)
+- [1AM Wallet](https://1am.xyz/)
 - [React documentation](https://react.dev/)
 - [Vite documentation](https://vite.dev/)
 
@@ -139,6 +139,6 @@ When modifying wallet integration:
 
 For issues specific to:
 - EdgeChain UI: open an issue in this repo
-- Lace Midnight mode: check Midnight support channels
 - 1AM Wallet: check the 1AM project docs/support
+- Lace fallback mode: check Midnight support channels
 - Midnight network: check the Midnight forum or Discord

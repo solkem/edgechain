@@ -50,7 +50,7 @@ export function Login({
 
   const connectToWallet = async () => {
     if (!isWalletInstalled) {
-      toast.warning("Install a compatible Midnight wallet first");
+      toast.warning("Install 1AM Wallet first");
       return;
     }
     await connectAndMaybeDeploy();
@@ -86,12 +86,12 @@ export function Login({
             >
               {!isWalletInstalled ? (
                 <a
-                  href="https://docs.midnight.network/getting-started/installation"
+                  href="https://1am.xyz"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block w-full font-semibold py-4 px-6 rounded-xl text-center transition-all"
                 >
-                  Install Wallet
+                  Install 1AM
                 </a>
               ) : (
                 <>

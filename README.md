@@ -298,8 +298,8 @@ curl http://localhost:3002/health
 ```
 
 Wallet note:
-- Use the main Lace wallet with Midnight/Beta features enabled
-- Or use another compatible Midnight wallet
+- Use 1AM Wallet for Midnight dApp access
+- Lace with Midnight enabled can be used as a fallback compatible wallet
 - For local proving, the proof-server endpoint is typically `http://localhost:6300`
 
 ### Python Lab
