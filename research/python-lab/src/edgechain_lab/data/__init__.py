@@ -1,0 +1,2 @@
+"""Synthetic EdgeChain data generation."""
+

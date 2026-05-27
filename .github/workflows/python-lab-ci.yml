@@ -1,0 +1,25 @@
+name: python-lab-ci
+
+on:
+  push:
+    paths:
+      - "research/python-lab/**"
+      - ".github/workflows/python-lab-ci.yml"
+  pull_request:
+    paths:
+      - "research/python-lab/**"
+      - ".github/workflows/python-lab-ci.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: research/python-lab
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --all-extras
+      - run: uv run ruff check .
+      - run: uv run mypy src
+      - run: uv run pytest

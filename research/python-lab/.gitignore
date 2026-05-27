@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.pyc
+data/*
+evals/*
+reports/*
+!data/.gitkeep
+!evals/.gitkeep
+!reports/.gitkeep
+!notebooks/.gitkeep

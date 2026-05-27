@@ -9,6 +9,7 @@ EdgeChain is built on the Midnight Network.
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Midnight Testnet](https://img.shields.io/badge/Midnight-testnet02-8B5CF6)](https://midnight.network)
 [![Midnight Summit Hackathon](https://img.shields.io/badge/Midnight%20Summit%20Hackathon-Top%2016%20of%2046-gold)](https://midnight.network)
+[![Python Lab CI](https://github.com/solkem/edgechain/actions/workflows/python-lab-ci.yml/badge.svg)](https://github.com/solkem/edgechain/actions/workflows/python-lab-ci.yml)
 [![SDG 1](https://img.shields.io/badge/SDG-1%20No%20Poverty-E5243B)](https://sdgs.un.org/goals/goal1)
 [![SDG 2](https://img.shields.io/badge/SDG-2%20Zero%20Hunger-DDA63A)](https://sdgs.un.org/goals/goal2)
 [![SDG 10](https://img.shields.io/badge/SDG-10%20Reduced%20Inequalities-DD1367)](https://sdgs.un.org/goals/goal10)
@@ -59,9 +60,9 @@ Local models train on-device. Raw farm data never has to leave the farm.
 Devices can prove contribution quality, threshold conditions, or eligibility without revealing identity, location, or raw values.
 
 3. **Midnight smart contracts**
-Reward logic, replay resistance, and private coordination can happen on-chain without forcing a coordinator to custody farmer identities.
+Reward eligibility, replay resistance, and private coordination can happen on-chain without forcing a coordinator to custody farmer identities.
 
-The strongest "why Midnight" moment is the reward-eligibility flow: EdgeChain needs to verify contribution quality, prevent double claims, and distribute rewards without revealing which device belongs to which farmer. That specific combination makes Midnight a structural requirement, not a branding choice.
+The strongest "why Midnight" moment is the reward-eligibility flow: EdgeChain needs to verify contribution quality, prevent double claims, and support private settlement without revealing which device belongs to which farmer. That specific combination makes Midnight a structural requirement, not a branding choice.
 
 ---
 
@@ -71,7 +72,7 @@ EdgeChain is built for a context where privacy is not a luxury feature. It is th
 
 For smallholder farmers, privacy-preserving verification can unlock:
 
-- payment for data contributions without surrendering identity
+- compensation for data contributions without surrendering identity
 - stronger local agronomic models
 - cooperative bargaining power
 - future insurance and marketplace participation without central data extraction
@@ -84,7 +85,7 @@ For institutions, it enables collaboration with farmer communities without deman
 
 | SDG | Connection |
 |-----|------------|
-| **SDG 1 - No Poverty** | Farmers can earn rewards for verified contributions instead of having data extracted without compensation. |
+| **SDG 1 - No Poverty** | Farmers can earn compensation for verified contributions instead of having data extracted without compensation. |
 | **SDG 2 - Zero Hunger** | Hyper-local microclimate signals support better timing of inputs, interventions, and forecasts. |
 | **SDG 10 - Reduced Inequalities** | Farmers can prove eligibility and quality without surrendering identity data that can be used against them. |
 | **SDG 17 - Partnerships for the Goals** | The architecture supports collaboration among cooperatives, NGOs, insurers, and buyers without creating a new centralized data dependency. |
@@ -106,6 +107,26 @@ The core problem definition predates Midnight's public developer tooling. Midnig
 
 ---
 
+## Python Research Lab
+
+EdgeChain includes a Python research lab for testing contribution scoring, adversarial federated learning behavior, and oversight under privacy constraints.
+
+The lab uses synthetic data only. It does not expose farmer identities, private keys, wallet data, real GPS coordinates, raw pilot readings, or production secrets.
+
+It currently includes:
+
+- synthetic Odzi microclimate generation
+- MARS contribution scoring
+- adversarial FL attack scenarios
+- baseline aggregation comparison
+- LLM oversight dry-run evaluation
+
+See [`research/python-lab`](research/python-lab) for the implementation, tests, and experiment entry points.
+
+Reward values in the lab are abstract accounting units for simulation and fairness analysis. They are not DUST or tDUST; DUST/tDUST are transaction-execution resources, not farmer compensation. A production reward layer should use a separate settlement or redemption instrument such as NIGHT, a stablecoin, cooperative credits, or mobile money.
+
+---
+
 ## Architecture
 
 ```text
@@ -113,7 +134,7 @@ Layer 4 - Settlement (forward-looking)
 Cardano-linked treasury and reward rails are a direction under exploration. Phase A and Phase B both run on Midnight testnet02 today; nothing in the current code path requires a separate settlement layer.
 
 Layer 3 - Midnight Network (non-negotiable)
-Private contract state, Compact contracts, nullifier-based replay prevention, and ZK-aware reward logic.
+Private contract state, Compact contracts, nullifier-based replay prevention, and ZK-aware reward-eligibility logic.
 
 Layer 2 - Freedom Node (farmer-owned proof server)
 Receives LoRa packets, manages commitment state, generates or coordinates proofs, and submits to Midnight.
@@ -160,7 +181,7 @@ Phase A delivers immediate farmer value and funder-grade documentation without r
 
 ### Phase B - First load-bearing Midnight transaction
 
-Phase B introduces Midnight at the precise point where its guarantees become structurally irreplaceable: an anonymous contribution proof that simultaneously verifies data quality, prevents double-claiming, and distributes rewards **without revealing device-to-farmer linkage**. That specific combination is what makes Midnight a structural requirement, not a branding choice.
+Phase B introduces Midnight at the precise point where its guarantees become structurally irreplaceable: an anonymous contribution proof that simultaneously verifies data quality, prevents double-claiming, and supports private reward eligibility **without revealing device-to-farmer linkage**. That specific combination is what makes Midnight a structural requirement, not a branding choice.
 
 ### Current implementation footprint
 
@@ -172,6 +193,7 @@ Demonstrable today:
 - React UI in [`packages/ui`](packages/ui)
 - IPFS integration in [`ipfs-service`](ipfs-service)
 - Compact contracts and deployment artifacts in [`packages/contract`](packages/contract)
+- Python research lab in [`research/python-lab`](research/python-lab) for synthetic FL, MARS scoring, adversarial scenarios, and oversight evaluation
 - Two contracts deployed on Midnight testnet02
 - Live demo services on Fly.io
 - Freedom Node validated end-to-end in Maryland (Ubuntu Server 24.04 LTS + Docker + `midnightntwrk/proof-server:7.0.0`)
@@ -180,7 +202,7 @@ Demonstrable today:
 In progress before Phase B:
 
 - end-to-end ZK proof generation and submission across all live flows
-- full anonymous device registration and reward-claim path
+- full anonymous device registration and reward-eligibility path
 - reduction of simulated contract paths in the UI/backend
 - production observability, queueing, and failure handling
 
@@ -195,19 +217,25 @@ Longer-term directions:
 
 ```text
 edgechain/
+|- .github/
+|  |- workflows/        CI/CD, including Python Lab validation
 |- packages/
-|  |- contract/   Compact contracts and deployment scripts
-|  |- ui/         React frontend
-|  |- api/        Workspace API package
-|  |- cli/        CLI tools and scripts
-|- server/        Unified backend
-|- proof-server/  In-repo Node.js service (Express + WS + LoRa serial). Distinct from the official `midnightntwrk/proof-server:7.0.0` Docker container (Midnight's ZK prover, 6 workers); both run on the Freedom Node alongside each other.
-|- firmware/      ESP32 firmware
-|- ipfs-service/  Storacha/IPFS microservice
-|- docs/          Project and handoff documentation
-|- arduino/       Deprecated BLE-era firmware path (kept for reference)
-|- gateway/       Legacy gateway tooling
-|- compact/       Contract compilation artifacts
+|  |- contract/         Compact contracts and deployment scripts
+|  |- ui/               React frontend
+|  |- api/              Workspace API package
+|  |- cli/              CLI tools and scripts
+|- research/
+|  |- python-lab/       Synthetic FL, MARS scoring, attack, and oversight experiments
+|- server/              Unified backend
+|- proof-server/        In-repo Node.js service (Express + WS + LoRa serial). Distinct from the official `midnightntwrk/proof-server:7.0.0` Docker container (Midnight's ZK prover, 6 workers); both run on the Freedom Node alongside each other.
+|- firmware/            ESP32 firmware
+|- ipfs-service/        Storacha/IPFS microservice
+|- docs/                Project documentation
+|- scripts/             Repository toolchain checks
+|- demo/                Demo assets and supporting material
+|- arduino/             Deprecated BLE-era firmware path (kept for reference)
+|- gateway/             Legacy gateway tooling
+|- compact/             Contract compilation artifacts
 ```
 
 ### Deployed Contracts
@@ -235,6 +263,7 @@ Current deployment artifacts recorded in [`packages/contract/deployment.json`](p
 
 - Node.js 22+
 - Yarn 4.x
+- Python 3.12+ and [`uv`](https://docs.astral.sh/uv/) for the research lab
 - npm for non-workspace folders
 - PlatformIO for firmware work
 - Optional hardware for full integration testing
@@ -274,6 +303,23 @@ Wallet note:
 - Or use another compatible Midnight wallet
 - For local proving, the proof-server endpoint is typically `http://localhost:6300`
 
+### Python Lab
+
+```bash
+cd research/python-lab
+uv sync
+uv run pytest
+uv run ruff check .
+uv run mypy src
+
+# Example experiment entry points
+uv run python -m edgechain_lab.experiments.synthetic_odzi
+uv run python -m edgechain_lab.experiments.mars_baselines
+uv run python -m edgechain_lab.experiments.llm_oversight
+```
+
+The lab uses synthetic data only. Generated `data/`, `evals/`, and `reports/` artifacts are ignored by git and can be regenerated locally.
+
 ### Key Commands
 
 ```bash
@@ -283,6 +329,10 @@ yarn build
 yarn dev
 yarn test
 yarn lint
+
+cd research/python-lab && uv run pytest
+cd research/python-lab && uv run ruff check .
+cd research/python-lab && uv run mypy src
 ```
 
 ---
@@ -357,6 +407,13 @@ TX power:           20
 | `LORA_PORT`, `LORA_BAUD` | serial configuration |
 | `MERKLE_STORAGE_PATH` | persistence path |
 
+### Python Lab (`research/python-lab/`)
+
+| Variable | Notes |
+|----------|-------|
+| `EDGECHAIN_LIVE_LLM` | Set to `1` to enable live Anthropic API oversight runs; omitted by default for dry-run tests |
+| `ANTHROPIC_API_KEY` | Required only when `EDGECHAIN_LIVE_LLM=1` |
+
 ---
 
 ## Team
@@ -383,7 +440,7 @@ These are targets, not promises. Field validation starts in the next implementat
 | Year 2 | 500+ farmers and a parametric-risk pilot |
 | Year 3 | path toward economic self-sustainability |
 
-The design principle is simple: day-one value should not require blockchain literacy. Midnight-based privacy and rewards should strengthen adoption, not gate it.
+The design principle is simple: day-one value should not require blockchain literacy. Midnight-based privacy and reward eligibility should strengthen adoption, not gate it.
 
 ---
 
@@ -401,8 +458,8 @@ The design principle is simple: day-one value should not require blockchain lite
 | File | Contents |
 |------|----------|
 | [`docs/README.md`](docs/README.md) | project documentation entry point |
-| [`docs/codex-handoff.md`](docs/codex-handoff.md) | architecture and handoff notes |
-| [`docs/codex-handoff-quick.md`](docs/codex-handoff-quick.md) | shorter handoff summary |
+| [`docs/user_stories.html`](docs/user_stories.html) | product user stories |
+| [`research/python-lab/README.md`](research/python-lab/README.md) | Python research lab overview, commands, and experiment framing |
 | [`proof-server/README.md`](proof-server/README.md) | proof-server operations |
 
 ---
