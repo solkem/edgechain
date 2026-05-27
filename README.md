@@ -434,7 +434,7 @@ These are targets, not promises. Field validation starts in the next implementat
 
 | Horizon | Goal |
 |---------|------|
-| Pilot | 7 farmers in Odzi, Manicaland (1 hardware + 6 WhatsApp observation sites) |
+| Pilot | Small scale armers in Odzi, Manicaland (Hardware + WhatsApp observation sites) |
 | Year 1 | 50-100 enrolled farmers and one B2B pilot |
 | Year 2 | 500+ farmers and a parametric-risk pilot |
 | Year 3 | path toward economic self-sustainability |
