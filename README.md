@@ -7,8 +7,7 @@
 EdgeChain is built on the Midnight Network.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Midnight Testnet](https://img.shields.io/badge/Midnight-testnet02-8B5CF6)](https://midnight.network)
-[![Midnight Summit Hackathon](https://img.shields.io/badge/Midnight%20Summit%20Hackathon-Top%2016%20of%2046-gold)](https://midnight.network)
+[![Midnight Testnet](https://img.shields.io/badge/Midnight-Network-8B5CF6)](https://midnight.network)
 [![Python Lab CI](https://github.com/solkem/edgechain/actions/workflows/python-lab-ci.yml/badge.svg)](https://github.com/solkem/edgechain/actions/workflows/python-lab-ci.yml)
 [![SDG 1](https://img.shields.io/badge/SDG-1%20No%20Poverty-E5243B)](https://sdgs.un.org/goals/goal1)
 [![SDG 2](https://img.shields.io/badge/SDG-2%20Zero%20Hunger-DDA63A)](https://sdgs.un.org/goals/goal2)
