@@ -35,6 +35,8 @@ def run_heuristic_monitor(
     rejection_rate = report.n_rejected / max(report.n_clients, 1)
     eligible = report.n_accepted + report.n_flagged
 
+    # This monitor is the simple baseline for LLM oversight: fixed rules over
+    # the same privacy-safe report the LLM sees, with no raw farmer data.
     if eligible < config.min_eligible_clients:
         return HeuristicResult(
             label=OversightLabel.SKIP_ROUND,
@@ -95,4 +97,3 @@ def _sjs_is_bimodal(report: VisibleRoundReport, config: HeuristicMonitorConfig) 
         and left_size >= config.min_group_size_for_gap
         and right_size >= config.min_group_size_for_gap
     )
-

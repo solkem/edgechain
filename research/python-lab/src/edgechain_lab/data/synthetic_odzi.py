@@ -87,6 +87,8 @@ def generate_readings(
         cluster_id: _global_weather_series(n_rounds, rng) * 0.7 for cluster_id in {"A", "B", "C"}
     }
 
+    # A round is the shared simulation/FL coordination step. In this synthetic
+    # testbed each round advances by one hour and emits one row per site.
     for round_id in range(n_rounds):
         timestamp = start + timedelta(hours=round_id)
         for site in sites:

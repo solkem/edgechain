@@ -35,6 +35,8 @@ def run_oversight_evaluation(
     """Run heuristic and dry/live LLM oversight monitors."""
 
     cases = build_oversight_cases(seed=seed)
+    # Both monitors receive the same visible, privacy-safe report. The
+    # experiment asks whether LLM reasoning adds value beyond fixed rules.
     heuristic_results = [run_heuristic_monitor(case.visible_round_report) for case in cases]
     llm_results = [run_anthropic_monitor(case) if live else dry_run_monitor(case) for case in cases]
     frame = results_to_frame(cases, heuristic_results, llm_results)

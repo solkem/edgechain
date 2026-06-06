@@ -25,6 +25,8 @@ def main() -> None:
     data_dir.mkdir(exist_ok=True)
     report_dir.mkdir(exist_ok=True)
 
+    # CSV is for quick human inspection; Parquet is the typed, efficient format
+    # expected by many analytics/ML tools. Both are generated from the same frame.
     readings.to_csv(data_dir / "synthetic_rounds.csv", index=False)
     with suppress(ImportError):
         readings.to_parquet(data_dir / "synthetic_rounds.parquet", index=False)

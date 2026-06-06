@@ -44,6 +44,9 @@ class BaselineRunConfig:
         ScenarioName.SENSOR_FAILURE,
         ScenarioName.CALIBRATION_DRIFT,
     )
+    # Aggregators are the comparison set: each method turns many client updates
+    # into one global update, letting MARS-weighted FedAvg be judged against
+    # standard and robust baselines rather than in isolation.
     aggregators: tuple[AggregatorConfig, ...] = (
         AggregatorConfig("fedavg"),
         AggregatorConfig("median"),
@@ -74,6 +77,8 @@ def run_baseline_evaluation(config: BaselineRunConfig | None = None) -> pd.DataF
             vectors = _vectors(attacked)
             scores = score_round(attacked, _default_clusters(config.n_clients), seed=seed)
             for aggregator in config.aggregators:
+                # Same scenario, same updates, different aggregation rule. The
+                # output row makes the methods directly comparable.
                 rows.append(
                     _run_one(
                         scenario=scenario,
