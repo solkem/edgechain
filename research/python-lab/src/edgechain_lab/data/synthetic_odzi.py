@@ -1,4 +1,9 @@
-"""Synthetic Odzi-like microclimate data generation."""
+"""Synthetic Odzi-like microclimate data generation.
+
+This module is reusable library code. It defines the synthetic sites, weather
+model, scenario rules, observation model, and public functions that other tests
+or experiments can import when they need Odzi-like readings in memory.
+"""
 
 from __future__ import annotations
 

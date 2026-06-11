@@ -1,4 +1,9 @@
-"""Run the synthetic Odzi generator and write artifacts."""
+"""Run the synthetic Odzi generator and write artifacts.
+
+This module is a thin experiment wrapper. It chooses one reproducible setup,
+calls the reusable generator from edgechain_lab.data.synthetic_odzi, then writes
+the resulting dataset and summary report to local artifact directories.
+"""
 
 from contextlib import suppress
 from pathlib import Path
