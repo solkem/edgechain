@@ -9,7 +9,10 @@
  */
 
 import * as crypto from 'crypto';
-import * as ed from '@noble/ed25519';
+
+async function ed25519() {
+  return import('@noble/ed25519');
+}
 
 export interface DeviceKeypair {
   publicKey: string; // hex
@@ -39,6 +42,7 @@ export class DeviceAuthService {
    * Including here for testing/simulation purposes
    */
   static async generateKeypair(): Promise<DeviceKeypair> {
+    const ed = await ed25519();
     // Generate random 32-byte private key
     const privateKey = crypto.randomBytes(32);
     const publicKey = await ed.getPublicKeyAsync(privateKey);
@@ -107,6 +111,7 @@ export class DeviceAuthService {
       const signatureBytes = Buffer.from(signature, 'hex');
       const pubkeyBytes = Buffer.from(devicePubkey, 'hex');
 
+      const ed = await ed25519();
       const isValid = await ed.verifyAsync(signatureBytes, challengeBytes, pubkeyBytes);
 
       if (isValid) {
@@ -133,6 +138,7 @@ export class DeviceAuthService {
     const messageBytes = Buffer.from(message, 'hex');
     const privateKeyBytes = Buffer.from(privateKeyHex, 'hex');
 
+    const ed = await ed25519();
     const signature = await ed.signAsync(messageBytes, privateKeyBytes);
     return Buffer.from(signature).toString('hex');
   }
@@ -155,6 +161,7 @@ export class DeviceAuthService {
       const signatureBytes = Buffer.from(signature, 'hex');
       const pubkeyBytes = Buffer.from(devicePubkey, 'hex');
 
+      const ed = await ed25519();
       return await ed.verifyAsync(signatureBytes, messageHash, pubkeyBytes);
     } catch (error: any) {
       console.error(`❌ Reading signature verification error: ${error.message}`);

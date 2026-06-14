@@ -7,6 +7,12 @@
 import Database from 'better-sqlite3';
 import * as fs from 'fs';
 import * as path from 'path';
+import {
+  ManualObservationRecord,
+  ManualObservationSession,
+  ManualObservationStatus,
+  ManualObservationStep,
+} from '../types/manualObservation';
 
 const DB_PATH = path.join(__dirname, '../../data/edgechain.db');
 const SCHEMA_PATH = path.join(__dirname, 'schema.sql');
@@ -302,6 +308,134 @@ export const txLogDB = {
   }
 };
 
+function parseSession(row: any): ManualObservationSession {
+  return {
+    session_id: row.session_id,
+    channel: row.channel,
+    participant_phone_hash: row.participant_phone_hash || undefined,
+    current_step: row.current_step as ManualObservationStep,
+    status: row.status as ManualObservationStatus,
+    draft: JSON.parse(row.draft_json),
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+
+function parseObservation(row: any): ManualObservationRecord {
+  return {
+    observation_id: row.observation_id,
+    session_id: row.session_id,
+    site_id: row.site_id,
+    channel: row.channel,
+    participant_phone_hash: row.participant_phone_hash || undefined,
+    observation_date: row.observation_date,
+    payload: JSON.parse(row.payload_json),
+    validation_status: row.validation_status,
+    validation_errors: JSON.parse(row.validation_errors_json),
+    review_status: row.review_status,
+    submitted_at: row.submitted_at,
+  };
+}
+
+// Manual observation operations
+export const manualObservationDB = {
+  insertSession: (session: ManualObservationSession) => {
+    const stmt = db.prepare(`
+      INSERT INTO manual_observation_sessions
+        (session_id, channel, participant_phone_hash, current_step, status, draft_json)
+      VALUES
+        (@session_id, @channel, @participant_phone_hash, @current_step, @status, @draft_json)
+    `);
+    return stmt.run({
+      ...session,
+      participant_phone_hash: session.participant_phone_hash || null,
+      draft_json: JSON.stringify(session.draft),
+    });
+  },
+
+  updateSession: (session: ManualObservationSession) => {
+    const stmt = db.prepare(`
+      UPDATE manual_observation_sessions
+      SET current_step = @current_step,
+          status = @status,
+          draft_json = @draft_json,
+          updated_at = strftime('%s', 'now')
+      WHERE session_id = @session_id
+    `);
+    return stmt.run({
+      ...session,
+      draft_json: JSON.stringify(session.draft),
+    });
+  },
+
+  findSession: (session_id: string): ManualObservationSession | undefined => {
+    const stmt = db.prepare('SELECT * FROM manual_observation_sessions WHERE session_id = ?');
+    const row = stmt.get(session_id);
+    return row ? parseSession(row) : undefined;
+  },
+
+  findActiveSessionByPhoneHash: (participant_phone_hash: string): ManualObservationSession | undefined => {
+    const stmt = db.prepare(`
+      SELECT * FROM manual_observation_sessions
+      WHERE participant_phone_hash = ? AND status = 'active'
+      ORDER BY updated_at DESC LIMIT 1
+    `);
+    const row = stmt.get(participant_phone_hash);
+    return row ? parseSession(row) : undefined;
+  },
+
+  insertObservation: (observation: ManualObservationRecord) => {
+    const stmt = db.prepare(`
+      INSERT INTO manual_observations
+        (observation_id, session_id, site_id, channel, participant_phone_hash,
+         observation_date, payload_json, validation_status, validation_errors_json, review_status)
+      VALUES
+        (@observation_id, @session_id, @site_id, @channel, @participant_phone_hash,
+         @observation_date, @payload_json, @validation_status, @validation_errors_json, @review_status)
+    `);
+    return stmt.run({
+      ...observation,
+      participant_phone_hash: observation.participant_phone_hash || null,
+      payload_json: JSON.stringify(observation.payload),
+      validation_errors_json: JSON.stringify(observation.validation_errors),
+    });
+  },
+
+  listObservations: (limit = 100): ManualObservationRecord[] => {
+    const stmt = db.prepare(`
+      SELECT * FROM manual_observations
+      ORDER BY submitted_at DESC LIMIT ?
+    `);
+    return stmt.all(limit).map(parseObservation);
+  },
+
+  getCount: () => {
+    const stmt = db.prepare('SELECT COUNT(*) as count FROM manual_observations');
+    return (stmt.get() as any).count;
+  },
+
+  insertMessage: (message: {
+    session_id?: string;
+    channel: string;
+    direction: 'inbound' | 'outbound';
+    participant_phone_hash?: string;
+    raw_payload: unknown;
+  }) => {
+    const stmt = db.prepare(`
+      INSERT INTO manual_observation_messages
+        (session_id, channel, direction, participant_phone_hash, raw_payload_json)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+    return stmt.run(
+      message.session_id || null,
+      message.channel,
+      message.direction,
+      message.participant_phone_hash || null,
+      JSON.stringify(message.raw_payload)
+    );
+  },
+};
+
 // Database statistics
 export function getDatabaseStats() {
   return {
@@ -309,7 +443,8 @@ export function getDatabaseStats() {
     readings: readingDB.getCount(),
     batch_proofs: batchProofDB.getStats(),
     nullifiers: nullifierDB.getCount(),
-    pending_rewards: rewardDB.getPending().length
+    pending_rewards: rewardDB.getPending().length,
+    manual_observations: manualObservationDB.getCount(),
   };
 }
 

@@ -150,3 +150,55 @@ CREATE TABLE IF NOT EXISTS zk_proof_submissions (
 
 CREATE INDEX IF NOT EXISTS idx_zk_submissions_epoch ON zk_proof_submissions(epoch);
 CREATE INDEX IF NOT EXISTS idx_zk_submissions_ipfs ON zk_proof_submissions(ipfs_cid);
+
+-- Manual Observation Channel
+-- Pilot-ready structured human observations. WhatsApp is the first adapter,
+-- but these tables are channel-neutral so PWA/SMS/coordinator forms can reuse them.
+CREATE TABLE IF NOT EXISTS manual_observation_sessions (
+  session_id TEXT PRIMARY KEY,
+  channel TEXT NOT NULL CHECK (channel IN ('whatsapp', 'coordinator', 'api')),
+  participant_phone_hash TEXT,
+  current_step TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'submitted', 'cancelled')),
+  draft_json TEXT NOT NULL,
+  created_at INTEGER DEFAULT (strftime('%s', 'now')),
+  updated_at INTEGER DEFAULT (strftime('%s', 'now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_manual_sessions_channel ON manual_observation_sessions(channel);
+CREATE INDEX IF NOT EXISTS idx_manual_sessions_phone_hash ON manual_observation_sessions(participant_phone_hash);
+CREATE INDEX IF NOT EXISTS idx_manual_sessions_status ON manual_observation_sessions(status);
+
+CREATE TABLE IF NOT EXISTS manual_observations (
+  observation_id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  site_id TEXT NOT NULL,
+  channel TEXT NOT NULL CHECK (channel IN ('whatsapp', 'coordinator', 'api')),
+  participant_phone_hash TEXT,
+  observation_date TEXT NOT NULL,
+  payload_json TEXT NOT NULL,
+  validation_status TEXT NOT NULL CHECK (validation_status IN ('valid', 'flagged', 'invalid')),
+  validation_errors_json TEXT NOT NULL,
+  review_status TEXT NOT NULL DEFAULT 'pending' CHECK (review_status IN ('pending', 'reviewed', 'needs_followup')),
+  submitted_at INTEGER DEFAULT (strftime('%s', 'now')),
+  FOREIGN KEY (session_id) REFERENCES manual_observation_sessions(session_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_manual_observations_site ON manual_observations(site_id);
+CREATE INDEX IF NOT EXISTS idx_manual_observations_date ON manual_observations(observation_date);
+CREATE INDEX IF NOT EXISTS idx_manual_observations_validation ON manual_observations(validation_status);
+CREATE INDEX IF NOT EXISTS idx_manual_observations_review ON manual_observations(review_status);
+
+CREATE TABLE IF NOT EXISTS manual_observation_messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id TEXT,
+  channel TEXT NOT NULL,
+  direction TEXT NOT NULL CHECK (direction IN ('inbound', 'outbound')),
+  participant_phone_hash TEXT,
+  raw_payload_json TEXT NOT NULL,
+  created_at INTEGER DEFAULT (strftime('%s', 'now')),
+  FOREIGN KEY (session_id) REFERENCES manual_observation_sessions(session_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_manual_messages_session ON manual_observation_messages(session_id);
+CREATE INDEX IF NOT EXISTS idx_manual_messages_phone_hash ON manual_observation_messages(participant_phone_hash);

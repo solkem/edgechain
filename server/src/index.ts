@@ -11,6 +11,8 @@ import cors from 'cors';
 import path from 'path';
 import { aggregationRouter } from './routes/aggregation';
 import { iotRouter } from './routes/iot';
+import { manualObservationsRouter } from './routes/manualObservations';
+import { whatsappRouter } from './routes/whatsapp';
 import { initializeDatabase, getDatabaseStats } from './database';
 
 const app = express();
@@ -70,6 +72,8 @@ app.get('/api', (_req, res) => {
     services: {
       'Federated Learning': '/api/fl',
       'Arduino IoT': '/api/arduino',
+      'Manual Observations': '/api/manual-observations',
+      'WhatsApp Pilot Adapter': '/api/whatsapp',
       'Device Registry': '/api/arduino/registry',
       'Database Stats': '/api/db-stats'
     },
@@ -77,6 +81,8 @@ app.get('/api', (_req, res) => {
       health: '/health',
       fl: '/api/fl',
       arduino: '/api/arduino',
+      manual_observations: '/api/manual-observations',
+      whatsapp: '/api/whatsapp',
       registry: '/api/arduino/registry',
       stats: '/api/db-stats'
     },
@@ -87,6 +93,8 @@ app.get('/api', (_req, res) => {
 // API Routes (must be before catch-all route)
 app.use('/api/fl', aggregationRouter);
 app.use('/api/arduino', iotRouter); // Keep /api/arduino path for backward compatibility
+app.use('/api/manual-observations', manualObservationsRouter);
+app.use('/api/whatsapp', whatsappRouter);
 
 // SPA fallback - serve frontend for all other routes (MUST BE LAST)
 app.get('*', (_req, res) => {
