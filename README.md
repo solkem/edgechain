@@ -428,9 +428,11 @@ TX power:           20
 | Health check | `GET /api/db-stats` |
 | Required secret | `DATABASE_URL` |
 | IPFS service | `https://edgechain-ipfs.fly.dev` |
+| Legacy mount | `edgechain_data` at `/app/data`; retained only while the existing Fly machine still has the old volume attached |
 
-The backend stores operational data in PostgreSQL. It does not use an app-local
-database file or a Fly volume for database persistence.
+The backend stores operational data in PostgreSQL. The Fly volume is not used
+for database persistence; it can be removed later after the old attached volume
+is destroyed from Fly.
 
 For Fly, create or attach Postgres before deploying:
 
