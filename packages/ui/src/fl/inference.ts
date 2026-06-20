@@ -21,10 +21,10 @@ import type {
 import {
   formatYieldPrediction,
   getYieldRecommendation,
+  predictionInputToTensor,
   validatePredictionInput,
 } from '@edgechain/fl';
 import { createModel, loadModelWeights } from './training';
-import { dataPointToTensor } from './dataCollection';
 
 export {
   formatYieldPrediction,
@@ -51,52 +51,46 @@ export async function predictYield(
 ): Promise<PredictionOutput> {
   console.log('🔮 Making yield prediction...');
 
-  // Load model with weights
+  const validation = validatePredictionInput(input);
+  if (!validation.valid) {
+    throw new Error(`Invalid prediction input: ${validation.errors.join('; ')}`);
+  }
+
   const model = createModel(weights.architecture);
-  await loadModelWeights(model, weights);
+  let inputTensor: tf.Tensor2D | undefined;
+  let predictionTensor: tf.Tensor | undefined;
 
-  // Convert input to tensor
-  const inputFeatures = dataPointToTensor({
-    rainfall: input.rainfall,
-    temperature: input.temperature,
-    soilType: input.soilType,
-    irrigationType: input.irrigationType,
-    farmSize: input.farmSize,
-    fertilizer: input.fertilizer,
-    pesticides: input.pesticides,
-    yield: 0, // Not used for prediction
-    cropType: input.cropType,
-    season: 'current',
-    timestamp: Date.now(),
-  });
+  try {
+    await loadModelWeights(model, weights);
 
-  // Make prediction
-  const inputTensor = tf.tensor2d([inputFeatures]);
-  const predictionTensor = model.predict(inputTensor) as tf.Tensor;
-  const predictionArray = await predictionTensor.array() as number[][];
-  const predictedYield = predictionArray[0][0];
+    const inputFeatures = predictionInputToTensor(input);
+    inputTensor = tf.tensor2d([inputFeatures]);
+    predictionTensor = model.predict(inputTensor) as tf.Tensor;
+    const predictionArray = await predictionTensor.array() as number[][];
+    const predictedYield = predictionArray[0]?.[0];
 
-  // Calculate confidence (simplified)
-  // In production: Use model uncertainty estimation or ensemble predictions
-  const confidence = calculateConfidence(input, weights);
+    if (!Number.isFinite(predictedYield)) {
+      throw new Error('Model returned a non-finite prediction');
+    }
 
-  // Feature importance (simplified)
-  const explanation = calculateFeatureImportance(input, weights);
+    // Simplified confidence/explanation until model uncertainty is implemented.
+    const confidence = calculateConfidence(input);
+    const explanation = calculateFeatureImportance(input);
 
-  // Cleanup
-  inputTensor.dispose();
-  predictionTensor.dispose();
-  model.dispose();
+    console.log(`✅ Predicted yield: ${predictedYield.toFixed(2)} tons/hectare (${(confidence * 100).toFixed(1)}% confidence)`);
 
-  console.log(`✅ Predicted yield: ${predictedYield.toFixed(2)} tons/hectare (${(confidence * 100).toFixed(1)}% confidence)`);
-
-  return {
-    predictedYield,
-    confidence,
-    modelVersion,
-    timestamp: Date.now(),
-    explanation,
-  };
+    return {
+      predictedYield,
+      confidence,
+      modelVersion,
+      timestamp: Date.now(),
+      explanation,
+    };
+  } finally {
+    inputTensor?.dispose();
+    predictionTensor?.dispose();
+    model.dispose();
+  }
 }
 
 /**
@@ -137,10 +131,7 @@ export async function predictWithLocalModel(
  *
  * In production: Use dropout-based uncertainty or ensemble methods
  */
-function calculateConfidence(
-  input: PredictionInput,
-  weights: ModelWeights
-): number {
+function calculateConfidence(input: PredictionInput): number {
   // Typical ranges for agricultural data
   const ranges = {
     rainfall: { min: 300, max: 1500, typical: [400, 1200] },
@@ -193,10 +184,7 @@ function calculateConfidence(
  *
  * Method: Perturb each feature slightly and measure prediction change
  */
-function calculateFeatureImportance(
-  input: PredictionInput,
-  weights: ModelWeights
-): { topFactors: { feature: string; impact: number }[] } {
+function calculateFeatureImportance(input: PredictionInput): { topFactors: { feature: string; impact: number }[] } {
   // Simplified feature importance
   // In production: Use SHAP values or integrated gradients
 

@@ -131,6 +131,8 @@ export async function extractModelWeights(model: tf.LayersModel): Promise<ModelW
         weights: weightsData,
         biases: biasesData,
       });
+
+      weights.forEach((tensor) => tensor.dispose());
     }
   }
 
@@ -161,12 +163,22 @@ export async function loadModelWeights(
   model: tf.LayersModel,
   weights: ModelWeights
 ): Promise<void> {
-  let layerIndex = 0;
+  let sourceLayerIndex = 0;
 
   for (const layer of model.layers) {
-    if (layerIndex >= weights.layers.length) break;
+    const currentWeights = layer.getWeights();
+    const expectsWeights = currentWeights.length > 0;
+    currentWeights.forEach((tensor) => tensor.dispose());
 
-    const layerWeights = weights.layers[layerIndex];
+    if (!expectsWeights) {
+      continue;
+    }
+
+    if (sourceLayerIndex >= weights.layers.length) {
+      throw new Error(`Missing stored weights for model layer "${layer.name}"`);
+    }
+
+    const layerWeights = weights.layers[sourceLayerIndex];
 
     if (layerWeights.weights.length > 0 || layerWeights.biases.length > 0) {
       const tensors: tf.Tensor[] = [];
@@ -187,7 +199,11 @@ export async function loadModelWeights(
       tensors.forEach(t => t.dispose());
     }
 
-    layerIndex++;
+    sourceLayerIndex++;
+  }
+
+  if (sourceLayerIndex !== weights.layers.length) {
+    throw new Error(`Unused stored weights: loaded ${sourceLayerIndex} of ${weights.layers.length} layers`);
   }
 
   console.log('✅ Weights loaded into model');
