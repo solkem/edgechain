@@ -131,8 +131,6 @@ export async function extractModelWeights(model: tf.LayersModel): Promise<ModelW
         weights: weightsData,
         biases: biasesData,
       });
-
-      weights.forEach((tensor) => tensor.dispose());
     }
   }
 
@@ -168,7 +166,6 @@ export async function loadModelWeights(
   for (const layer of model.layers) {
     const currentWeights = layer.getWeights();
     const expectsWeights = currentWeights.length > 0;
-    currentWeights.forEach((tensor) => tensor.dispose());
 
     if (!expectsWeights) {
       continue;
