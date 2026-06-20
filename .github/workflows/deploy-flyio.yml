@@ -66,6 +66,26 @@ jobs:
       - name: Setup Fly CLI
         uses: superfly/flyctl-actions/setup-flyctl@master
 
+      - name: Ensure Fly Postgres secret
+        run: |
+          if flyctl secrets list --app edgechain-midnight | grep -q '^DATABASE_URL'; then
+            echo "DATABASE_URL is already configured on Fly."
+          elif [ -n "${DATABASE_URL}" ]; then
+            echo "Setting DATABASE_URL from GitHub Actions secret."
+            flyctl secrets set --app edgechain-midnight DATABASE_URL="${DATABASE_URL}"
+          else
+            echo "::error::DATABASE_URL is not configured on Fly. Create/attach Fly Postgres with: fly postgres attach edgechain-postgres --app edgechain-midnight"
+            exit 1
+          fi
+
+          if [ -n "${DATABASE_SSL}" ]; then
+            flyctl secrets set --app edgechain-midnight DATABASE_SSL="${DATABASE_SSL}"
+          fi
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_SSL: ${{ secrets.DATABASE_SSL }}
+
       - name: Deploy to Fly.io
         run: flyctl deploy --remote-only --yes --config ./apps/freedom-node/fly.toml
         env:
