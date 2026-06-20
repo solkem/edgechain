@@ -50,6 +50,8 @@ RUN npm ci --omit=dev
 
 # Copy built files from builder
 COPY --from=builder /app/apps/freedom-node/dist ./dist
+COPY --from=builder /app/packages/fl/dist /app/packages/fl/dist
+COPY --from=builder /app/packages/mars/dist /app/packages/mars/dist
 
 # Copy database schema files (SQL files are not compiled by TypeScript)
 COPY apps/freedom-node/src/database/schema.sql ./dist/database/schema.sql
