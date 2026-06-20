@@ -14,7 +14,7 @@ import type {
   TrainingResult,
   FarmDataset,
 } from './types';
-import { prepareTrainingData } from './dataCollection';
+import { prepareTrainingData } from '@edgechain/fl';
 
 // ============================================================================
 // MODEL CREATION

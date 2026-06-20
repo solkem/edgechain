@@ -17,7 +17,7 @@ import type {
   TrainingMetrics,
 } from '../fl/types';
 import { trainLocalModel, DEFAULT_TRAINING_CONFIG } from '../fl/training';
-import { generateMockFarmDataset } from '../fl/dataCollection';
+import { generateMockFarmDataset } from '@edgechain/fl';
 import { loadGlobalModel } from '../fl/aggregation';
 import { hashModelWeights } from '../fl/training';
 import type { TransactionData } from '../providers/WalletProvider';

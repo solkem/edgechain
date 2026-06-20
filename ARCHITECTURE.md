@@ -102,8 +102,8 @@ research/python-lab/src/edgechain_lab/oversight/
 ```
 
 Current boundary: `packages/fl/` owns shared production model-update types,
-feature encoding, training-data preparation, prediction contracts, prediction
-validation helpers, and backend aggregation. `packages/mars/` owns production
+feature encoding, training-data preparation, IoT/Sensor Node dataset conversion,
+prediction contracts, prediction validation helpers, and backend aggregation. `packages/mars/` owns production
 MARS scoring and reward allocation primitives. `apps/freedom-node/src/services/aggregation.ts`
 owns runtime state and API orchestration, while `apps/freedom-node/src/services/marsScoring.ts`
 adapts MARS to backend sensor-contribution reward eligibility.
