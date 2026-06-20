@@ -17,6 +17,7 @@ export type {
   ModelSubmission,
   ModelWeights,
   PredictionInput,
+  PredictionOutput,
 } from '@edgechain/fl';
 
 // ============================================================================
@@ -67,26 +68,6 @@ export interface TrainingResult {
   datasetSize: number;
   trainingTime: number;      // milliseconds
   timestamp: number;
-}
-
-// ============================================================================
-// INFERENCE
-// ============================================================================
-
-/**
- * Prediction output
- */
-export interface PredictionOutput {
-  predictedYield: number;    // tons per hectare
-  confidence: number;        // 0-1 score
-  modelVersion: number;
-  timestamp: number;
-  explanation?: {
-    topFactors: {
-      feature: string;
-      impact: number;        // relative importance
-    }[];
-  };
 }
 
 // ============================================================================

@@ -102,14 +102,15 @@ research/python-lab/src/edgechain_lab/oversight/
 ```
 
 Current boundary: `packages/fl/` owns shared production model-update types,
-feature encoding, training-data preparation, and backend aggregation.
-`packages/mars/` owns production MARS scoring and reward allocation primitives.
-`server/src/services/aggregation.ts` owns runtime state and API orchestration,
-while `server/src/services/marsScoring.ts` adapts MARS to backend
-sensor-contribution reward eligibility. `packages/ui/src/fl/` still owns
-browser training, inference, demo storage helpers, and UI-side fallback logic.
-The Python lab remains the research authority for synthetic data, attacks,
-oversight, and experimental MARS variants.
+feature encoding, training-data preparation, prediction contracts, prediction
+validation helpers, and backend aggregation. `packages/mars/` owns production
+MARS scoring and reward allocation primitives. `server/src/services/aggregation.ts`
+owns runtime state and API orchestration, while `server/src/services/marsScoring.ts`
+adapts MARS to backend sensor-contribution reward eligibility.
+`packages/ui/src/fl/` still owns browser TensorFlow training/inference
+execution, demo storage helpers, and UI-side fallback logic. The Python lab
+remains the research authority for synthetic data, attacks, oversight, and
+experimental MARS variants.
 
 Target direction:
 

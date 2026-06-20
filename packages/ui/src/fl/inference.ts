@@ -18,8 +18,19 @@ import type {
   PredictionOutput,
   GlobalModel,
 } from './types';
+import {
+  formatYieldPrediction,
+  getYieldRecommendation,
+  validatePredictionInput,
+} from '@edgechain/fl';
 import { createModel, loadModelWeights } from './training';
 import { dataPointToTensor } from './dataCollection';
+
+export {
+  formatYieldPrediction,
+  getYieldRecommendation,
+  validatePredictionInput,
+};
 
 // ============================================================================
 // PREDICTION
@@ -377,135 +388,4 @@ export function getGlobalModelInfo(): {
     accuracy: model.metadata.averageAccuracy,
     createdAt: model.metadata.createdAt,
   };
-}
-
-/**
- * Validate prediction input
- */
-export function validatePredictionInput(input: PredictionInput): {
-  valid: boolean;
-  errors: string[];
-} {
-  const errors: string[] = [];
-
-  // Rainfall validation (mm per season)
-  if (input.rainfall < 0 || input.rainfall > 3000) {
-    errors.push('Rainfall must be between 0 and 3000 mm');
-  }
-
-  // Temperature validation (celsius)
-  if (input.temperature < -10 || input.temperature > 50) {
-    errors.push('Temperature must be between -10 and 50°C');
-  }
-
-  // Farm size validation (hectares)
-  if (input.farmSize <= 0 || input.farmSize > 10000) {
-    errors.push('Farm size must be between 0 and 10,000 hectares');
-  }
-
-  // Fertilizer validation (kg/hectare)
-  if (input.fertilizer < 0 || input.fertilizer > 1000) {
-    errors.push('Fertilizer must be between 0 and 1000 kg/hectare');
-  }
-
-  // Pesticides validation (applications per season)
-  if (input.pesticides < 0 || input.pesticides > 20) {
-    errors.push('Pesticides must be between 0 and 20 applications');
-  }
-
-  // Soil type validation
-  const validSoilTypes = ['loamy', 'clay', 'sandy', 'silty', 'peaty'];
-  if (!validSoilTypes.includes(input.soilType.toLowerCase())) {
-    errors.push(`Soil type must be one of: ${validSoilTypes.join(', ')}`);
-  }
-
-  // Irrigation type validation
-  const validIrrigationTypes = ['drip', 'sprinkler', 'flood', 'rainfed'];
-  if (!validIrrigationTypes.includes(input.irrigationType.toLowerCase())) {
-    errors.push(`Irrigation type must be one of: ${validIrrigationTypes.join(', ')}`);
-  }
-
-  return {
-    valid: errors.length === 0,
-    errors,
-  };
-}
-
-/**
- * Format yield prediction for display
- */
-export function formatYieldPrediction(prediction: PredictionOutput): string {
-  const yield_tons = prediction.predictedYield.toFixed(2);
-  const confidence_pct = (prediction.confidence * 100).toFixed(1);
-
-  return `${yield_tons} tons/hectare (${confidence_pct}% confidence)`;
-}
-
-/**
- * Get recommendation based on prediction
- */
-export function getYieldRecommendation(
-  prediction: PredictionOutput,
-  averageYield: number = 4.0
-): {
-  status: 'excellent' | 'good' | 'average' | 'below-average' | 'poor';
-  message: string;
-  suggestions: string[];
-} {
-  const predicted = prediction.predictedYield;
-  const ratio = predicted / averageYield;
-
-  if (ratio >= 1.2) {
-    return {
-      status: 'excellent',
-      message: 'Excellent yield predicted! Your conditions are optimal.',
-      suggestions: [
-        'Maintain current farming practices',
-        'Consider documenting your approach for future seasons',
-        'Share your success with the farming community',
-      ],
-    };
-  } else if (ratio >= 1.05) {
-    return {
-      status: 'good',
-      message: 'Good yield predicted. You\'re on the right track.',
-      suggestions: [
-        'Continue current practices',
-        'Monitor IoT sensors for any changes',
-        'Consider minor optimizations',
-      ],
-    };
-  } else if (ratio >= 0.9) {
-    return {
-      status: 'average',
-      message: 'Average yield predicted. Room for improvement.',
-      suggestions: [
-        'Review fertilizer application timing',
-        'Check soil moisture levels regularly',
-        'Consider adjusting irrigation schedule',
-      ],
-    };
-  } else if (ratio >= 0.7) {
-    return {
-      status: 'below-average',
-      message: 'Below-average yield predicted. Action recommended.',
-      suggestions: [
-        'Check for pest or disease issues',
-        'Review water management practices',
-        'Consider soil testing',
-        'Consult with agricultural extension services',
-      ],
-    };
-  } else {
-    return {
-      status: 'poor',
-      message: 'Low yield predicted. Immediate action needed.',
-      suggestions: [
-        'Urgent: Check for major issues (pests, disease, drought)',
-        'Review all farming inputs and practices',
-        'Consider expert consultation',
-        'Check IoT sensor calibration',
-      ],
-    };
-  }
 }
