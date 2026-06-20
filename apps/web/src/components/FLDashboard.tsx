@@ -18,7 +18,7 @@ import type {
 } from '../fl/types';
 import { trainLocalModel, DEFAULT_TRAINING_CONFIG } from '../fl/training';
 import { generateMockFarmDataset } from '@edgechain/fl';
-import { loadGlobalModel } from '../fl/aggregation';
+import { loadGlobalModel } from '../fl/modelStore';
 import { hashModelWeights } from '../fl/training';
 import type { TransactionData } from '../providers/WalletProvider';
 import {
@@ -27,7 +27,7 @@ import {
   hasValidSensorNodeData,
   getSensorNodeDataSummary,
   clearSensorNodeData,
-} from '../fl/iotIntegration';
+} from '../fl/sensorNodeStore';
 import {
   storeSubmission,
   checkAggregationReadiness,

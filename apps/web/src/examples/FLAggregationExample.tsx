@@ -13,7 +13,7 @@ import {
   saveGlobalModel,
   loadGlobalModel,
   DEFAULT_AGGREGATION_CONFIG,
-} from '../fl/aggregation';
+} from '../fl/modelStore';
 
 export function FLAggregationExample() {
   const [loading, setLoading] = useState(false);

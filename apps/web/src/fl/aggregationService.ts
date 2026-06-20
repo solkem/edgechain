@@ -19,7 +19,7 @@ import {
   saveAggregationHistory,
   loadAggregationHistory,
   DEFAULT_AGGREGATION_CONFIG,
-} from './aggregation';
+} from './modelStore';
 import type {
   ModelSubmission,
   AggregationConfig,
