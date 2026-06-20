@@ -10,53 +10,14 @@ export type {
   AggregationAlgorithm,
   AggregationConfig,
   AggregationResult,
+  FarmDataPoint,
+  FarmDataset,
   GlobalModel,
   ModelArchitecture,
   ModelSubmission,
   ModelWeights,
+  PredictionInput,
 } from '@edgechain/fl';
-
-// ============================================================================
-// DATA COLLECTION
-// ============================================================================
-
-/**
- * Agricultural data point collected from farmer
- * This is the training data that stays LOCAL on farmer's device
- */
-export interface FarmDataPoint {
-  // Input features
-  rainfall: number;          // mm per season
-  temperature: number;       // average celsius
-  soilType: string;          // 'loamy' | 'clay' | 'sandy' | 'silty' | 'peaty'
-  irrigationType: string;    // 'drip' | 'sprinkler' | 'flood' | 'rainfed'
-  farmSize: number;          // hectares
-  fertilizer: number;        // kg per hectare
-  pesticides: number;        // applications per season
-
-  // Target (what we're predicting)
-  yield: number;             // tons per hectare
-
-  // Metadata
-  cropType: string;          // 'wheat' | 'corn' | 'rice' | etc.
-  season: string;            // '2024-spring' | '2024-fall' etc.
-  timestamp: number;         // when data was collected
-}
-
-/**
- * Collection of farm data points for training
- */
-export interface FarmDataset {
-  farmerId: string;          // Midnight wallet address
-  dataPoints: FarmDataPoint[];
-  privacyLevel: 'basic' | 'enhanced' | 'detailed';
-  totalSamples: number;
-  crops: string[];           // unique crops in dataset
-  dateRange: {
-    start: number;
-    end: number;
-  };
-}
 
 // ============================================================================
 // TRAINING
@@ -111,20 +72,6 @@ export interface TrainingResult {
 // ============================================================================
 // INFERENCE
 // ============================================================================
-
-/**
- * Input for crop yield prediction
- */
-export interface PredictionInput {
-  rainfall: number;
-  temperature: number;
-  soilType: string;
-  irrigationType: string;
-  farmSize: number;
-  fertilizer: number;
-  pesticides: number;
-  cropType: string;
-}
 
 /**
  * Prediction output

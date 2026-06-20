@@ -19,7 +19,27 @@
  * - Existing weather data APIs (free)
  */
 
-import type { FarmDataPoint, FarmDataset, PredictionInput } from './types';
+import {
+  calculateDatasetStats,
+  dataPointToTensor,
+  encodeCategorical,
+  normalizeFeature,
+  predictionInputToTensor,
+  prepareTrainingData,
+  validateDataPoint,
+  type FarmDataPoint,
+  type FarmDataset,
+} from '@edgechain/fl';
+
+export {
+  calculateDatasetStats,
+  dataPointToTensor,
+  encodeCategorical,
+  normalizeFeature,
+  predictionInputToTensor,
+  prepareTrainingData,
+  validateDataPoint,
+};
 
 // ============================================================================
 // IOT SENSOR DATA TYPES (Affordable Sensors)
@@ -58,45 +78,6 @@ export interface IoTAggregatedData {
   };
   cropHealthScore: number;  // 0-100 from image analysis
   readings: number;         // number of sensor readings
-}
-
-// ============================================================================
-// DATA VALIDATION
-// ============================================================================
-
-/**
- * Validate a farm data point from IoT sensors
- */
-export function validateDataPoint(data: Partial<FarmDataPoint>): string | null {
-  if (typeof data.rainfall !== 'number' || data.rainfall < 0 || data.rainfall > 5000) {
-    return 'Rainfall must be between 0-5000mm';
-  }
-  if (typeof data.temperature !== 'number' || data.temperature < -10 || data.temperature > 50) {
-    return 'Temperature must be between -10 and 50°C';
-  }
-  if (!data.soilType || !['loamy', 'clay', 'sandy', 'silty', 'peaty'].includes(data.soilType)) {
-    return 'Invalid soil type';
-  }
-  if (!data.irrigationType || !['drip', 'sprinkler', 'flood', 'rainfed'].includes(data.irrigationType)) {
-    return 'Invalid irrigation type';
-  }
-  if (typeof data.farmSize !== 'number' || data.farmSize <= 0 || data.farmSize > 10000) {
-    return 'Farm size must be between 0-10000 hectares';
-  }
-  if (typeof data.fertilizer !== 'number' || data.fertilizer < 0 || data.fertilizer > 1000) {
-    return 'Fertilizer must be between 0-1000 kg/ha';
-  }
-  if (typeof data.pesticides !== 'number' || data.pesticides < 0 || data.pesticides > 20) {
-    return 'Pesticides must be between 0-20 applications';
-  }
-  if (typeof data.yield !== 'number' || data.yield < 0 || data.yield > 50) {
-    return 'Yield must be between 0-50 tons/ha';
-  }
-  if (!data.cropType || data.cropType.length === 0) {
-    return 'Crop type is required';
-  }
-
-  return null; // valid
 }
 
 // ============================================================================
@@ -428,90 +409,6 @@ export function generateSampleData(
 }
 
 // ============================================================================
-// DATA PREPROCESSING
-// ============================================================================
-
-/**
- * Encode categorical features to numeric
- */
-export function encodeCategorical(value: string, category: 'soil' | 'irrigation'): number[] {
-  if (category === 'soil') {
-    const soils = ['loamy', 'clay', 'sandy', 'silty', 'peaty'];
-    return soils.map(s => s === value ? 1 : 0);
-  }
-
-  if (category === 'irrigation') {
-    const types = ['drip', 'sprinkler', 'flood', 'rainfed'];
-    return types.map(t => t === value ? 1 : 0);
-  }
-
-  return [];
-}
-
-/**
- * Normalize numeric features to 0-1 range
- */
-export function normalizeFeature(value: number, min: number, max: number): number {
-  if (max === min) return 0.5;
-  return (value - min) / (max - min);
-}
-
-/**
- * Convert farm data point to model input tensor
- */
-export function dataPointToTensor(data: FarmDataPoint): number[] {
-  const features: number[] = [];
-
-  // Numeric features (normalized)
-  features.push(normalizeFeature(data.rainfall, 0, 2000));
-  features.push(normalizeFeature(data.temperature, 0, 40));
-  features.push(normalizeFeature(data.farmSize, 0, 100));
-  features.push(normalizeFeature(data.fertilizer, 0, 500));
-  features.push(normalizeFeature(data.pesticides, 0, 15));
-
-  // Categorical features (one-hot encoded)
-  features.push(...encodeCategorical(data.soilType, 'soil'));
-  features.push(...encodeCategorical(data.irrigationType, 'irrigation'));
-
-  return features; // Total: 14 features
-}
-
-/**
- * Convert prediction input to model input tensor
- */
-export function predictionInputToTensor(input: PredictionInput): number[] {
-  const features: number[] = [];
-
-  features.push(normalizeFeature(input.rainfall, 0, 2000));
-  features.push(normalizeFeature(input.temperature, 0, 40));
-  features.push(normalizeFeature(input.farmSize, 0, 100));
-  features.push(normalizeFeature(input.fertilizer, 0, 500));
-  features.push(normalizeFeature(input.pesticides, 0, 15));
-  features.push(...encodeCategorical(input.soilType, 'soil'));
-  features.push(...encodeCategorical(input.irrigationType, 'irrigation'));
-
-  return features;
-}
-
-/**
- * Prepare dataset for training
- */
-export function prepareTrainingData(dataset: FarmDataset): {
-  inputs: number[][];
-  targets: number[][];
-} {
-  const inputs: number[][] = [];
-  const targets: number[][] = [];
-
-  for (const dataPoint of dataset.dataPoints) {
-    inputs.push(dataPointToTensor(dataPoint));
-    targets.push([dataPoint.yield]);
-  }
-
-  return { inputs, targets };
-}
-
-// ============================================================================
 // DATA STORAGE (LOCAL - Privacy Preserving)
 // ============================================================================
 
@@ -585,47 +482,6 @@ export function clearAllLocalData(): void {
   localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem(IOT_READINGS_KEY);
   console.log('✅ Cleared all local IoT data');
-}
-
-// ============================================================================
-// DATA STATISTICS
-// ============================================================================
-
-/**
- * Calculate statistics for a dataset
- */
-export function calculateDatasetStats(dataset: FarmDataset) {
-  const { dataPoints } = dataset;
-
-  if (dataPoints.length === 0) return null;
-
-  const yields = dataPoints.map(d => d.yield);
-  const rainfalls = dataPoints.map(d => d.rainfall);
-  const temps = dataPoints.map(d => d.temperature);
-
-  return {
-    samples: dataPoints.length,
-    yield: {
-      mean: yields.reduce((a, b) => a + b, 0) / yields.length,
-      min: Math.min(...yields),
-      max: Math.max(...yields),
-    },
-    rainfall: {
-      mean: rainfalls.reduce((a, b) => a + b, 0) / rainfalls.length,
-      min: Math.min(...rainfalls),
-      max: Math.max(...rainfalls),
-    },
-    temperature: {
-      mean: temps.reduce((a, b) => a + b, 0) / temps.length,
-      min: Math.min(...temps),
-      max: Math.max(...temps),
-    },
-    crops: dataset.crops,
-    dateRange: {
-      start: new Date(dataset.dateRange.start).toLocaleDateString(),
-      end: new Date(dataset.dateRange.end).toLocaleDateString(),
-    },
-  };
 }
 
 // ============================================================================
