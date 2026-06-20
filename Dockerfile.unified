@@ -19,6 +19,11 @@ COPY apps/freedom-node/package.json apps/freedom-node/package-lock.json ./apps/f
 WORKDIR /app/apps/freedom-node
 RUN npm ci
 
+# Build local package dependencies so backend TypeScript can resolve their
+# package "types" entries during the isolated Docker build.
+RUN npx tsc --project /app/packages/fl/tsconfig.json \
+  && npx tsc --project /app/packages/mars/tsconfig.json
+
 # Copy server source files
 COPY apps/freedom-node/src ./src
 COPY apps/freedom-node/tsconfig.json ./
