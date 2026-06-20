@@ -68,7 +68,9 @@ jobs:
 
       - name: Ensure Fly Postgres secret
         run: |
-          if flyctl secrets list --app edgechain-midnight | grep -q '^DATABASE_URL'; then
+          secrets_output="$(flyctl secrets list --app edgechain-midnight)"
+
+          if echo "${secrets_output}" | grep -q 'DATABASE_URL'; then
             echo "DATABASE_URL is already configured on Fly."
           elif [ -n "${DATABASE_URL}" ]; then
             echo "Setting DATABASE_URL from GitHub Actions secret."
@@ -80,6 +82,11 @@ jobs:
 
           if [ -n "${DATABASE_SSL}" ]; then
             flyctl secrets set --app edgechain-midnight DATABASE_SSL="${DATABASE_SSL}"
+          fi
+
+          if flyctl secrets list --app edgechain-midnight | grep -q 'Staged'; then
+            echo "Deploying staged Fly secrets before app deploy."
+            flyctl secrets deploy --app edgechain-midnight
           fi
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
