@@ -442,6 +442,9 @@ fly postgres attach edgechain-postgres --app edgechain-midnight
 ```
 
 `fly postgres attach` sets the `DATABASE_URL` secret for the backend app.
+EdgeChain backend gets Postgres credentials from the Fly secret
+`DATABASE_URL`; rotate via Fly if needed. Do not commit generated Postgres
+passwords to the repository.
 
 ### Proof Server (`proof-server/`)
 
