@@ -277,7 +277,7 @@ VITE_MIDNIGHT_PROOF_SERVER=${TESTNET_CONFIG.proofServer}
     console.log("1. Keep the proof server running (Terminal 1)");
     console.log("");
     console.log("2. Start the UI:");
-    console.log("   cd packages/ui");
+    console.log("   cd apps/web");
     console.log("   npm run dev");
     console.log("");
     console.log("3. Open http://localhost:5173 in your browser");

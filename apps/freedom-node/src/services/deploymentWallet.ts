@@ -48,8 +48,8 @@ class DeploymentWalletService {
       setNetworkId(NetworkId.TestNet);
 
       // Load wallet seed from deployment.json
-      // Path from server/src/services to packages/contract
-      const deploymentPath = path.join(process.cwd(), '..', 'packages', 'contract', 'deployment.json');
+      // Path from apps/freedom-node to packages/contract
+      const deploymentPath = path.join(process.cwd(), '..', '..', 'packages', 'contract', 'deployment.json');
 
       if (!fs.existsSync(deploymentPath)) {
         throw new Error(`Deployment file not found: ${deploymentPath}`);

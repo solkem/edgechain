@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const tempDir = await mkdtemp(path.join(tmpdir(), 'edgechain-ui-inference-'));
+const tempDir = await mkdtemp(path.join(tmpdir(), 'edgechain-web-inference-'));
 const outputFile = path.join(tempDir, 'inference.test.cjs');
 
 try {

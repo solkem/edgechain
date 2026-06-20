@@ -24,7 +24,7 @@ echo ""
 
 # Get script directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-DB_PATH="$SCRIPT_DIR/server/data"
+DB_PATH="$SCRIPT_DIR/apps/freedom-node/data"
 
 # Check if database directory exists
 if [ ! -d "$DB_PATH" ]; then
@@ -84,7 +84,7 @@ echo ""
 echo -e "${YELLOW}📋 Next Steps:${NC}"
 echo ""
 echo -e "${BLUE}1. Restart the backend server:${NC}"
-echo "   cd server && npm run dev"
+echo "   cd apps/freedom-node && npm run dev"
 echo ""
 echo -e "${BLUE}2. Clear browser localStorage:${NC}"
 echo "   • Open DevTools (F12)"

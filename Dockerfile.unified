@@ -1,6 +1,6 @@
 # Unified Dockerfile for EdgeChain Backend + Frontend
 # Build context: project root
-# This allows access to both server/ and packages/ui/dist/
+# This allows access to both apps/freedom-node/ and apps/web/dist/
 
 # Build stage
 FROM node:20-alpine AS builder
@@ -11,14 +11,14 @@ WORKDIR /app
 RUN apk add --no-cache python3 make g++
 
 # Copy server package files
-COPY server/package.json server/package-lock.json ./
+COPY apps/freedom-node/package.json apps/freedom-node/package-lock.json ./
 
 # Install dependencies
 RUN npm ci
 
 # Copy server source files
-COPY server/src ./src
-COPY server/tsconfig.json ./
+COPY apps/freedom-node/src ./src
+COPY apps/freedom-node/tsconfig.json ./
 
 # Build TypeScript
 RUN npm run build
@@ -32,7 +32,7 @@ WORKDIR /app
 RUN apk add --no-cache sqlite python3 make g++
 
 # Copy server package files
-COPY server/package.json server/package-lock.json ./
+COPY apps/freedom-node/package.json apps/freedom-node/package-lock.json ./
 
 # Install production dependencies only
 RUN npm ci --omit=dev
@@ -41,10 +41,10 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
 
 # Copy database schema files (SQL files are not compiled by TypeScript)
-COPY server/src/database/schema.sql ./dist/database/schema.sql
+COPY apps/freedom-node/src/database/schema.sql ./dist/database/schema.sql
 
 # Copy frontend build
-COPY packages/ui/dist ./packages/ui/dist
+COPY apps/web/dist ./apps/web/dist
 
 # Create data directory for SQLite database
 RUN mkdir -p /app/data

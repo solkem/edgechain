@@ -1,5 +1,5 @@
 {
-  "name": "edgechain-unified-backend",
+  "name": "@edgechain/freedom-node",
   "version": "1.1.0",
   "description": "Unified Backend for EdgeChain: Federated Learning + Sensor Node",
   "main": "src/index.js",
@@ -17,8 +17,8 @@
   "author": "EdgeChain Team",
   "license": "MIT",
   "dependencies": {
-    "@edgechain/fl": "file:../packages/fl",
-    "@edgechain/mars": "file:../packages/mars",
+    "@edgechain/fl": "file:../../packages/fl",
+    "@edgechain/mars": "file:../../packages/mars",
     "@noble/ed25519": "^3.0.0",
     "@storacha/client": "^1.8.15",
     "@types/better-sqlite3": "^7.6.13",

@@ -9,6 +9,7 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import { existsSync } from 'fs';
 import { aggregationRouter } from './routes/aggregation';
 import { iotRouter } from './routes/iot';
 import { manualObservationsRouter } from './routes/manualObservations';
@@ -30,10 +31,13 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '50mb' })); // Large limit for model weights
 
-// Serve frontend static files from packages/ui/dist
-// __dirname in production: /app/dist
-// Frontend location in Docker: /app/packages/ui/dist
-const frontendPath = path.join(__dirname, '../packages/ui/dist');
+// Serve frontend static files from the sibling web app build.
+const frontendPathCandidates = [
+  process.env.FRONTEND_DIST_PATH,
+  path.resolve(__dirname, '../../web/dist'),
+  path.resolve(__dirname, '../apps/web/dist')
+].filter((candidate): candidate is string => Boolean(candidate));
+const frontendPath = frontendPathCandidates.find((candidate) => existsSync(candidate)) ?? frontendPathCandidates[0];
 console.log(`📁 Serving frontend from: ${frontendPath}`);
 app.use(express.static(frontendPath));
 

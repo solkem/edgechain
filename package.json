@@ -6,10 +6,10 @@
     "dev": "turbo run dev",
     "predev": "node scripts/check-toolchain.mjs",
     "build": "turbo run build",
-    "build:node": "turbo run build --filter=@edgechain/fl --filter=@edgechain/mars --filter=@edgechain/contract --filter=@edgechain/cli",
-    "build:ui": "turbo run build --filter=edgechain-ui",
+    "build:node": "turbo run build --filter=@edgechain/fl --filter=@edgechain/mars --filter=@edgechain/contract --filter=@edgechain/cli --filter=@edgechain/freedom-node",
+    "build:ui": "turbo run build --filter=@edgechain/web",
     "prebuild": "node scripts/check-toolchain.mjs",
-    "build:all": "cd packages/fl && npm run build && cd ../mars && npm run build && cd ../contract && npx turbo run build && cd ../cli && npx turbo run build && cd ../ui && npx turbo run build",
+    "build:all": "cd packages/fl && npm run build && cd ../mars && npm run build && cd ../contract && npx turbo run build && cd ../cli && npx turbo run build && cd ../../apps/web && npx turbo run build",
     "prebuild:all": "node scripts/check-toolchain.mjs",
     "clean": "turbo run clean",
     "test": "turbo run test",
@@ -81,7 +81,8 @@
     "compact",
     "packages/fl",
     "packages/mars",
-    "packages/ui",
+    "apps/web",
+    "apps/freedom-node",
     "packages/cli",
     "packages/contract"
   ]

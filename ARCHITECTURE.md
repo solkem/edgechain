@@ -47,7 +47,7 @@ edgechain/
     distinct from the official Midnight proof-server container used for ZK
     proving workers.
 
-  server/
+  apps/freedom-node/
     Unified backend for current demo flows: FL aggregation routes, IoT routes,
     manual observations, WhatsApp adapter, persistence, IPFS, device registry,
     and ZK-proof service integration.
@@ -56,7 +56,7 @@ edgechain/
     Storacha/IPFS microservice. Production architecture should decide whether
     this remains a standalone service or becomes a Freedom Node/backend module.
 
-  packages/ui/
+  apps/web/
     React application and UI-side demo logic. It currently contains FL and IoT
     helpers that should not become the long-term canonical production logic.
 
@@ -92,9 +92,9 @@ research logic still kept separately:
 ```text
 packages/fl/
 packages/mars/
-server/src/services/aggregation.ts
-packages/ui/src/fl/
-packages/ui/src/components/fl/
+apps/freedom-node/src/services/aggregation.ts
+apps/web/src/fl/
+apps/web/src/components/fl/
 research/python-lab/src/edgechain_lab/fl/
 research/python-lab/src/edgechain_lab/mars/
 research/python-lab/src/edgechain_lab/attacks/
@@ -104,10 +104,10 @@ research/python-lab/src/edgechain_lab/oversight/
 Current boundary: `packages/fl/` owns shared production model-update types,
 feature encoding, training-data preparation, prediction contracts, prediction
 validation helpers, and backend aggregation. `packages/mars/` owns production
-MARS scoring and reward allocation primitives. `server/src/services/aggregation.ts`
-owns runtime state and API orchestration, while `server/src/services/marsScoring.ts`
+MARS scoring and reward allocation primitives. `apps/freedom-node/src/services/aggregation.ts`
+owns runtime state and API orchestration, while `apps/freedom-node/src/services/marsScoring.ts`
 adapts MARS to backend sensor-contribution reward eligibility.
-`packages/ui/src/fl/` still owns browser TensorFlow training/inference
+`apps/web/src/fl/` still owns browser TensorFlow training/inference
 execution, demo storage helpers, and UI-side fallback logic. The Python lab
 remains the research authority for synthetic data, attacks, oversight, and
 experimental MARS variants.
@@ -136,12 +136,12 @@ the Python lab as the research authority for MARS/FL experiment design.
 firmware/esp32-ndani/
   Current ESP32 firmware.
 
-server/src/routes/iot.ts
-server/src/services/bleReceiver.ts
-server/src/services/deviceAuth.ts
-server/src/services/deviceRegistry.ts
-server/src/services/nullifierTracking.ts
-server/src/services/zkProofService.ts
+apps/freedom-node/src/routes/iot.ts
+apps/freedom-node/src/services/bleReceiver.ts
+apps/freedom-node/src/services/deviceAuth.ts
+apps/freedom-node/src/services/deviceRegistry.ts
+apps/freedom-node/src/services/nullifierTracking.ts
+apps/freedom-node/src/services/zkProofService.ts
   Current backend-side IoT and privacy routes/services.
 
 proof-server/src/lora-receiver.ts

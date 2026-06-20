@@ -104,8 +104,8 @@ async function deployEdgeChainContract() {
   console.log('✅ Deployer mnemonic found\n');
 
   // 2. Load compiled contract
-  // Find the correct path whether we're in root or packages/ui
-  const contractPath = resolve(__dirname, __dirname.includes('/packages/ui') ? '../contract/dist/managed/edgechain' : 'packages/contract/dist/managed/edgechain');
+  // Find the correct path whether we're in root or apps/web
+  const contractPath = resolve(__dirname, __dirname.includes('/apps/web') ? '../../packages/contract/dist/managed/edgechain' : 'packages/contract/dist/managed/edgechain');
   const contractModulePath = resolve(contractPath, 'contract/index.cjs');
 
   console.log('📦 Loading compiled contract...');
@@ -191,7 +191,7 @@ async function deployEdgeChainContract() {
     console.log('');
 
     // 8. Save contract address
-    const envPath = resolve(__dirname, __dirname.includes('/packages/ui') ? '.env.local' : 'packages/ui/.env.local');
+    const envPath = resolve(__dirname, __dirname.includes('/apps/web') ? '.env.local' : 'apps/web/.env.local');
     const envContent = `# EdgeChain Midnight Contract Address
 # Deployed: ${new Date().toISOString()}
 # Network: Midnight Testnet-02
@@ -211,7 +211,7 @@ VITE_MIDNIGHT_PROOF_SERVER=${DEVNET_CONFIG.proverServerUrl}
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
     console.log('🎯 Next Steps:\n');
     console.log('1. Implement real circuit calls in ContractProvider');
-    console.log('2. Restart UI: cd packages/ui && npm run dev');
+    console.log('2. Restart UI: cd apps/web && npm run dev');
     console.log('3. Connect your Lace wallet in the browser');
     console.log('4. Test the FL workflow with real transactions!\n');
 

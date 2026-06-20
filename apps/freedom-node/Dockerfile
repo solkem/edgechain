@@ -7,16 +7,16 @@ WORKDIR /app
 RUN apk add --no-cache python3 make g++
 
 # Copy server package files
-COPY server/package.json server/package-lock.json ./
+COPY apps/freedom-node/package.json apps/freedom-node/package-lock.json ./
 
 # Install dependencies
 RUN npm ci
 
 # Copy server source files
-COPY server/ ./
+COPY apps/freedom-node/ ./
 
 # Copy frontend build from monorepo
-COPY packages/ui/dist ./frontend-build
+COPY apps/web/dist ./frontend-build
 
 # Build TypeScript
 RUN npm run build
@@ -30,7 +30,7 @@ WORKDIR /app
 RUN apk add --no-cache sqlite python3 make g++
 
 # Copy server package files
-COPY server/package.json server/package-lock.json ./
+COPY apps/freedom-node/package.json apps/freedom-node/package-lock.json ./
 
 # Install production dependencies only
 RUN npm ci --omit=dev
@@ -42,7 +42,7 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/src/database/schema.sql ./dist/database/schema.sql
 
 # Copy frontend build
-COPY --from=builder /app/frontend-build ./packages/ui/dist
+COPY --from=builder /app/frontend-build ./apps/web/dist
 
 # Create data directory for SQLite database
 RUN mkdir -p /app/data

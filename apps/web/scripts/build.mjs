@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const packageDir = path.resolve(__dirname, '..');
-const contractManagedDir = path.resolve(packageDir, '../contract/dist/managed/edgechain');
+const contractManagedDir = path.resolve(packageDir, '../../packages/contract/dist/managed/edgechain');
 const distDir = path.join(packageDir, 'dist');
 
 const run = (command, args) => {

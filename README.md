@@ -188,8 +188,8 @@ Demonstrable today:
 
 - ESP32 firmware scaffolding in [`firmware/esp32-ndani`](firmware/esp32-ndani)
 - In-repo Node.js proof server in [`proof-server`](proof-server)
-- Unified backend flows in [`server`](server)
-- React UI in [`packages/ui`](packages/ui)
+- Unified backend flows in [`apps/freedom-node`](apps/freedom-node)
+- React UI in [`apps/web`](apps/web)
 - IPFS integration in [`ipfs-service`](ipfs-service)
 - Compact contracts and deployment artifacts in [`packages/contract`](packages/contract)
 - Python research lab in [`research/python-lab`](research/python-lab) for synthetic FL, MARS scoring, adversarial scenarios, and oversight evaluation
@@ -225,11 +225,12 @@ edgechain/
 |  |- contract/         Compact contracts and deployment scripts
 |  |- fl/               Production FL aggregation and model-update types
 |  |- mars/             Production MARS scoring and reward eligibility
-|  |- ui/               React frontend
 |  |- cli/              CLI tools and scripts
+|- apps/
+|  |- web/              React frontend
+|  |- freedom-node/     Unified backend
 |- research/
 |  |- python-lab/       Synthetic FL, MARS scoring, attack, and oversight experiments
-|- server/              Unified backend
 |- proof-server/        In-repo Node.js service (Express + WS + LoRa serial). Distinct from the official `midnightntwrk/proof-server:7.0.0` Docker container (Midnight's ZK prover, 6 workers); both run on the Freedom Node alongside each other.
 |- firmware/            ESP32 firmware
 |- ipfs-service/        Storacha/IPFS microservice
@@ -286,10 +287,10 @@ yarn build:ui
 yarn dev
 
 # Or run services individually
-cd server && npm install && npm run dev
+cd apps/freedom-node && npm install && npm run dev
 cd proof-server && npm install && npm run dev
 cd ipfs-service && npm install && npm run dev
-yarn workspace edgechain-ui dev
+yarn workspace @edgechain/web dev
 ```
 
 Health checks:
@@ -389,7 +390,7 @@ TX power:           20
 
 ## Environment Variables
 
-### Backend (`server/`)
+### Backend (`apps/freedom-node/`)
 
 | Variable | Notes |
 |----------|-------|
