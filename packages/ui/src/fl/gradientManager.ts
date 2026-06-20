@@ -133,38 +133,43 @@ export class GradientManager {
     // In production, this would be actual crop yield data
     const y = tf.randomNormal([features.length, 1]);
 
-    // Clone global model weights
-    const globalWeights = globalModel.getWeights();
+    // Clone global weights so local training can compute deltas without
+    // mutating the caller-owned global model permanently.
+    const originalWeights = globalModel.getWeights().map((weight) => weight.clone());
 
     console.log('   🏋️ Training local model (5 epochs)...');
 
-    // Train for 5 epochs locally
-    await globalModel.fit(X, y, {
-      epochs: 5,
-      verbose: 0,
-      batchSize: Math.min(32, features.length)
-    });
+    try {
+      // Train for 5 epochs locally
+      await globalModel.fit(X, y, {
+        epochs: 5,
+        verbose: 0,
+        batchSize: Math.min(32, features.length)
+      });
 
-    // Get updated local weights
-    const localWeights = globalModel.getWeights();
+      // Get updated local weights. Do not dispose these directly; TensorFlow.js
+      // may return tensors owned by the model.
+      const localWeights = globalModel.getWeights();
 
-    console.log('   📊 Computing gradients (Δw = w_local - w_global)...');
+      console.log('   📊 Computing gradients (Δw = w_local - w_global)...');
 
-    // Compute gradients: Δw = w_local - w_global
-    const gradients = localWeights.map((localW, idx) => {
-      const globalW = globalWeights[idx];
-      const diff = localW.sub(globalW);
-      return diff.arraySync() as number[];
-    });
+      // Compute gradients: Δw = w_local - w_global
+      const gradients = localWeights.map((localW, idx) => {
+        const diff = localW.sub(originalWeights[idx]);
+        const values = diff.arraySync() as number[];
+        diff.dispose();
+        return values;
+      });
 
-    // Cleanup tensors
-    X.dispose();
-    y.dispose();
-    localWeights.forEach(w => w.dispose());
+      console.log(`   ✅ Computed ${gradients.length} gradient tensors`);
 
-    console.log(`   ✅ Computed ${gradients.length} gradient tensors`);
-
-    return gradients;
+      return gradients;
+    } finally {
+      globalModel.setWeights(originalWeights);
+      originalWeights.forEach((weight) => weight.dispose());
+      X.dispose();
+      y.dispose();
+    }
   }
 
   /**

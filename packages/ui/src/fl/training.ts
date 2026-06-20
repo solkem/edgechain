@@ -227,111 +227,109 @@ export async function trainLocalModel(
   // Prepare training data
   const { inputs, targets } = prepareTrainingData(dataset);
 
-  // Convert to tensors
   const xs = tf.tensor2d(inputs);
   const ys = tf.tensor2d(targets);
-
-  console.log(`Input shape: ${xs.shape}, Target shape: ${ys.shape}`);
-
-  // Create model
   const model = createModel(DEFAULT_ARCHITECTURE);
 
-  // Load initial weights if provided (for FL)
-  if (initialWeights) {
-    await loadModelWeights(model, initialWeights);
-    console.log('📥 Loaded initial global model weights');
-  }
+  try {
+    console.log(`Input shape: ${xs.shape}, Target shape: ${ys.shape}`);
 
-  // Training metrics history
-  const metricsHistory: TrainingMetrics[] = [];
-
-  // Custom callback for tracking metrics
-  // Use the callback object format that TensorFlow.js expects
-  const metricsCallback: tf.CustomCallbackArgs = {
-    onEpochEnd: async (epoch: number, logs?: tf.Logs) => {
-      if (!logs) return;
-
-      const metrics: TrainingMetrics = {
-        epoch: epoch + 1,
-        loss: logs.loss as number,
-        mae: logs.mae as number,
-        mse: logs.mse as number,
-        valLoss: logs.val_loss as number,
-        valMae: logs.val_mae as number,
-        valMse: logs.val_mse as number,
-        timestamp: Date.now(),
-      };
-
-      metricsHistory.push(metrics);
-
-      if (onEpochEnd) {
-        onEpochEnd(metrics);
-      }
-
-      // Log progress every 10 epochs
-      if ((epoch + 1) % 10 === 0) {
-        console.log(
-          `Epoch ${epoch + 1}/${config.epochs} - ` +
-          `loss: ${logs.loss.toFixed(4)}, mae: ${logs.mae.toFixed(4)}, ` +
-          `val_loss: ${logs.val_loss?.toFixed(4)}, val_mae: ${logs.val_mae?.toFixed(4)}`
-        );
-      }
+    // Load initial weights if provided (for FL)
+    if (initialWeights) {
+      await loadModelWeights(model, initialWeights);
+      console.log('📥 Loaded initial global model weights');
     }
-  };
 
-  // Build callbacks array
-  // NOTE: Early stopping disabled due to TensorFlow.js callback interface issues
-  // The model will train for all epochs (50 by default)
-  const callbacks: tf.CustomCallbackArgs[] = [metricsCallback];
+    // Training metrics history
+    const metricsHistory: TrainingMetrics[] = [];
 
-  // Train the model
-  const history = await model.fit(xs, ys, {
-    epochs: config.epochs,
-    batchSize: config.batchSize,
-    validationSplit: config.validationSplit,
-    callbacks,
-    verbose: 0, // Silent mode
-  });
+    // Custom callback for tracking metrics
+    // Use the callback object format that TensorFlow.js expects
+    const metricsCallback: tf.CustomCallbackArgs = {
+      onEpochEnd: async (epoch: number, logs?: tf.Logs) => {
+        if (!logs) return;
 
-  const trainingTime = Date.now() - startTime;
+        const metrics: TrainingMetrics = {
+          epoch: epoch + 1,
+          loss: logs.loss as number,
+          mae: logs.mae as number,
+          mse: logs.mse as number,
+          valLoss: logs.val_loss as number,
+          valMae: logs.val_mae as number,
+          valMse: logs.val_mse as number,
+          timestamp: Date.now(),
+        };
 
-  console.log(`✅ Training completed in ${(trainingTime / 1000).toFixed(2)}s`);
+        metricsHistory.push(metrics);
 
-  // Extract final weights
-  const finalWeights = await extractModelWeights(model);
+        if (onEpochEnd) {
+          onEpochEnd(metrics);
+        }
 
-  // Get final metrics
-  const finalMetrics = {
-    trainLoss: history.history.loss[history.history.loss.length - 1] as number,
-    trainMae: history.history.mae[history.history.mae.length - 1] as number,
-    trainMse: history.history.mse[history.history.mse.length - 1] as number,
-    valLoss: history.history.val_loss
-      ? (history.history.val_loss[history.history.val_loss.length - 1] as number)
-      : 0,
-    valMae: history.history.val_mae
-      ? (history.history.val_mae[history.history.val_mae.length - 1] as number)
-      : 0,
-    valMse: history.history.val_mse
-      ? (history.history.val_mse[history.history.val_mse.length - 1] as number)
-      : 0,
-  };
+        // Log progress every 10 epochs
+        if ((epoch + 1) % 10 === 0) {
+          console.log(
+            `Epoch ${epoch + 1}/${config.epochs} - ` +
+            `loss: ${logs.loss.toFixed(4)}, mae: ${logs.mae.toFixed(4)}, ` +
+            `val_loss: ${logs.val_loss?.toFixed(4)}, val_mae: ${logs.val_mae?.toFixed(4)}`
+          );
+        }
+      }
+    };
 
-  console.log('Final metrics:', finalMetrics);
+    // Build callbacks array
+    // NOTE: Early stopping disabled due to TensorFlow.js callback interface issues
+    // The model will train for all epochs (50 by default)
+    const callbacks: tf.CustomCallbackArgs[] = [metricsCallback];
 
-  // Clean up tensors
-  xs.dispose();
-  ys.dispose();
-  model.dispose();
+    // Train the model
+    const history = await model.fit(xs, ys, {
+      epochs: config.epochs,
+      batchSize: config.batchSize,
+      validationSplit: config.validationSplit,
+      callbacks,
+      verbose: 0, // Silent mode
+    });
 
-  return {
-    farmerId: dataset.farmerId,
-    modelWeights: finalWeights,
-    metrics: metricsHistory,
-    finalMetrics,
-    datasetSize: dataset.totalSamples,
-    trainingTime,
-    timestamp: Date.now(),
-  };
+    const trainingTime = Date.now() - startTime;
+
+    console.log(`✅ Training completed in ${(trainingTime / 1000).toFixed(2)}s`);
+
+    // Extract final weights
+    const finalWeights = await extractModelWeights(model);
+
+    // Get final metrics
+    const finalMetrics = {
+      trainLoss: history.history.loss[history.history.loss.length - 1] as number,
+      trainMae: history.history.mae[history.history.mae.length - 1] as number,
+      trainMse: history.history.mse[history.history.mse.length - 1] as number,
+      valLoss: history.history.val_loss
+        ? (history.history.val_loss[history.history.val_loss.length - 1] as number)
+        : 0,
+      valMae: history.history.val_mae
+        ? (history.history.val_mae[history.history.val_mae.length - 1] as number)
+        : 0,
+      valMse: history.history.val_mse
+        ? (history.history.val_mse[history.history.val_mse.length - 1] as number)
+        : 0,
+    };
+
+    console.log('Final metrics:', finalMetrics);
+
+    return {
+      farmerId: dataset.farmerId,
+      modelWeights: finalWeights,
+      metrics: metricsHistory,
+      finalMetrics,
+      datasetSize: dataset.totalSamples,
+      trainingTime,
+      timestamp: Date.now(),
+    };
+  } finally {
+    xs.dispose();
+    ys.dispose();
+    model.dispose();
+  }
 }
 
 // ============================================================================
@@ -346,28 +344,30 @@ export async function evaluateModel(
   testDataset: FarmDataset
 ): Promise<{ loss: number; mae: number; mse: number }> {
   const model = createModel(DEFAULT_ARCHITECTURE);
-  await loadModelWeights(model, weights);
-
   const { inputs, targets } = prepareTrainingData(testDataset);
   const xs = tf.tensor2d(inputs);
   const ys = tf.tensor2d(targets);
+  let result: tf.Tensor[] | undefined;
 
-  const result = model.evaluate(xs, ys) as tf.Tensor[];
+  try {
+    await loadModelWeights(model, weights);
+    result = model.evaluate(xs, ys) as tf.Tensor[];
 
-  const loss = await result[0].data();
-  const mae = await result[1].data();
-  const mse = await result[2].data();
+    const loss = await result[0].data();
+    const mae = await result[1].data();
+    const mse = await result[2].data();
 
-  xs.dispose();
-  ys.dispose();
-  model.dispose();
-  result.forEach(t => t.dispose());
-
-  return {
-    loss: loss[0],
-    mae: mae[0],
-    mse: mse[0],
-  };
+    return {
+      loss: loss[0],
+      mae: mae[0],
+      mse: mse[0],
+    };
+  } finally {
+    xs.dispose();
+    ys.dispose();
+    model.dispose();
+    result?.forEach(t => t.dispose());
+  }
 }
 
 // ============================================================================

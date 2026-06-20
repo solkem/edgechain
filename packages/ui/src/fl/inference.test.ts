@@ -10,6 +10,7 @@ import {
   predictYield,
   predictWithLocalModel,
 } from './inference';
+import { GradientManager } from './gradientManager';
 import type { PredictionInput } from './types';
 
 const validInput: PredictionInput = {
@@ -92,6 +93,49 @@ async function testInvalidInputFailsBeforeInference() {
   }
 }
 
+async function testGradientManagerRestoresGlobalModel() {
+  const model = tf.sequential({
+    layers: [
+      tf.layers.dense({ inputShape: [13], units: 8, activation: 'relu' }),
+      tf.layers.dense({ units: 4, activation: 'relu' }),
+      tf.layers.dense({ units: 1 }),
+    ],
+  });
+
+  model.compile({
+    optimizer: 'adam',
+    loss: 'meanSquaredError',
+  });
+
+  const manager = new GradientManager();
+  const before = await Promise.all(model.getWeights().map((weight) => weight.array()));
+  const features = Array.from({ length: 8 }, () => ({
+    soil_moisture_normalized: 0.5,
+    temperature_normalized: 0.6,
+    humidity_normalized: 0.7,
+    pH_normalized: 0.5,
+    moisture_trend: 0.1,
+    temperature_trend: 0.05,
+    humidity_trend: -0.05,
+    optimal_irrigation: true,
+    hour_of_day: 0.5,
+    day_of_week: 0.3,
+    season: 0.4,
+    reading_freshness: 1,
+    sensor_stability: 1,
+  }));
+
+  try {
+    const gradients = await (manager as any).trainLocalModel(features, model);
+    assert.ok(gradients.length > 0, 'gradient manager should produce gradient tensors');
+
+    const after = await Promise.all(model.getWeights().map((weight) => weight.array()));
+    assert.deepEqual(after, before, 'gradient manager must restore caller-owned global model weights');
+  } finally {
+    model.dispose();
+  }
+}
+
 async function main() {
   await tf.setBackend('cpu');
   await tf.ready();
@@ -100,6 +144,7 @@ async function main() {
   await testPredictYieldReturnsFiniteResult();
   await testPredictWithLocalModelUsesVersionZero();
   await testInvalidInputFailsBeforeInference();
+  await testGradientManagerRestoresGlobalModel();
 
   console.log('UI inference runtime tests passed.');
 }
