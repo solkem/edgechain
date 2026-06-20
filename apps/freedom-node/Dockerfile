@@ -6,17 +6,20 @@ WORKDIR /app
 # Install build dependencies for better-sqlite3
 RUN apk add --no-cache python3 make g++
 
-# Copy server package files
-COPY apps/freedom-node/package.json apps/freedom-node/package-lock.json ./
+# Copy backend package files and local package dependencies
+COPY packages/fl ./packages/fl
+COPY packages/mars ./packages/mars
+COPY apps/freedom-node/package.json apps/freedom-node/package-lock.json ./apps/freedom-node/
 
 # Install dependencies
+WORKDIR /app/apps/freedom-node
 RUN npm ci
 
 # Copy server source files
 COPY apps/freedom-node/ ./
 
 # Copy frontend build from monorepo
-COPY apps/web/dist ./frontend-build
+COPY apps/web/dist /app/apps/web/dist
 
 # Build TypeScript
 RUN npm run build
@@ -29,20 +32,23 @@ WORKDIR /app
 # Install SQLite3 and build dependencies for better-sqlite3
 RUN apk add --no-cache sqlite python3 make g++
 
-# Copy server package files
-COPY apps/freedom-node/package.json apps/freedom-node/package-lock.json ./
+# Copy backend package files and local package dependencies
+COPY packages/fl ./packages/fl
+COPY packages/mars ./packages/mars
+COPY apps/freedom-node/package.json apps/freedom-node/package-lock.json ./apps/freedom-node/
 
 # Install production dependencies only
+WORKDIR /app/apps/freedom-node
 RUN npm ci --omit=dev
 
 # Copy built files from builder
-COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/apps/freedom-node/dist ./dist
 
 # Copy database schema files (SQL files are not compiled by TypeScript)
-COPY --from=builder /app/src/database/schema.sql ./dist/database/schema.sql
+COPY --from=builder /app/apps/freedom-node/src/database/schema.sql ./dist/database/schema.sql
 
 # Copy frontend build
-COPY --from=builder /app/frontend-build ./apps/web/dist
+COPY --from=builder /app/apps/web/dist /app/apps/web/dist
 
 # Create data directory for SQLite database
 RUN mkdir -p /app/data

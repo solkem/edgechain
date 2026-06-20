@@ -51,7 +51,7 @@ jobs:
           fi
 
       - name: Build UI package
-        run: yarn workspace edgechain-ui build
+        run: yarn workspace @edgechain/web build
         env:
           NODE_ENV: production
           # Deployed contract address (set in GitHub Secrets)
@@ -67,6 +67,6 @@ jobs:
         uses: superfly/flyctl-actions/setup-flyctl@master
 
       - name: Deploy to Fly.io
-        run: flyctl deploy --remote-only --config ./server/fly.toml
+        run: flyctl deploy --remote-only --config ./apps/freedom-node/fly.toml
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
