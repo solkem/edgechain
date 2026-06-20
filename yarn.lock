@@ -605,8 +605,8 @@ __metadata:
 
 "@edgechain/fl@file:../../packages/fl::locator=%40edgechain%2Ffreedom-node%40workspace%3Aapps%2Ffreedom-node":
   version: 0.1.0
-  resolution: "@edgechain/fl@file:../../packages/fl#../../packages/fl::hash=8e5a0a&locator=%40edgechain%2Ffreedom-node%40workspace%3Aapps%2Ffreedom-node"
-  checksum: 10c0/7e6e118e6b8e6f3314421b0cbb85782c17d5a675a8df6ede2536931cd3b4ce04920fc677210eadda79774bf878bb5e2bce9eac884489fb26fe0287c717b23bc3
+  resolution: "@edgechain/fl@file:../../packages/fl#../../packages/fl::hash=02ae59&locator=%40edgechain%2Ffreedom-node%40workspace%3Aapps%2Ffreedom-node"
+  checksum: 10c0/38aa944038b4e045ad8300051d2a83b0339fc652a8a38040b296e81c5ed1cf2ac6ed492f9d7e2452549b2a6d04785fa0aa43203047ede3f7ab9eef39ed2e61f9
   languageName: node
   linkType: hard
 
@@ -642,8 +642,8 @@ __metadata:
 
 "@edgechain/mars@file:../../packages/mars::locator=%40edgechain%2Ffreedom-node%40workspace%3Aapps%2Ffreedom-node":
   version: 0.1.0
-  resolution: "@edgechain/mars@file:../../packages/mars#../../packages/mars::hash=2bf69f&locator=%40edgechain%2Ffreedom-node%40workspace%3Aapps%2Ffreedom-node"
-  checksum: 10c0/b1b589cf29e0ac6d10d187b616374887d6c9632522049765f4700413e2f02f33bdc4f77fde4c181821ee205fa106a607a84defe127fd30bda17d974bffbfa672
+  resolution: "@edgechain/mars@file:../../packages/mars#../../packages/mars::hash=ed92f9&locator=%40edgechain%2Ffreedom-node%40workspace%3Aapps%2Ffreedom-node"
+  checksum: 10c0/6064e015694e2116860f842d0949a85292e092c20bad12f2f7ec17070a03d7e90e46858629a7894e3025b2964daacf163d339aaa9e2de43a53d19d0ccf32e1c0
   languageName: node
   linkType: hard
 
