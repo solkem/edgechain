@@ -50,7 +50,8 @@ edgechain/
   apps/freedom-node/
     Unified backend for current demo flows: FL aggregation routes, IoT routes,
     manual observations, WhatsApp adapter, persistence, IPFS, device registry,
-    and ZK-proof service integration.
+    and ZK-proof service integration. It uses PostgreSQL through DATABASE_URL
+    and initializes schema from src/database/schema.sql at startup.
 
   ipfs-service/
     Storacha/IPFS microservice. Production architecture should decide whether

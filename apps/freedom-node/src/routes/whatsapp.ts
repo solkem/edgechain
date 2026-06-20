@@ -26,14 +26,14 @@ router.get('/webhook', (req, res) => {
  * observation workflow. Sending replies through Meta is intentionally left as
  * an adapter boundary; local tests return the reply in the HTTP response.
  */
-router.post('/webhook', (req, res) => {
+router.post('/webhook', async (req, res) => {
   try {
     const inbound = extractInboundText(req.body);
     if (!inbound) {
       return res.json({ success: true, ignored: true });
     }
 
-    const reply = manualObservationWorkflow.continueOrStartWhatsAppSession(
+    const reply = await manualObservationWorkflow.continueOrStartWhatsAppSession(
       inbound.from,
       inbound.text
     );
@@ -53,14 +53,14 @@ router.post('/webhook', (req, res) => {
  * Local pilot simulator endpoint. Use this before wiring Meta Cloud API:
  * POST /api/whatsapp/simulate { "from": "+263...", "text": "site-004" }
  */
-router.post('/simulate', (req, res) => {
+router.post('/simulate', async (req, res) => {
   try {
     const { from, text } = req.body;
     if (!from || !text) {
       return res.status(400).json({ error: 'from and text required' });
     }
 
-    const reply = manualObservationWorkflow.continueOrStartWhatsAppSession(String(from), String(text));
+    const reply = await manualObservationWorkflow.continueOrStartWhatsAppSession(String(from), String(text));
     res.json({
       success: true,
       reply_text: reply.prompt,

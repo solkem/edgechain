@@ -11,14 +11,14 @@ router.get('/schema', (_req, res) => {
   });
 });
 
-router.post('/sessions', (req, res) => {
+router.post('/sessions', async (req, res) => {
   try {
     const channel = (req.body.channel || 'api') as ManualObservationChannel;
     if (!['whatsapp', 'coordinator', 'api'].includes(channel)) {
       return res.status(400).json({ error: 'channel must be whatsapp, coordinator, or api' });
     }
 
-    const reply = manualObservationWorkflow.startSession({
+    const reply = await manualObservationWorkflow.startSession({
       channel,
       participant_phone: req.body.participant_phone,
     });
@@ -29,13 +29,13 @@ router.post('/sessions', (req, res) => {
   }
 });
 
-router.post('/sessions/:sessionId/respond', (req, res) => {
+router.post('/sessions/:sessionId/respond', async (req, res) => {
   try {
     if (!req.body.input) {
       return res.status(400).json({ error: 'input required' });
     }
 
-    const reply = manualObservationWorkflow.continueSession(req.params.sessionId, String(req.body.input));
+    const reply = await manualObservationWorkflow.continueSession(req.params.sessionId, String(req.body.input));
     res.json({ success: true, ...reply });
   } catch (error: any) {
     const status = error.message.includes('not found') ? 404 : 500;
@@ -43,16 +43,16 @@ router.post('/sessions/:sessionId/respond', (req, res) => {
   }
 });
 
-router.get('/observations', (req, res) => {
+router.get('/observations', async (req, res) => {
   const limit = req.query.limit ? Number(req.query.limit) : 100;
   res.json({
     success: true,
-    observations: manualObservationWorkflow.listObservations(limit),
+    observations: await manualObservationWorkflow.listObservations(limit),
   });
 });
 
-router.get('/observations.csv', (_req, res) => {
-  const rows = manualObservationWorkflow.listObservations(10000);
+router.get('/observations.csv', async (_req, res) => {
+  const rows = await manualObservationWorkflow.listObservations(10000);
   const header = [
     'observation_id',
     'site_id',

@@ -4,7 +4,7 @@
 # EdgeChain Demo Reset Script
 #
 # This script resets the EdgeChain demo environment for testing.
-# It clears the SQLite database and provides instructions for browser reset.
+# It clears the PostgreSQL database and provides instructions for browser reset.
 ##############################################################################
 
 set -e  # Exit on error
@@ -22,56 +22,54 @@ echo -e "${BLUE}║   EdgeChain Demo Reset Script              ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════════╝${NC}"
 echo ""
 
-# Get script directory
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-DB_PATH="$SCRIPT_DIR/apps/freedom-node/data"
-
-# Check if database directory exists
-if [ ! -d "$DB_PATH" ]; then
-    echo -e "${YELLOW}⚠️  Database directory not found: $DB_PATH${NC}"
-    echo -e "${YELLOW}   Creating directory...${NC}"
-    mkdir -p "$DB_PATH"
+if ! command -v psql &> /dev/null; then
+    echo -e "${RED}❌ psql is required to reset the Postgres database.${NC}"
+    exit 1
 fi
 
-# Count database files
-DB_COUNT=$(ls -1 "$DB_PATH"/edgechain.db* 2>/dev/null | wc -l)
+if [ -z "${DATABASE_URL:-}" ]; then
+    echo -e "${RED}❌ DATABASE_URL must be set before resetting the database.${NC}"
+    echo "   Example: export DATABASE_URL=postgresql://edgechain:edgechain@localhost:5432/edgechain"
+    exit 1
+fi
 
-if [ "$DB_COUNT" -eq 0 ]; then
-    echo -e "${YELLOW}ℹ️  No database files found - already clean!${NC}"
+echo -e "${RED}⚠️  This will DELETE all EdgeChain database rows:${NC}"
+echo "   • Device registrations (Sensor Node → wallet bindings)"
+echo "   • Sensor readings"
+echo "   • ZK proof submissions"
+echo "   • Reward records"
+echo "   • Nullifiers"
+echo "   • Manual observations"
+echo ""
+
+read -p "Are you sure you want to reset Postgres? (y/N): " -n 1 -r
+echo ""
+
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    echo ""
+    echo -e "${BLUE}🗑️  Truncating EdgeChain Postgres tables...${NC}"
+
+    psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+TRUNCATE TABLE
+  manual_observation_messages,
+  manual_observations,
+  manual_observation_sessions,
+  zk_proof_submissions,
+  spent_nullifiers,
+  transaction_log,
+  merkle_roots,
+  nullifiers,
+  rewards,
+  batch_proofs,
+  sensor_readings,
+  devices
+RESTART IDENTITY CASCADE;
+SQL
+
+    echo -e "${GREEN}✅ PostgreSQL tables truncated successfully!${NC}"
 else
-    echo -e "${YELLOW}📊 Found $DB_COUNT database file(s):${NC}"
-    ls -lh "$DB_PATH"/edgechain.db* 2>/dev/null | awk '{print "   - " $9 " (" $5 ")"}'
-    echo ""
-
-    # Confirm deletion
-    echo -e "${RED}⚠️  This will DELETE all:${NC}"
-    echo "   • Device registrations (Sensor Node → wallet bindings)"
-    echo "   • Sensor readings"
-    echo "   • ZK proof submissions"
-    echo "   • Reward records"
-    echo "   • Nullifiers"
-    echo ""
-
-    read -p "Are you sure you want to reset? (y/N): " -n 1 -r
-    echo ""
-
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        echo ""
-        echo -e "${BLUE}🗑️  Deleting database files...${NC}"
-
-        # Checkpoint WAL file to ensure all data is flushed before deletion
-        if [ -f "$DB_PATH/edgechain.db" ]; then
-            echo -e "${YELLOW}   Checkpointing WAL file...${NC}"
-            sqlite3 "$DB_PATH/edgechain.db" "PRAGMA wal_checkpoint(TRUNCATE);" 2>/dev/null || true
-        fi
-
-        # Now delete all database files
-        rm -f "$DB_PATH"/edgechain.db*
-        echo -e "${GREEN}✅ Database files deleted successfully!${NC}"
-    else
-        echo -e "${YELLOW}❌ Reset cancelled.${NC}"
-        exit 0
-    fi
+    echo -e "${YELLOW}❌ Reset cancelled.${NC}"
+    exit 0
 fi
 
 echo ""

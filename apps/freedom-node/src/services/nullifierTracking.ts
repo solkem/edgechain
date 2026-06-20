@@ -38,34 +38,34 @@ export class NullifierTrackingService {
    * Check if nullifier has been spent in this epoch
    * Returns true if already spent (replay attack detected)
    */
-  isNullifierSpent(nullifier: string, epoch: number): boolean {
-    const stmt = this.db.prepare(`
+  async isNullifierSpent(nullifier: string, epoch: number): Promise<boolean> {
+    const result = await this.db.query(`
       SELECT COUNT(*) as count
       FROM spent_nullifiers
-      WHERE nullifier = ? AND epoch = ?
-    `);
+      WHERE nullifier = $1 AND epoch = $2
+    `, [nullifier, epoch]);
 
-    const result = stmt.get(nullifier, epoch) as { count: number };
-    return result.count > 0;
+    return Number(result.rows[0].count) > 0;
   }
 
   /**
    * Mark nullifier as spent
    * This prevents the same device from submitting twice in the same epoch
    */
-  markNullifierSpent(
+  async markNullifierSpent(
     nullifier: string,
     epoch: number,
     data_hash: string,
     reward: number,
     marsScore?: MarsScore
-  ): void {
+  ): Promise<void> {
     // Check if already spent (double-spend attempt)
-    if (this.isNullifierSpent(nullifier, epoch)) {
+    if (await this.isNullifierSpent(nullifier, epoch)) {
       throw new Error(`Nullifier already spent in epoch ${epoch} (replay attack detected)`);
     }
 
-    const stmt = this.db.prepare(`
+    const now = Math.floor(Date.now() / 1000);
+    await this.db.query(`
       INSERT INTO spent_nullifiers (
         nullifier,
         epoch,
@@ -75,11 +75,8 @@ export class NullifierTrackingService {
         mars_composite,
         mars_score_json,
         spent_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    const now = Math.floor(Date.now() / 1000);
-    stmt.run(
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `, [
       nullifier,
       epoch,
       data_hash,
@@ -88,7 +85,7 @@ export class NullifierTrackingService {
       marsScore?.composite ?? null,
       marsScore ? JSON.stringify(marsScore) : null,
       now
-    );
+    ]);
 
     console.log(`🔒 Nullifier marked as spent: ${nullifier.slice(0, 16)}... (epoch ${epoch})`);
   }
@@ -118,42 +115,42 @@ export class NullifierTrackingService {
   /**
    * Get all nullifiers for an epoch (for debugging)
    */
-  getNullifiersForEpoch(epoch: number): NullifierRecord[] {
-    const stmt = this.db.prepare(`
+  async getNullifiersForEpoch(epoch: number): Promise<NullifierRecord[]> {
+    const result = await this.db.query(`
       SELECT * FROM spent_nullifiers
-      WHERE epoch = ?
+      WHERE epoch = $1
       ORDER BY spent_at DESC
-    `);
+    `, [epoch]);
 
-    return stmt.all(epoch) as NullifierRecord[];
+    return result.rows as NullifierRecord[];
   }
 
   /**
    * Get nullifier statistics
    */
-  getNullifierStats(): {
+  async getNullifierStats(): Promise<{
     total_nullifiers: number;
     current_epoch_count: number;
     total_epochs: number;
     total_rewards: number;
-  } {
+  }> {
     const currentEpoch = this.getCurrentEpoch();
 
-    const totalStmt = this.db.prepare(`SELECT COUNT(*) as count FROM spent_nullifiers`);
-    const total = (totalStmt.get() as { count: number }).count;
+    const totalResult = await this.db.query(`SELECT COUNT(*)::int as count FROM spent_nullifiers`);
+    const total = Number(totalResult.rows[0].count);
 
-    const epochStmt = this.db.prepare(`
+    const epochResult = await this.db.query(`
       SELECT COUNT(*) as count
       FROM spent_nullifiers
-      WHERE epoch = ?
-    `);
-    const currentEpochCount = (epochStmt.get(currentEpoch) as { count: number }).count;
+      WHERE epoch = $1
+    `, [currentEpoch]);
+    const currentEpochCount = Number(epochResult.rows[0].count);
 
-    const epochsStmt = this.db.prepare(`SELECT COUNT(DISTINCT epoch) as count FROM spent_nullifiers`);
-    const totalEpochs = (epochsStmt.get() as { count: number }).count;
+    const epochsResult = await this.db.query(`SELECT COUNT(DISTINCT epoch)::int as count FROM spent_nullifiers`);
+    const totalEpochs = Number(epochsResult.rows[0].count);
 
-    const rewardsStmt = this.db.prepare(`SELECT SUM(reward) as total FROM spent_nullifiers`);
-    const totalRewards = ((rewardsStmt.get() as { total: number | null }).total) || 0;
+    const rewardsResult = await this.db.query(`SELECT COALESCE(SUM(reward), 0)::float as total FROM spent_nullifiers`);
+    const totalRewards = Number(rewardsResult.rows[0].total);
 
     return {
       total_nullifiers: total,
@@ -167,17 +164,15 @@ export class NullifierTrackingService {
    * Garbage collection: Delete nullifiers older than N epochs
    * This prevents database bloat while maintaining recent history for debugging
    */
-  cleanupOldNullifiers(keepEpochs: number = 30): number {
+  async cleanupOldNullifiers(keepEpochs: number = 30): Promise<number> {
     const currentEpoch = this.getCurrentEpoch();
     const cutoffEpoch = currentEpoch - keepEpochs;
 
-    const stmt = this.db.prepare(`
+    const result = await this.db.query(`
       DELETE FROM spent_nullifiers
-      WHERE epoch < ?
-    `);
-
-    const result = stmt.run(cutoffEpoch);
-    const deleted = result.changes;
+      WHERE epoch < $1
+    `, [cutoffEpoch]);
+    const deleted = result.rowCount || 0;
 
     if (deleted > 0) {
       console.log(`🧹 Cleaned up ${deleted} nullifier(s) older than ${keepEpochs} epochs`);
@@ -203,24 +198,24 @@ export class NullifierTrackingService {
    * Get nullifier history for analysis (without revealing device identity)
    * Shows distribution of submissions across epochs
    */
-  getNullifierDistribution(): {
+  async getNullifierDistribution(): Promise<{
     epoch: number;
     count: number;
     total_rewards: number;
     date: string;
-  }[] {
-    const stmt = this.db.prepare(`
+  }[]> {
+    const result = await this.db.query(`
       SELECT
         epoch,
-        COUNT(*) as count,
-        SUM(reward) as total_rewards,
-        date(spent_at, 'unixepoch') as date
+        COUNT(*)::int as count,
+        COALESCE(SUM(reward), 0)::float as total_rewards,
+        TO_CHAR(TO_TIMESTAMP(spent_at), 'YYYY-MM-DD') as date
       FROM spent_nullifiers
       GROUP BY epoch
       ORDER BY epoch DESC
       LIMIT 30
     `);
 
-    return stmt.all() as any[];
+    return result.rows as any[];
   }
 }

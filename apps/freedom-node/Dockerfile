@@ -3,7 +3,7 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install build dependencies for better-sqlite3
+# Install native build dependencies used by npm packages during install
 RUN apk add --no-cache python3 make g++
 
 # Copy backend package files and local package dependencies
@@ -34,9 +34,6 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install SQLite3 and build dependencies for better-sqlite3
-RUN apk add --no-cache sqlite python3 make g++
-
 # Copy backend package files and local package dependencies
 COPY packages/fl ./packages/fl
 COPY packages/mars ./packages/mars
@@ -48,15 +45,14 @@ RUN npm ci --omit=dev
 
 # Copy built files from builder
 COPY --from=builder /app/apps/freedom-node/dist ./dist
+COPY --from=builder /app/packages/fl/dist /app/packages/fl/dist
+COPY --from=builder /app/packages/mars/dist /app/packages/mars/dist
 
 # Copy database schema files (SQL files are not compiled by TypeScript)
 COPY --from=builder /app/apps/freedom-node/src/database/schema.sql ./dist/database/schema.sql
 
 # Copy frontend build
 COPY --from=builder /app/apps/web/dist /app/apps/web/dist
-
-# Create data directory for SQLite database
-RUN mkdir -p /app/data
 
 # Expose port
 EXPOSE 3001

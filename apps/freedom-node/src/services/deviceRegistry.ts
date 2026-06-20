@@ -30,19 +30,17 @@ export class DeviceRegistryService {
   private devices: Map<string, ApprovedDevice> = new Map();
   private globalDeviceRoot: string = '';
 
-  constructor() {
-    // Load devices from database on startup
-    this.loadDevicesFromDatabase();
-    // Initialize root based on loaded devices
+  async initialize(): Promise<void> {
+    await this.loadDevicesFromDatabase();
     this.rebuildGlobalRoot();
   }
 
   /**
    * Load devices from database into memory
    */
-  private loadDevicesFromDatabase(): void {
+  private async loadDevicesFromDatabase(): Promise<void> {
     try {
-      const dbDevices = deviceDB.getAll() as any[];
+      const dbDevices = await deviceDB.getAll() as any[];
 
       for (const dbDevice of dbDevices) {
         const device: ApprovedDevice = {

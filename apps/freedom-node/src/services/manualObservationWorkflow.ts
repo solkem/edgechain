@@ -32,10 +32,10 @@ const STEP_ORDER: ManualObservationStep[] = [
 type ChoiceField = Exclude<keyof typeof MANUAL_OBSERVATION_OPTIONS, never>;
 
 export class ManualObservationWorkflow {
-  startSession(params: {
+  async startSession(params: {
     channel: ManualObservationChannel;
     participant_phone?: string;
-  }): ManualObservationReply {
+  }): Promise<ManualObservationReply> {
     const participant_phone_hash = params.participant_phone
       ? this.hashPhone(params.participant_phone)
       : undefined;
@@ -48,27 +48,27 @@ export class ManualObservationWorkflow {
       draft: {},
     };
 
-    manualObservationDB.insertSession(session);
+    await manualObservationDB.insertSession(session);
     return {
       session,
       prompt: this.promptForStep('site_id'),
     };
   }
 
-  continueSession(session_id: string, input: string): ManualObservationReply {
-    const session = manualObservationDB.findSession(session_id);
+  async continueSession(session_id: string, input: string): Promise<ManualObservationReply> {
+    const session = await manualObservationDB.findSession(session_id);
     if (!session) {
       throw new Error('manual observation session not found');
     }
     return this.applyInput(session, input);
   }
 
-  continueOrStartWhatsAppSession(phone: string, input: string): ManualObservationReply {
+  async continueOrStartWhatsAppSession(phone: string, input: string): Promise<ManualObservationReply> {
     const phoneHash = this.hashPhone(phone);
-    const existing = manualObservationDB.findActiveSessionByPhoneHash(phoneHash);
-    const session = existing || this.startSession({ channel: 'whatsapp', participant_phone: phone }).session;
+    const existing = await manualObservationDB.findActiveSessionByPhoneHash(phoneHash);
+    const session = existing || (await this.startSession({ channel: 'whatsapp', participant_phone: phone })).session;
 
-    manualObservationDB.insertMessage({
+    await manualObservationDB.insertMessage({
       session_id: session.session_id,
       channel: 'whatsapp',
       direction: 'inbound',
@@ -76,8 +76,8 @@ export class ManualObservationWorkflow {
       raw_payload: { text: input },
     });
 
-    const reply = this.applyInput(session, input);
-    manualObservationDB.insertMessage({
+    const reply = await this.applyInput(session, input);
+    await manualObservationDB.insertMessage({
       session_id: reply.session.session_id,
       channel: 'whatsapp',
       direction: 'outbound',
@@ -87,7 +87,7 @@ export class ManualObservationWorkflow {
     return reply;
   }
 
-  listObservations(limit = 100): ManualObservationRecord[] {
+  async listObservations(limit = 100): Promise<ManualObservationRecord[]> {
     return manualObservationDB.listObservations(limit);
   }
 
@@ -113,7 +113,7 @@ export class ManualObservationWorkflow {
     return crypto.createHash('sha256').update(`${salt}:${phone}`).digest('hex');
   }
 
-  private applyInput(session: ManualObservationSession, input: string): ManualObservationReply {
+  private async applyInput(session: ManualObservationSession, input: string): Promise<ManualObservationReply> {
     if (session.status !== 'active') {
       return { session, prompt: 'This observation session is already closed. Start a new session to submit another observation.' };
     }
@@ -121,20 +121,20 @@ export class ManualObservationWorkflow {
     const trimmed = input.trim();
     if (trimmed.toUpperCase() === 'CANCEL') {
       session.status = 'cancelled';
-      manualObservationDB.updateSession(session);
+      await manualObservationDB.updateSession(session);
       return { session, prompt: 'Observation cancelled. Start a new session when you are ready.' };
     }
 
     if (trimmed.toUpperCase() === 'EDIT') {
       session.current_step = 'site_id';
       session.draft = {};
-      manualObservationDB.updateSession(session);
+      await manualObservationDB.updateSession(session);
       return { session, prompt: this.promptForStep(session.current_step) };
     }
 
     if (session.current_step === 'confirm') {
       if (['YES', 'Y', 'SUBMIT'].includes(trimmed.toUpperCase())) {
-        const observation = this.submit(session);
+        const observation = await this.submit(session);
         return {
           session: { ...session, status: 'submitted', current_step: 'submitted' },
           observation,
@@ -150,7 +150,7 @@ export class ManualObservationWorkflow {
     }
 
     session.current_step = this.nextStep(session.current_step);
-    manualObservationDB.updateSession(session);
+    await manualObservationDB.updateSession(session);
 
     if (session.current_step === 'confirm') {
       return { session, prompt: formatManualObservationSummary(session.draft) };
@@ -238,7 +238,7 @@ export class ManualObservationWorkflow {
     ].join('\n');
   }
 
-  private submit(session: ManualObservationSession): ManualObservationRecord {
+  private async submit(session: ManualObservationSession): Promise<ManualObservationRecord> {
     const validation = validateManualObservation(session.draft);
     const observation: ManualObservationRecord = {
       observation_id: crypto.randomUUID(),
@@ -254,10 +254,10 @@ export class ManualObservationWorkflow {
       submitted_at: Math.floor(Date.now() / 1000),
     };
 
-    manualObservationDB.insertObservation(observation);
+    await manualObservationDB.insertObservation(observation);
     session.status = 'submitted';
     session.current_step = 'submitted';
-    manualObservationDB.updateSession(session);
+    await manualObservationDB.updateSession(session);
     return observation;
   }
 }

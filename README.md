@@ -277,6 +277,15 @@ git clone https://github.com/solkem/edgechain.git
 cd edgechain
 yarn install
 
+# Backend database for local development
+docker run --name edgechain-postgres \
+  -e POSTGRES_USER=edgechain \
+  -e POSTGRES_PASSWORD=edgechain \
+  -e POSTGRES_DB=edgechain \
+  -p 5432:5432 \
+  -d postgres:16
+export DATABASE_URL=postgresql://edgechain:edgechain@localhost:5432/edgechain
+
 # Build contract/api/cli workspaces
 yarn build:node
 
@@ -292,6 +301,11 @@ cd proof-server && npm install && npm run dev
 cd ipfs-service && npm install && npm run dev
 yarn workspace @edgechain/web dev
 ```
+
+`apps/freedom-node` initializes its PostgreSQL schema from
+`apps/freedom-node/src/database/schema.sql` during startup. Production and Fly
+deployments must provide `DATABASE_URL` through secrets or a managed Postgres
+attachment.
 
 Health checks:
 
@@ -394,10 +408,38 @@ TX power:           20
 
 | Variable | Notes |
 |----------|-------|
+| `DATABASE_URL` | PostgreSQL connection string used by the backend |
+| `DATABASE_SSL` | Set to `true` only when the Postgres provider requires SSL |
 | `PORT` | backend port |
 | `CORS_ORIGINS` | allowed origins |
 | `DEMO_MODE` | mock fallback behavior |
+| `IPFS_SERVICE_URL` | URL for the Storacha/IPFS service |
 | `STORACHA_EMAIL` | IPFS auth |
+
+### Current Fly Backend Settings
+
+`apps/freedom-node/fly.toml` deploys the unified backend with:
+
+| Setting | Value |
+|---------|-------|
+| App | `edgechain-midnight` |
+| Region | `iad` |
+| Port | `3001` |
+| Health check | `GET /api/db-stats` |
+| Required secret | `DATABASE_URL` |
+| IPFS service | `https://edgechain-ipfs.fly.dev` |
+
+The backend stores operational data in PostgreSQL. It does not use an app-local
+database file or a Fly volume for database persistence.
+
+For Fly, create or attach Postgres before deploying:
+
+```bash
+fly postgres create --name edgechain-postgres --region iad
+fly postgres attach edgechain-postgres --app edgechain-midnight
+```
+
+`fly postgres attach` sets the `DATABASE_URL` secret for the backend app.
 
 ### Proof Server (`proof-server/`)
 

@@ -1,7 +1,7 @@
 /**
  * Database Persistence Service
  *
- * Handles persisting Sensor Node data to SQLite database
+ * Handles persisting Sensor Node data to PostgreSQL
  * Supports wallet-based device ownership and historical tracking
  */
 
@@ -27,11 +27,7 @@ export interface ReadingRecord {
   temperature: number;
   humidity: number;
   timestamp_device: number;
-  // M1 FIX: New consolidated signature column
   signature: string;
-  // DEPRECATED: Legacy columns (kept for backward compatibility)
-  signature_r: string;
-  signature_s: string;
   batch_id: string | null;
   created_at: number;
 }
@@ -69,15 +65,15 @@ export class DatabasePersistenceService {
    * Persist device registration to database (single-tree architecture)
    * Returns: { alreadyRegistered: boolean, device: DeviceRecord }
    */
-  registerDevice(
+  async registerDevice(
     device_pubkey: string,
     owner_wallet: string,
     device_id: string,
     metadata: any,
     merkle_leaf_hash: string
-  ): { alreadyRegistered: boolean; device: DeviceRecord } {
+  ): Promise<{ alreadyRegistered: boolean; device: DeviceRecord }> {
     // Check if device already exists
-    const existing = this.getDevice(device_pubkey);
+    const existing = await this.getDevice(device_pubkey);
 
     if (existing) {
       console.log(`⚠️  Device already registered: ${device_pubkey.slice(0, 16)}...`);
@@ -96,7 +92,7 @@ export class DatabasePersistenceService {
     const registration_epoch = now;
     const expiry_epoch = now + (86400 * 365); // 1 year
 
-    const stmt = this.db.prepare(`
+    await this.db.query(`
       INSERT INTO devices (
         device_pubkey,
         owner_wallet,
@@ -107,10 +103,8 @@ export class DatabasePersistenceService {
         merkle_leaf_hash,
         authorization_reward_paid,
         created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    `, [
       device_pubkey,
       owner_wallet,
       registration_epoch,
@@ -118,49 +112,40 @@ export class DatabasePersistenceService {
       device_id,
       JSON.stringify(metadata),
       merkle_leaf_hash,
-      0, // Not paid yet
-      now
-    );
+      false,
+      now,
+    ]);
 
     console.log(`✅ Device registered in database: ${device_pubkey.slice(0, 16)}...`);
 
     // Return the newly created device
-    const newDevice = this.getDevice(device_pubkey)!;
+    const newDevice = (await this.getDevice(device_pubkey))!;
     return { alreadyRegistered: false, device: newDevice };
   }
 
   /**
    * Get device by pubkey
    */
-  getDevice(device_pubkey: string): DeviceRecord | null {
-    const stmt = this.db.prepare(`
-      SELECT * FROM devices WHERE device_pubkey = ?
-    `);
-
-    const row = stmt.get(device_pubkey) as DeviceRecord | undefined;
-    return row || null;
+  async getDevice(device_pubkey: string): Promise<DeviceRecord | null> {
+    const result = await this.db.query('SELECT * FROM devices WHERE device_pubkey = $1', [device_pubkey]);
+    return (result.rows[0] as DeviceRecord | undefined) || null;
   }
 
   /**
    * Get device by owner wallet
    */
-  getDeviceByWallet(owner_wallet: string): DeviceRecord | null {
-    const stmt = this.db.prepare(`
-      SELECT * FROM devices WHERE owner_wallet = ? LIMIT 1
-    `);
-
-    const row = stmt.get(owner_wallet) as DeviceRecord | undefined;
-    return row || null;
+  async getDeviceByWallet(owner_wallet: string): Promise<DeviceRecord | null> {
+    const result = await this.db.query('SELECT * FROM devices WHERE owner_wallet = $1 LIMIT 1', [owner_wallet]);
+    return (result.rows[0] as DeviceRecord | undefined) || null;
   }
 
   /**
    * Persist sensor reading to database
    */
-  saveReading(reading: SignedReading): number {
+  async saveReading(reading: SignedReading): Promise<number> {
     const parsed = JSON.parse(reading.reading_json);
 
-    // M1 FIX: Use new signature column, but also populate legacy columns for backward compatibility
-    const stmt = this.db.prepare(`
+    const result = await this.db.query(`
       INSERT INTO sensor_readings (
         device_pubkey,
         reading_json,
@@ -168,74 +153,68 @@ export class DatabasePersistenceService {
         humidity,
         timestamp_device,
         signature,
-        signature_r,
-        signature_s,
         batch_id,
         created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    const info = stmt.run(
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING id
+    `, [
       reading.device_pubkey,
       reading.reading_json,
       parsed.t,
       parsed.h,
       parsed.ts,
-      reading.signature, // New consolidated column
-      reading.signature, // Legacy: Store full signature in signature_r
-      '', // Legacy: Empty signature_s
-      null, // batch_id assigned later
+      reading.signature,
+      null,
       Math.floor(Date.now() / 1000)
-    );
+    ]);
 
-    console.log(`📊 Reading saved to database: ID ${info.lastInsertRowid}`);
-    return info.lastInsertRowid as number;
+    const id = Number(result.rows[0].id);
+    console.log(`📊 Reading saved to database: ID ${id}`);
+    return id;
   }
 
   /**
    * Get all readings for a device within an epoch (24-hour window)
    */
-  getReadingsInEpoch(device_pubkey: string, epoch_start: number, epoch_end: number): ReadingRecord[] {
-    const stmt = this.db.prepare(`
+  async getReadingsInEpoch(device_pubkey: string, epoch_start: number, epoch_end: number): Promise<ReadingRecord[]> {
+    const result = await this.db.query(`
       SELECT * FROM sensor_readings
-      WHERE device_pubkey = ?
-        AND created_at >= ?
-        AND created_at <= ?
+      WHERE device_pubkey = $1
+        AND created_at >= $2
+        AND created_at <= $3
       ORDER BY created_at ASC
-    `);
+    `, [device_pubkey, epoch_start, epoch_end]);
 
-    const rows = stmt.all(device_pubkey, epoch_start, epoch_end) as ReadingRecord[];
-    return rows;
+    return result.rows as ReadingRecord[];
   }
 
   /**
    * Get all readings for a wallet's device
    */
-  getReadingsByWallet(owner_wallet: string, limit: number = 100): ReadingRecord[] {
-    const stmt = this.db.prepare(`
+  async getReadingsByWallet(owner_wallet: string, limit: number = 100): Promise<ReadingRecord[]> {
+    const result = await this.db.query(`
       SELECT sr.* FROM sensor_readings sr
       INNER JOIN devices d ON sr.device_pubkey = d.device_pubkey
-      WHERE d.owner_wallet = ?
+      WHERE d.owner_wallet = $1
       ORDER BY sr.created_at DESC
-      LIMIT ?
-    `);
+      LIMIT $2
+    `, [owner_wallet, limit]);
 
-    const rows = stmt.all(owner_wallet, limit) as ReadingRecord[];
-    return rows;
+    return result.rows as ReadingRecord[];
   }
 
   /**
    * Calculate consistency metrics for a device over the last 24 hours
    */
-  getConsistencyMetrics(device_pubkey: string): ConsistencyMetrics | null {
-    const device = this.getDevice(device_pubkey);
+  async getConsistencyMetrics(device_pubkey: string): Promise<ConsistencyMetrics | null> {
+    const device = await this.getDevice(device_pubkey);
     if (!device) return null;
 
     const now = Math.floor(Date.now() / 1000);
     const epoch_end = now;
     const epoch_start = now - (24 * 60 * 60); // 24 hours ago
 
-    const readings = this.getReadingsInEpoch(device_pubkey, epoch_start, epoch_end);
+    const readings = await this.getReadingsInEpoch(device_pubkey, epoch_start, epoch_end);
 
     if (readings.length === 0) {
       return {
@@ -301,11 +280,11 @@ export class DatabasePersistenceService {
   /**
    * Calculate incentive summary for a device
    */
-  getIncentiveSummary(device_pubkey: string): IncentiveSummary | null {
-    const device = this.getDevice(device_pubkey);
+  async getIncentiveSummary(device_pubkey: string): Promise<IncentiveSummary | null> {
+    const device = await this.getDevice(device_pubkey);
     if (!device) return null;
 
-    const consistency = this.getConsistencyMetrics(device_pubkey);
+    const consistency = await this.getConsistencyMetrics(device_pubkey);
     if (!consistency) return null;
 
     // Authorization reward: 0.02 tDUST (one-time)
@@ -333,32 +312,28 @@ export class DatabasePersistenceService {
   /**
    * Mark authorization reward as paid
    */
-  markAuthorizationRewardPaid(device_pubkey: string): void {
-    const stmt = this.db.prepare(`
+  async markAuthorizationRewardPaid(device_pubkey: string): Promise<void> {
+    await this.db.query(`
       UPDATE devices
-      SET authorization_reward_paid = 1
-      WHERE device_pubkey = ?
-    `);
-
-    stmt.run(device_pubkey);
+      SET authorization_reward_paid = TRUE
+      WHERE device_pubkey = $1
+    `, [device_pubkey]);
     console.log(`💰 Authorization reward marked as paid for ${device_pubkey.slice(0, 16)}...`);
   }
 
   /**
    * Get total readings count
    */
-  getTotalReadingsCount(): number {
-    const stmt = this.db.prepare(`SELECT COUNT(*) as count FROM sensor_readings`);
-    const row = stmt.get() as { count: number };
-    return row.count;
+  async getTotalReadingsCount(): Promise<number> {
+    const result = await this.db.query(`SELECT COUNT(*)::int as count FROM sensor_readings`);
+    return Number(result.rows[0].count);
   }
 
   /**
    * Get total devices count
    */
-  getTotalDevicesCount(): number {
-    const stmt = this.db.prepare(`SELECT COUNT(*) as count FROM devices`);
-    const row = stmt.get() as { count: number };
-    return row.count;
+  async getTotalDevicesCount(): Promise<number> {
+    const result = await this.db.query(`SELECT COUNT(*)::int as count FROM devices`);
+    return Number(result.rows[0].count);
   }
 }

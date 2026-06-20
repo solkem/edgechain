@@ -1,10 +1,10 @@
 /**
- * Database Service - SQLite with Knex.js
+ * PostgreSQL database service for EdgeChain.
  *
- * Production-grade persistent storage for EdgeChain
+ * The backend uses DATABASE_URL for production and local development.
  */
 
-import Database from 'better-sqlite3';
+import { Pool, QueryResultRow } from 'pg';
 import * as fs from 'fs';
 import * as path from 'path';
 import {
@@ -14,336 +14,404 @@ import {
   ManualObservationStep,
 } from '../types/manualObservation';
 
-const DB_PATH = path.join(__dirname, '../../data/edgechain.db');
 const SCHEMA_PATH = path.join(__dirname, 'schema.sql');
+const DEFAULT_DATABASE_URL = 'postgresql://edgechain:edgechain@localhost:5432/edgechain';
 
-// Ensure data directory exists
-const dataDir = path.dirname(DB_PATH);
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
+if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL is required when NODE_ENV=production');
 }
 
-// Initialize database
-const db = new Database(DB_PATH);
+const databaseUrl = process.env.DATABASE_URL || DEFAULT_DATABASE_URL;
 
-// Enable WAL mode for better concurrency
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+export const db = new Pool({
+  connectionString: databaseUrl,
+  ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
+});
 
-// Initialize schema
-export function initializeDatabase() {
-  console.log('🗄️  Initializing EdgeChain database...');
+export async function initializeDatabase() {
+  console.log('Initializing EdgeChain PostgreSQL database...');
 
   const schema = fs.readFileSync(SCHEMA_PATH, 'utf-8');
-  const statements = schema.split(';').filter(s => s.trim());
+  await db.query(schema);
 
-  db.transaction(() => {
-    for (const statement of statements) {
-      if (statement.trim()) {
-        db.prepare(statement).run();
-      }
-    }
-  })();
-
-  ensureRuntimeColumns();
-
-  console.log(`   ✅ Database initialized at: ${DB_PATH}`);
+  console.log(`Database initialized: ${redactDatabaseUrl(databaseUrl)}`);
 }
 
-function ensureRuntimeColumns() {
-  ensureColumns('batch_proofs', [
-    ['collection_mode', 'TEXT'],
-  ]);
-
-  ensureColumns('merkle_roots', [
-    ['collection_mode', 'TEXT'],
-  ]);
-
-  ensureColumns('spent_nullifiers', [
-    ['mars_action', 'TEXT'],
-    ['mars_composite', 'REAL'],
-    ['mars_score_json', 'TEXT'],
-  ]);
-
-  ensureColumns('zk_proof_submissions', [
-    ['collection_mode', 'TEXT'],
-    ['mars_action', 'TEXT'],
-    ['mars_composite', 'REAL'],
-    ['mars_score_json', 'TEXT'],
-  ]);
-}
-
-function ensureColumns(tableName: string, columns: [string, string][]) {
-  const existingColumns = new Set(
-    (db.prepare(`PRAGMA table_info(${tableName})`).all() as { name: string }[])
-      .map((column) => column.name)
-  );
-
-  for (const [columnName, columnType] of columns) {
-    if (!existingColumns.has(columnName)) {
-      db.prepare(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnType}`).run();
+function redactDatabaseUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (parsed.password) {
+      parsed.password = '****';
     }
+    return parsed.toString();
+  } catch {
+    return 'configured DATABASE_URL';
   }
 }
 
-// Device operations (single-tree architecture)
+function first<T extends QueryResultRow>(rows: T[]): T | undefined {
+  return rows[0];
+}
+
+function toInt(value: unknown): number {
+  return Number(value ?? 0);
+}
+
+// Device operations
 export const deviceDB = {
-  insert: (device: any) => {
-    const stmt = db.prepare(`
-      INSERT INTO devices (device_pubkey, owner_wallet, registration_epoch, expiry_epoch,
-                          device_id, metadata, merkle_leaf_hash)
-      VALUES (@device_pubkey, @owner_wallet, @registration_epoch, @expiry_epoch,
-              @device_id, @metadata, @merkle_leaf_hash)
-    `);
-    return stmt.run(device);
+  insert: async (device: any) => {
+    return db.query(
+      `
+        INSERT INTO devices (
+          device_pubkey,
+          owner_wallet,
+          registration_epoch,
+          expiry_epoch,
+          device_id,
+          metadata,
+          merkle_leaf_hash,
+          authorization_reward_paid
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `,
+      [
+        device.device_pubkey,
+        device.owner_wallet,
+        device.registration_epoch,
+        device.expiry_epoch,
+        device.device_id,
+        device.metadata,
+        device.merkle_leaf_hash,
+        Boolean(device.authorization_reward_paid),
+      ]
+    );
   },
 
-  findByPubkey: (device_pubkey: string) => {
-    const stmt = db.prepare('SELECT * FROM devices WHERE device_pubkey = ?');
-    return stmt.get(device_pubkey);
+  findByPubkey: async (device_pubkey: string) => {
+    const result = await db.query('SELECT * FROM devices WHERE device_pubkey = $1', [device_pubkey]);
+    return first(result.rows);
   },
 
-  getAll: () => {
-    const stmt = db.prepare('SELECT * FROM devices');
-    return stmt.all();
+  getAll: async () => {
+    const result = await db.query('SELECT * FROM devices ORDER BY created_at ASC');
+    return result.rows;
   },
 
-  delete: (device_pubkey: string) => {
-    const stmt = db.prepare('DELETE FROM devices WHERE device_pubkey = ?');
-    return stmt.run(device_pubkey);
+  delete: async (device_pubkey: string) => {
+    return db.query('DELETE FROM devices WHERE device_pubkey = $1', [device_pubkey]);
   },
 
-  deleteAll: () => {
-    const stmt = db.prepare('DELETE FROM devices');
-    return stmt.run();
-  }
+  deleteAll: async () => {
+    return db.query('DELETE FROM devices');
+  },
 };
 
 // Sensor readings operations
 export const readingDB = {
-  insert: (reading: any) => {
-    // M1 FIX: Use new signature column, also populate legacy columns for backward compatibility
-    const stmt = db.prepare(`
-      INSERT INTO sensor_readings (device_pubkey, reading_json, temperature, humidity,
-                                  timestamp_device, signature, signature_r, signature_s, batch_id)
-      VALUES (@device_pubkey, @reading_json, @temperature, @humidity,
-              @timestamp_device, @signature, @signature_r, @signature_s, @batch_id)
-    `);
-    return stmt.run(reading);
+  insert: async (reading: any) => {
+    return db.query(
+      `
+        INSERT INTO sensor_readings (
+          device_pubkey,
+          reading_json,
+          temperature,
+          humidity,
+          timestamp_device,
+          signature,
+          batch_id
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING id
+      `,
+      [
+        reading.device_pubkey,
+        reading.reading_json,
+        reading.temperature,
+        reading.humidity,
+        reading.timestamp_device,
+        reading.signature,
+        reading.batch_id,
+      ]
+    );
   },
 
-  findByBatch: (batch_id: string) => {
-    const stmt = db.prepare('SELECT * FROM sensor_readings WHERE batch_id = ?');
-    return stmt.all(batch_id);
+  findByBatch: async (batch_id: string) => {
+    const result = await db.query('SELECT * FROM sensor_readings WHERE batch_id = $1', [batch_id]);
+    return result.rows;
   },
 
-  findByDevice: (device_pubkey: string, limit = 100) => {
-    const stmt = db.prepare(`
-      SELECT * FROM sensor_readings WHERE device_pubkey = ?
-      ORDER BY created_at DESC LIMIT ?
-    `);
-    return stmt.all(device_pubkey, limit);
+  findByDevice: async (device_pubkey: string, limit = 100) => {
+    const result = await db.query(
+      `
+        SELECT * FROM sensor_readings
+        WHERE device_pubkey = $1
+        ORDER BY created_at DESC
+        LIMIT $2
+      `,
+      [device_pubkey, limit]
+    );
+    return result.rows;
   },
 
-  getCount: () => {
-    const stmt = db.prepare('SELECT COUNT(*) as count FROM sensor_readings');
-    return (stmt.get() as any).count;
-  }
+  getCount: async () => {
+    const result = await db.query('SELECT COUNT(*)::int AS count FROM sensor_readings');
+    return toInt(result.rows[0]?.count);
+  },
 };
 
 // Batch proofs operations
 export const batchProofDB = {
-  insert: (proof: any) => {
-    const stmt = db.prepare(`
-      INSERT INTO batch_proofs (batch_id, device_pubkey, collection_mode, readings_count,
-                               proof_data, public_inputs, merkle_root)
-      VALUES (@batch_id, @device_pubkey, @collection_mode, @readings_count,
-              @proof_data, @public_inputs, @merkle_root)
-    `);
-    return stmt.run(proof);
+  insert: async (proof: any) => {
+    return db.query(
+      `
+        INSERT INTO batch_proofs (
+          batch_id,
+          device_pubkey,
+          collection_mode,
+          readings_count,
+          proof_data,
+          public_inputs,
+          merkle_root
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `,
+      [
+        proof.batch_id,
+        proof.device_pubkey,
+        proof.collection_mode,
+        proof.readings_count,
+        proof.proof_data,
+        proof.public_inputs,
+        proof.merkle_root,
+      ]
+    );
   },
 
-  findById: (batch_id: string) => {
-    const stmt = db.prepare('SELECT * FROM batch_proofs WHERE batch_id = ?');
-    return stmt.get(batch_id);
+  findById: async (batch_id: string) => {
+    const result = await db.query('SELECT * FROM batch_proofs WHERE batch_id = $1', [batch_id]);
+    return first(result.rows);
   },
 
-  markVerified: (batch_id: string, tx_hash: string, block_number?: number) => {
-    const stmt = db.prepare(`
-      UPDATE batch_proofs
-      SET verified = 1, verified_at = strftime('%s', 'now'), tx_hash = ?, block_number = ?
-      WHERE batch_id = ?
-    `);
-    return stmt.run(tx_hash, block_number, batch_id);
+  markVerified: async (batch_id: string, tx_hash: string, block_number?: number) => {
+    return db.query(
+      `
+        UPDATE batch_proofs
+        SET verified = TRUE,
+            verified_at = EXTRACT(EPOCH FROM NOW())::BIGINT,
+            tx_hash = $1,
+            block_number = $2
+        WHERE batch_id = $3
+      `,
+      [tx_hash, block_number ?? null, batch_id]
+    );
   },
 
-  findUnverified: (limit = 10) => {
-    const stmt = db.prepare(`
-      SELECT * FROM batch_proofs WHERE verified = 0
-      ORDER BY created_at ASC LIMIT ?
-    `);
-    return stmt.all(limit);
+  findUnverified: async (limit = 10) => {
+    const result = await db.query(
+      `
+        SELECT * FROM batch_proofs
+        WHERE verified = FALSE
+        ORDER BY created_at ASC
+        LIMIT $1
+      `,
+      [limit]
+    );
+    return result.rows;
   },
 
-  getStats: () => {
-    const stmt = db.prepare(`
+  getStats: async () => {
+    const result = await db.query(`
       SELECT
-        COUNT(*) as total,
-        SUM(CASE WHEN verified = 1 THEN 1 ELSE 0 END) as verified,
-        SUM(readings_count) as total_readings
+        COUNT(*)::int AS total,
+        SUM(CASE WHEN verified THEN 1 ELSE 0 END)::int AS verified,
+        COALESCE(SUM(readings_count), 0)::int AS total_readings
       FROM batch_proofs
     `);
-    return stmt.get();
-  }
+    return result.rows[0];
+  },
 };
 
 // Rewards operations
 export const rewardDB = {
-  insert: (reward: any) => {
-    const stmt = db.prepare(`
-      INSERT INTO rewards (batch_id, farmer_address, amount, tx_hash, status)
-      VALUES (@batch_id, @farmer_address, @amount, @tx_hash, @status)
-    `);
-    return stmt.run(reward);
+  insert: async (reward: any) => {
+    return db.query(
+      `
+        INSERT INTO rewards (batch_id, farmer_address, amount, tx_hash, status)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING id
+      `,
+      [reward.batch_id, reward.farmer_address, reward.amount, reward.tx_hash, reward.status]
+    );
   },
 
-  markCompleted: (id: number, tx_hash: string) => {
-    const stmt = db.prepare(`
-      UPDATE rewards
-      SET status = 'completed', tx_hash = ?, paid_at = strftime('%s', 'now')
-      WHERE id = ?
-    `);
-    return stmt.run(tx_hash, id);
+  markCompleted: async (id: number, tx_hash: string) => {
+    return db.query(
+      `
+        UPDATE rewards
+        SET status = 'completed',
+            tx_hash = $1,
+            paid_at = EXTRACT(EPOCH FROM NOW())::BIGINT
+        WHERE id = $2
+      `,
+      [tx_hash, id]
+    );
   },
 
-  markFailed: (id: number, error_message: string) => {
-    const stmt = db.prepare(`
-      UPDATE rewards SET status = 'failed', error_message = ? WHERE id = ?
-    `);
-    return stmt.run(error_message, id);
+  markFailed: async (id: number, error_message: string) => {
+    return db.query('UPDATE rewards SET status = $1, error_message = $2 WHERE id = $3', [
+      'failed',
+      error_message,
+      id,
+    ]);
   },
 
-  findByFarmer: (farmer_address: string) => {
-    const stmt = db.prepare(`
-      SELECT * FROM rewards WHERE farmer_address = ?
-      ORDER BY created_at DESC
-    `);
-    return stmt.all(farmer_address);
+  findByFarmer: async (farmer_address: string) => {
+    const result = await db.query(
+      `
+        SELECT * FROM rewards
+        WHERE farmer_address = $1
+        ORDER BY created_at DESC
+      `,
+      [farmer_address]
+    );
+    return result.rows;
   },
 
-  getTotalByFarmer: (farmer_address: string) => {
-    const stmt = db.prepare(`
-      SELECT SUM(amount) as total FROM rewards
-      WHERE farmer_address = ? AND status = 'completed'
-    `);
-    return (stmt.get(farmer_address) as any).total || 0;
+  getTotalByFarmer: async (farmer_address: string) => {
+    const result = await db.query(
+      `
+        SELECT COALESCE(SUM(amount), 0)::float AS total
+        FROM rewards
+        WHERE farmer_address = $1 AND status = 'completed'
+      `,
+      [farmer_address]
+    );
+    return Number(result.rows[0]?.total ?? 0);
   },
 
-  getPending: () => {
-    const stmt = db.prepare(`
-      SELECT * FROM rewards WHERE status = 'pending'
+  getPending: async () => {
+    const result = await db.query(`
+      SELECT * FROM rewards
+      WHERE status = 'pending'
       ORDER BY created_at ASC
     `);
-    return stmt.all();
-  }
+    return result.rows;
+  },
 };
 
 // Nullifier operations
 export const nullifierDB = {
-  insert: (claim_nullifier: string, batch_id: string) => {
-    const stmt = db.prepare(`
-      INSERT INTO nullifiers (claim_nullifier, batch_id)
-      VALUES (?, ?)
-    `);
-    return stmt.run(claim_nullifier, batch_id);
+  insert: async (claim_nullifier: string, batch_id: string) => {
+    return db.query('INSERT INTO nullifiers (claim_nullifier, batch_id) VALUES ($1, $2)', [
+      claim_nullifier,
+      batch_id,
+    ]);
   },
 
-  exists: (claim_nullifier: string): boolean => {
-    const stmt = db.prepare('SELECT 1 FROM nullifiers WHERE claim_nullifier = ?');
-    return stmt.get(claim_nullifier) !== undefined;
+  exists: async (claim_nullifier: string): Promise<boolean> => {
+    const result = await db.query('SELECT 1 FROM nullifiers WHERE claim_nullifier = $1', [claim_nullifier]);
+    return (result.rowCount ?? 0) > 0;
   },
 
-  getCount: () => {
-    const stmt = db.prepare('SELECT COUNT(*) as count FROM nullifiers');
-    return (stmt.get() as any).count;
-  }
+  getCount: async () => {
+    const result = await db.query('SELECT COUNT(*)::int AS count FROM nullifiers');
+    return toInt(result.rows[0]?.count);
+  },
 };
 
 // Merkle roots operations
 export const merkleRootDB = {
-  insert: (root: any) => {
-    const stmt = db.prepare(`
-      INSERT INTO merkle_roots (root_hash, collection_mode, device_count)
-      VALUES (@root_hash, @collection_mode, @device_count)
-    `);
-    return stmt.run(root);
+  insert: async (root: any) => {
+    return db.query('INSERT INTO merkle_roots (root_hash, collection_mode, device_count) VALUES ($1, $2, $3)', [
+      root.root_hash,
+      root.collection_mode,
+      root.device_count,
+    ]);
   },
 
-  markPublished: (root_hash: string, tx_hash: string, block_number?: number) => {
-    const stmt = db.prepare(`
-      UPDATE merkle_roots
-      SET published_to_chain = 1, tx_hash = ?, block_number = ?
-      WHERE root_hash = ?
-    `);
-    return stmt.run(tx_hash, block_number, root_hash);
+  markPublished: async (root_hash: string, tx_hash: string, block_number?: number) => {
+    return db.query(
+      `
+        UPDATE merkle_roots
+        SET published_to_chain = TRUE,
+            tx_hash = $1,
+            block_number = $2
+        WHERE root_hash = $3
+      `,
+      [tx_hash, block_number ?? null, root_hash]
+    );
   },
 
-  findCurrent: (collection_mode: string) => {
-    const stmt = db.prepare(`
-      SELECT * FROM merkle_roots
-      WHERE collection_mode = ?
-      ORDER BY created_at DESC LIMIT 1
-    `);
-    return stmt.get(collection_mode);
+  findCurrent: async (collection_mode: string) => {
+    const result = await db.query(
+      `
+        SELECT * FROM merkle_roots
+        WHERE collection_mode = $1
+        ORDER BY created_at DESC
+        LIMIT 1
+      `,
+      [collection_mode]
+    );
+    return first(result.rows);
   },
 
-  getUnpublished: () => {
-    const stmt = db.prepare(`
-      SELECT * FROM merkle_roots WHERE published_to_chain = 0
-    `);
-    return stmt.all();
-  }
+  getUnpublished: async () => {
+    const result = await db.query('SELECT * FROM merkle_roots WHERE published_to_chain = FALSE');
+    return result.rows;
+  },
 };
 
 // Transaction log operations
 export const txLogDB = {
-  insert: (tx: any) => {
-    const stmt = db.prepare(`
-      INSERT INTO transaction_log (tx_hash, tx_type, status, block_number, related_id, metadata)
-      VALUES (@tx_hash, @tx_type, @status, @block_number, @related_id, @metadata)
-    `);
-    return stmt.run(tx);
+  insert: async (tx: any) => {
+    return db.query(
+      `
+        INSERT INTO transaction_log (tx_hash, tx_type, status, block_number, related_id, metadata)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING id
+      `,
+      [tx.tx_hash, tx.tx_type, tx.status, tx.block_number, tx.related_id, tx.metadata]
+    );
   },
 
-  markConfirmed: (tx_hash: string, block_number: number) => {
-    const stmt = db.prepare(`
-      UPDATE transaction_log
-      SET status = 'confirmed', block_number = ?, confirmed_at = strftime('%s', 'now')
-      WHERE tx_hash = ?
-    `);
-    return stmt.run(block_number, tx_hash);
+  markConfirmed: async (tx_hash: string, block_number: number) => {
+    return db.query(
+      `
+        UPDATE transaction_log
+        SET status = 'confirmed',
+            block_number = $1,
+            confirmed_at = EXTRACT(EPOCH FROM NOW())::BIGINT
+        WHERE tx_hash = $2
+      `,
+      [block_number, tx_hash]
+    );
   },
 
-  findByHash: (tx_hash: string) => {
-    const stmt = db.prepare('SELECT * FROM transaction_log WHERE tx_hash = ?');
-    return stmt.get(tx_hash);
+  findByHash: async (tx_hash: string) => {
+    const result = await db.query('SELECT * FROM transaction_log WHERE tx_hash = $1', [tx_hash]);
+    return first(result.rows);
   },
 
-  getPending: () => {
-    const stmt = db.prepare(`
-      SELECT * FROM transaction_log WHERE status = 'pending'
+  getPending: async () => {
+    const result = await db.query(`
+      SELECT * FROM transaction_log
+      WHERE status = 'pending'
       ORDER BY created_at ASC
     `);
-    return stmt.all();
+    return result.rows;
   },
 
-  getRecent: (limit = 20) => {
-    const stmt = db.prepare(`
-      SELECT * FROM transaction_log
-      ORDER BY created_at DESC LIMIT ?
-    `);
-    return stmt.all(limit);
-  }
+  getRecent: async (limit = 20) => {
+    const result = await db.query(
+      `
+        SELECT * FROM transaction_log
+        ORDER BY created_at DESC
+        LIMIT $1
+      `,
+      [limit]
+    );
+    return result.rows;
+  },
 };
 
 function parseSession(row: any): ManualObservationSession {
@@ -354,8 +422,8 @@ function parseSession(row: any): ManualObservationSession {
     current_step: row.current_step as ManualObservationStep,
     status: row.status as ManualObservationStatus,
     draft: JSON.parse(row.draft_json),
-    created_at: row.created_at,
-    updated_at: row.updated_at,
+    created_at: Number(row.created_at),
+    updated_at: Number(row.updated_at),
   };
 }
 
@@ -371,127 +439,154 @@ function parseObservation(row: any): ManualObservationRecord {
     validation_status: row.validation_status,
     validation_errors: JSON.parse(row.validation_errors_json),
     review_status: row.review_status,
-    submitted_at: row.submitted_at,
+    submitted_at: Number(row.submitted_at),
   };
 }
 
 // Manual observation operations
 export const manualObservationDB = {
-  insertSession: (session: ManualObservationSession) => {
-    const stmt = db.prepare(`
-      INSERT INTO manual_observation_sessions
-        (session_id, channel, participant_phone_hash, current_step, status, draft_json)
-      VALUES
-        (@session_id, @channel, @participant_phone_hash, @current_step, @status, @draft_json)
-    `);
-    return stmt.run({
-      ...session,
-      participant_phone_hash: session.participant_phone_hash || null,
-      draft_json: JSON.stringify(session.draft),
-    });
+  insertSession: async (session: ManualObservationSession) => {
+    return db.query(
+      `
+        INSERT INTO manual_observation_sessions
+          (session_id, channel, participant_phone_hash, current_step, status, draft_json)
+        VALUES
+          ($1, $2, $3, $4, $5, $6)
+      `,
+      [
+        session.session_id,
+        session.channel,
+        session.participant_phone_hash || null,
+        session.current_step,
+        session.status,
+        JSON.stringify(session.draft),
+      ]
+    );
   },
 
-  updateSession: (session: ManualObservationSession) => {
-    const stmt = db.prepare(`
-      UPDATE manual_observation_sessions
-      SET current_step = @current_step,
-          status = @status,
-          draft_json = @draft_json,
-          updated_at = strftime('%s', 'now')
-      WHERE session_id = @session_id
-    `);
-    return stmt.run({
-      ...session,
-      draft_json: JSON.stringify(session.draft),
-    });
+  updateSession: async (session: ManualObservationSession) => {
+    return db.query(
+      `
+        UPDATE manual_observation_sessions
+        SET current_step = $1,
+            status = $2,
+            draft_json = $3,
+            updated_at = EXTRACT(EPOCH FROM NOW())::BIGINT
+        WHERE session_id = $4
+      `,
+      [session.current_step, session.status, JSON.stringify(session.draft), session.session_id]
+    );
   },
 
-  findSession: (session_id: string): ManualObservationSession | undefined => {
-    const stmt = db.prepare('SELECT * FROM manual_observation_sessions WHERE session_id = ?');
-    const row = stmt.get(session_id);
+  findSession: async (session_id: string): Promise<ManualObservationSession | undefined> => {
+    const result = await db.query('SELECT * FROM manual_observation_sessions WHERE session_id = $1', [session_id]);
+    const row = first(result.rows);
     return row ? parseSession(row) : undefined;
   },
 
-  findActiveSessionByPhoneHash: (participant_phone_hash: string): ManualObservationSession | undefined => {
-    const stmt = db.prepare(`
-      SELECT * FROM manual_observation_sessions
-      WHERE participant_phone_hash = ? AND status = 'active'
-      ORDER BY updated_at DESC LIMIT 1
-    `);
-    const row = stmt.get(participant_phone_hash);
+  findActiveSessionByPhoneHash: async (
+    participant_phone_hash: string
+  ): Promise<ManualObservationSession | undefined> => {
+    const result = await db.query(
+      `
+        SELECT * FROM manual_observation_sessions
+        WHERE participant_phone_hash = $1 AND status = 'active'
+        ORDER BY updated_at DESC
+        LIMIT 1
+      `,
+      [participant_phone_hash]
+    );
+    const row = first(result.rows);
     return row ? parseSession(row) : undefined;
   },
 
-  insertObservation: (observation: ManualObservationRecord) => {
-    const stmt = db.prepare(`
-      INSERT INTO manual_observations
-        (observation_id, session_id, site_id, channel, participant_phone_hash,
-         observation_date, payload_json, validation_status, validation_errors_json, review_status)
-      VALUES
-        (@observation_id, @session_id, @site_id, @channel, @participant_phone_hash,
-         @observation_date, @payload_json, @validation_status, @validation_errors_json, @review_status)
-    `);
-    return stmt.run({
-      ...observation,
-      participant_phone_hash: observation.participant_phone_hash || null,
-      payload_json: JSON.stringify(observation.payload),
-      validation_errors_json: JSON.stringify(observation.validation_errors),
-    });
+  insertObservation: async (observation: ManualObservationRecord) => {
+    return db.query(
+      `
+        INSERT INTO manual_observations
+          (observation_id, session_id, site_id, channel, participant_phone_hash,
+           observation_date, payload_json, validation_status, validation_errors_json, review_status)
+        VALUES
+          ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `,
+      [
+        observation.observation_id,
+        observation.session_id,
+        observation.site_id,
+        observation.channel,
+        observation.participant_phone_hash || null,
+        observation.observation_date,
+        JSON.stringify(observation.payload),
+        observation.validation_status,
+        JSON.stringify(observation.validation_errors),
+        observation.review_status,
+      ]
+    );
   },
 
-  listObservations: (limit = 100): ManualObservationRecord[] => {
-    const stmt = db.prepare(`
-      SELECT * FROM manual_observations
-      ORDER BY submitted_at DESC LIMIT ?
-    `);
-    return stmt.all(limit).map(parseObservation);
+  listObservations: async (limit = 100): Promise<ManualObservationRecord[]> => {
+    const result = await db.query(
+      `
+        SELECT * FROM manual_observations
+        ORDER BY submitted_at DESC
+        LIMIT $1
+      `,
+      [limit]
+    );
+    return result.rows.map(parseObservation);
   },
 
-  getCount: () => {
-    const stmt = db.prepare('SELECT COUNT(*) as count FROM manual_observations');
-    return (stmt.get() as any).count;
+  getCount: async () => {
+    const result = await db.query('SELECT COUNT(*)::int AS count FROM manual_observations');
+    return toInt(result.rows[0]?.count);
   },
 
-  insertMessage: (message: {
+  insertMessage: async (message: {
     session_id?: string;
     channel: string;
     direction: 'inbound' | 'outbound';
     participant_phone_hash?: string;
     raw_payload: unknown;
   }) => {
-    const stmt = db.prepare(`
-      INSERT INTO manual_observation_messages
-        (session_id, channel, direction, participant_phone_hash, raw_payload_json)
-      VALUES (?, ?, ?, ?, ?)
-    `);
-    return stmt.run(
-      message.session_id || null,
-      message.channel,
-      message.direction,
-      message.participant_phone_hash || null,
-      JSON.stringify(message.raw_payload)
+    return db.query(
+      `
+        INSERT INTO manual_observation_messages
+          (session_id, channel, direction, participant_phone_hash, raw_payload_json)
+        VALUES ($1, $2, $3, $4, $5)
+      `,
+      [
+        message.session_id || null,
+        message.channel,
+        message.direction,
+        message.participant_phone_hash || null,
+        JSON.stringify(message.raw_payload),
+      ]
     );
   },
 };
 
 // Database statistics
-export function getDatabaseStats() {
+export async function getDatabaseStats() {
+  const [devices, readings, batch_proofs, nullifiers, pending_rewards, manual_observations] = await Promise.all([
+    deviceDB.getAll(),
+    readingDB.getCount(),
+    batchProofDB.getStats(),
+    nullifierDB.getCount(),
+    rewardDB.getPending(),
+    manualObservationDB.getCount(),
+  ]);
+
   return {
-    devices: deviceDB.getAll().length,
-    readings: readingDB.getCount(),
-    batch_proofs: batchProofDB.getStats(),
-    nullifiers: nullifierDB.getCount(),
-    pending_rewards: rewardDB.getPending().length,
-    manual_observations: manualObservationDB.getCount(),
+    database: 'PostgreSQL',
+    devices: devices.length,
+    readings,
+    batch_proofs,
+    nullifiers,
+    pending_rewards: pending_rewards.length,
+    manual_observations,
   };
 }
 
-// Export database instance for raw queries if needed
-export { db };
-
-/**
- * Get raw database instance for advanced operations
- */
 export function getDatabase() {
   return db;
 }

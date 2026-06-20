@@ -58,8 +58,8 @@ function testSensorRewards() {
   assert.equal(impossibleReading.score.eligibleForReward, false);
 }
 
-function testDatabaseAuditPersistence() {
-  initializeDatabase();
+async function testDatabaseAuditPersistence() {
+  await initializeDatabase();
 
   const db = getDatabase();
   const nullifierService = new NullifierTrackingService();
@@ -78,7 +78,7 @@ function testDatabaseAuditPersistence() {
   });
 
   try {
-    nullifierService.markNullifierSpent(
+    await nullifierService.markNullifierSpent(
       nullifier,
       epoch,
       'test_data_hash',
@@ -86,11 +86,12 @@ function testDatabaseAuditPersistence() {
       rewardDecision.score,
     );
 
-    const spent = db.prepare(`
+    const spentResult = await db.query(`
       SELECT reward, mars_action, mars_composite, mars_score_json
       FROM spent_nullifiers
-      WHERE nullifier = ? AND epoch = ?
-    `).get(nullifier, epoch) as {
+      WHERE nullifier = $1 AND epoch = $2
+    `, [nullifier, epoch]);
+    const spent = spentResult.rows[0] as {
       reward: number;
       mars_action: string;
       mars_composite: number;
@@ -102,7 +103,7 @@ function testDatabaseAuditPersistence() {
     assert.equal(spent.mars_composite, rewardDecision.score.composite);
     assert.deepEqual(JSON.parse(spent.mars_score_json), rewardDecision.score);
 
-    db.prepare(`
+    await db.query(`
       INSERT INTO zk_proof_submissions (
         nullifier,
         epoch,
@@ -117,8 +118,8 @@ function testDatabaseAuditPersistence() {
         mars_composite,
         mars_score_json,
         verified
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+    `, [
       zkNullifier,
       epoch,
       'test_proof',
@@ -131,14 +132,15 @@ function testDatabaseAuditPersistence() {
       rewardDecision.score.action,
       rewardDecision.score.composite,
       JSON.stringify(rewardDecision.score),
-      1,
-    );
+      true,
+    ]);
 
-    const zkSubmission = db.prepare(`
+    const zkSubmissionResult = await db.query(`
       SELECT reward, collection_mode, mars_action, mars_composite, mars_score_json
       FROM zk_proof_submissions
-      WHERE nullifier = ? AND epoch = ?
-    `).get(zkNullifier, epoch) as {
+      WHERE nullifier = $1 AND epoch = $2
+    `, [zkNullifier, epoch]);
+    const zkSubmission = zkSubmissionResult.rows[0] as {
       reward: number;
       collection_mode: string;
       mars_action: string;
@@ -152,12 +154,18 @@ function testDatabaseAuditPersistence() {
     assert.equal(zkSubmission.mars_composite, rewardDecision.score.composite);
     assert.deepEqual(JSON.parse(zkSubmission.mars_score_json), rewardDecision.score);
   } finally {
-    db.prepare('DELETE FROM spent_nullifiers WHERE nullifier = ? AND epoch = ?').run(nullifier, epoch);
-    db.prepare('DELETE FROM zk_proof_submissions WHERE nullifier = ? AND epoch = ?').run(zkNullifier, epoch);
+    await db.query('DELETE FROM spent_nullifiers WHERE nullifier = $1 AND epoch = $2', [nullifier, epoch]);
+    await db.query('DELETE FROM zk_proof_submissions WHERE nullifier = $1 AND epoch = $2', [zkNullifier, epoch]);
   }
 }
 
 testSensorRewards();
-testDatabaseAuditPersistence();
-
-console.log('MARS scoring and audit persistence tests passed.');
+testDatabaseAuditPersistence()
+  .then(() => {
+    console.log('MARS scoring and audit persistence tests passed.');
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });

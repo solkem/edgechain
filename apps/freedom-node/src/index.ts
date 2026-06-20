@@ -11,16 +11,13 @@ import cors from 'cors';
 import path from 'path';
 import { existsSync } from 'fs';
 import { aggregationRouter } from './routes/aggregation';
-import { iotRouter } from './routes/iot';
+import { initializeIoTRoutes, iotRouter } from './routes/iot';
 import { manualObservationsRouter } from './routes/manualObservations';
 import { whatsappRouter } from './routes/whatsapp';
 import { initializeDatabase, getDatabaseStats } from './database';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-
-// Initialize database
-initializeDatabase();
 
 // Middleware
 // H2 FIX: Restrict CORS in production
@@ -47,11 +44,11 @@ app.get('/health', (_req, res) => {
 });
 
 // Database statistics endpoint (must be before catch-all route)
-app.get('/api/db-stats', (_req, res) => {
+app.get('/api/db-stats', async (_req, res) => {
   try {
-    const stats = getDatabaseStats();
+    const stats = await getDatabaseStats();
     res.json({
-      database: 'SQLite',
+      database: 'PostgreSQL',
       stats,
       timestamp: Date.now()
     });
@@ -98,17 +95,26 @@ app.get('*', (_req, res) => {
   res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log('\n===========================================');
-  console.log('🌐 EdgeChain Unified Backend');
-  console.log('===========================================');
-  console.log(`📡 Server running on port ${PORT}`);
-  console.log(`🔗 FL API: http://localhost:${PORT}/api/fl`);
-  console.log(`🔗 Sensor Node API: http://localhost:${PORT}/api/sensor-node`);
-  console.log(`💚 Health check: http://localhost:${PORT}/health`);
-  console.log('===========================================\n');
-  console.log('✅ Ready to receive:');
-  console.log('   👨‍🌾 Farmer model submissions (FL)');
-  console.log('   📊 Sensor Node data (IoT)\n');
+async function startServer() {
+  await initializeDatabase();
+  await initializeIoTRoutes();
+
+  app.listen(PORT, () => {
+    console.log('\n===========================================');
+    console.log('🌐 EdgeChain Unified Backend');
+    console.log('===========================================');
+    console.log(`📡 Server running on port ${PORT}`);
+    console.log(`🔗 FL API: http://localhost:${PORT}/api/fl`);
+    console.log(`🔗 Sensor Node API: http://localhost:${PORT}/api/sensor-node`);
+    console.log(`💚 Health check: http://localhost:${PORT}/health`);
+    console.log('===========================================\n');
+    console.log('✅ Ready to receive:');
+    console.log('   👨‍🌾 Farmer model submissions (FL)');
+    console.log('   📊 Sensor Node data (IoT)\n');
+  });
+}
+
+startServer().catch((error) => {
+  console.error('Failed to start EdgeChain backend:', error);
+  process.exit(1);
 });

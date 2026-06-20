@@ -14,11 +14,6 @@ primary_region = 'iad'
   PORT = '3001'
   IPFS_SERVICE_URL = 'https://edgechain-ipfs.fly.dev'
 
-[[mounts]]
-  source = 'edgechain_data'
-  destination = '/app/data'
-  initial_size = '1gb'
-
 [http_service]
   internal_port = 3001
   force_https = true

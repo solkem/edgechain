@@ -26,6 +26,10 @@ const nullifierService = new NullifierTrackingService();
 const zkProofService = new ZKProofService();
 const marsScoringService = new MarsScoringService();
 
+export async function initializeIoTRoutes(): Promise<void> {
+  await registryService.initialize();
+}
+
 // ============= DEVICE AUTHENTICATION ENDPOINTS =============
 
 /**
@@ -162,7 +166,7 @@ router.post('/registry/register', async (req, res) => {
     const merkle_leaf_hash = crypto.createHash('sha256').update(device_pubkey).digest('hex');
 
     // Persist to database with owner_wallet (handles already-registered case)
-    const dbResult = dbService.registerDevice(
+    const dbResult = await dbService.registerDevice(
       device_pubkey,
       owner_wallet,
       device_id || 'iot-kit-001',
@@ -392,7 +396,7 @@ router.post('/submit-proof', async (req, res) => {
 
     // 1. Check nullifier not spent using database (prevents replay)
     const currentEpoch = nullifierService.getCurrentEpoch();
-    if (nullifierService.isNullifierSpent(claim_nullifier, epoch || currentEpoch)) {
+    if (await nullifierService.isNullifierSpent(claim_nullifier, epoch || currentEpoch)) {
       return res.status(400).json({
         valid: false,
         reason: 'Nullifier already spent (replay detected)',
@@ -444,7 +448,7 @@ router.post('/submit-proof', async (req, res) => {
     const reward = rewardDecision.reward;
 
     // 6. Mark nullifier as spent in database (persistent across restarts)
-    nullifierService.markNullifierSpent(
+    await nullifierService.markNullifierSpent(
       claim_nullifier,
       epoch || currentEpoch,
       data_hash || 'direct_submission',
@@ -481,7 +485,7 @@ router.post('/submit-proof', async (req, res) => {
  * Simulate receiving Sensor Node data (for testing without hardware)
  * Persists reading to database
  */
-router.post('/simulate', (req, res) => {
+router.post('/simulate', async (req, res) => {
   try {
     const {
       temperature = 25.0,
@@ -498,7 +502,7 @@ router.post('/simulate', (req, res) => {
     // Persist reading to database
     if (device_pubkey) {
       try {
-        const readingId = dbService.saveReading(reading);
+        const readingId = await dbService.saveReading(reading);
         console.log(`✅ Reading persisted: ID ${readingId}`);
       } catch (dbError: any) {
         console.error('⚠️  Failed to persist reading:', dbError.message);
@@ -610,7 +614,7 @@ router.post('/zk/submit-private-reading', async (req, res) => {
     console.log(`🔧 Mode: ${public_inputs.collectionMode === 0 ? 'auto' : 'manual'}`);
 
     // 1. Check nullifier not spent
-    if (nullifierService.isNullifierSpent(public_inputs.nullifier, public_inputs.epoch)) {
+    if (await nullifierService.isNullifierSpent(public_inputs.nullifier, public_inputs.epoch)) {
       console.log('❌ Nullifier already spent (replay attack detected)');
       return res.status(400).json({
         valid: false,
@@ -654,7 +658,7 @@ router.post('/zk/submit-private-reading', async (req, res) => {
     const reward = rewardDecision.reward;
 
     // 5. Mark nullifier as spent
-    nullifierService.markNullifierSpent(
+    await nullifierService.markNullifierSpent(
       public_inputs.nullifier,
       public_inputs.epoch,
       public_inputs.dataHash,
@@ -663,8 +667,8 @@ router.post('/zk/submit-private-reading', async (req, res) => {
     );
 
     // 6. Store anonymous reading in database
-    const db = dbService['db']; // Access private db property
-    const stmt = db.prepare(`
+    const db = dbService['db']; // Route-level query access for ZK submission audit records
+    const insertResult = await db.query(`
       INSERT INTO zk_proof_submissions (
         nullifier,
         epoch,
@@ -679,10 +683,9 @@ router.post('/zk/submit-private-reading', async (req, res) => {
         mars_composite,
         mars_score_json,
         verified
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    const result = stmt.run(
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      RETURNING id
+    `, [
       public_inputs.nullifier,
       public_inputs.epoch,
       proof,
@@ -695,10 +698,10 @@ router.post('/zk/submit-private-reading', async (req, res) => {
       rewardDecision.score.action,
       rewardDecision.score.composite,
       JSON.stringify(rewardDecision.score),
-      1 // verified = true
-    );
+      true,
+    ]);
 
-    const submissionId = result.lastInsertRowid;
+    const submissionId = Number(insertResult.rows[0].id);
 
     console.log('✅ VERIFIED AND STORED IN DATABASE!');
     console.log(`🧭 MARS action: ${rewardDecision.score.action} (${rewardDecision.score.composite.toFixed(3)})`);
@@ -728,12 +731,11 @@ router.post('/zk/submit-private-reading', async (req, res) => {
       ipfsCid = await ipfsStorage.uploadZKProof(ipfsData);
 
       // Update database record with IPFS CID
-      const updateStmt = db.prepare(`
+      await db.query(`
         UPDATE zk_proof_submissions
-        SET ipfs_cid = ?
-        WHERE id = ?
-      `);
-      updateStmt.run(ipfsCid, submissionId);
+        SET ipfs_cid = $1
+        WHERE id = $2
+      `, [ipfsCid, submissionId]);
 
       console.log('✅ UPLOADED TO IPFS!');
       console.log(`🌐 CID: ${ipfsCid}`);
@@ -766,18 +768,18 @@ router.post('/zk/submit-private-reading', async (req, res) => {
  * GET /api/sensor-node/zk/stats
  * Get ZK proof statistics
  */
-router.get('/zk/stats', (_req, res) => {
+router.get('/zk/stats', async (_req, res) => {
   try {
     const proofStats = zkProofService.getStats();
-    const nullifierStats = nullifierService.getNullifierStats();
+    const nullifierStats = await nullifierService.getNullifierStats();
 
     // Get IPFS stats from database
     const db = dbService['db'];
-    const ipfsStmt = db.prepare(`
-      SELECT COUNT(*) as total, COUNT(ipfs_cid) as with_ipfs
+    const ipfsResult = await db.query(`
+      SELECT COUNT(*)::int as total, COUNT(ipfs_cid)::int as with_ipfs
       FROM zk_proof_submissions
     `);
-    const ipfsStats = ipfsStmt.get() as { total: number; with_ipfs: number };
+    const ipfsStats = ipfsResult.rows[0] as { total: number; with_ipfs: number };
 
     res.json({
       proof_generation: proofStats,
@@ -842,10 +844,10 @@ router.get('/zk/ipfs/:cid', async (req, res) => {
  * GET /api/sensor-node/zk/submissions
  * Get recent ZK proof submissions with IPFS links
  */
-router.get('/zk/submissions', (_req, res) => {
+router.get('/zk/submissions', async (_req, res) => {
   try {
     const db = dbService['db'];
-    const stmt = db.prepare(`
+    const result = await db.query(`
       SELECT
         id,
         nullifier,
@@ -866,7 +868,7 @@ router.get('/zk/submissions', (_req, res) => {
       LIMIT 50
     `);
 
-    const submissions = stmt.all() as any[];
+    const submissions = result.rows as any[];
 
     // Add IPFS gateway URLs
     const submissionsWithUrls = submissions.map((sub) => ({
@@ -918,7 +920,7 @@ router.post('/readings/submit', async (req, res) => {
     }
 
     // Step 1: Verify device is registered
-    const deviceCheck = dbService.getDevice(device_pubkey);
+    const deviceCheck = await dbService.getDevice(device_pubkey);
     if (!deviceCheck) {
       console.log('❌ Device not registered');
       return res.status(403).json({
@@ -1060,7 +1062,7 @@ router.get('/wallet-balance', async (_req, res) => {
  * GET /api/sensor-node/my-device/:wallet
  * Get device information for a specific wallet address
  */
-router.get('/my-device/:wallet', (req, res) => {
+router.get('/my-device/:wallet', async (req, res) => {
   try {
     const { wallet } = req.params;
 
@@ -1068,7 +1070,7 @@ router.get('/my-device/:wallet', (req, res) => {
       return res.status(400).json({ error: 'wallet parameter required' });
     }
 
-    const device = dbService.getDeviceByWallet(wallet);
+    const device = await dbService.getDeviceByWallet(wallet);
 
     if (!device) {
       return res.status(404).json({
@@ -1078,8 +1080,8 @@ router.get('/my-device/:wallet', (req, res) => {
     }
 
     // Get consistency metrics
-    const consistency = dbService.getConsistencyMetrics(device.device_pubkey);
-    const incentives = dbService.getIncentiveSummary(device.device_pubkey);
+    const consistency = await dbService.getConsistencyMetrics(device.device_pubkey);
+    const incentives = await dbService.getIncentiveSummary(device.device_pubkey);
 
     res.json({
       device,
@@ -1095,7 +1097,7 @@ router.get('/my-device/:wallet', (req, res) => {
  * GET /api/sensor-node/my-readings/:wallet
  * Get sensor readings for a specific wallet's device
  */
-router.get('/my-readings/:wallet', (req, res) => {
+router.get('/my-readings/:wallet', async (req, res) => {
   try {
     const { wallet } = req.params;
     const limit = parseInt(req.query.limit as string) || 100;
@@ -1104,7 +1106,7 @@ router.get('/my-readings/:wallet', (req, res) => {
       return res.status(400).json({ error: 'wallet parameter required' });
     }
 
-    const readings = dbService.getReadingsByWallet(wallet, limit);
+    const readings = await dbService.getReadingsByWallet(wallet, limit);
 
     res.json({
       wallet,

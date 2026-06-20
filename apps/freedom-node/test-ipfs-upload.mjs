@@ -3,17 +3,22 @@
  * Simulates a complete ZK proof generation and IPFS upload flow
  */
 
-// Read device from database
-import Database from 'better-sqlite3';
-import crypto from 'crypto';
+// Read device from PostgreSQL
+import pg from 'pg';
 
-const db = new Database('./data/edgechain.db');
+const { Pool } = pg;
+const db = new Pool({
+  connectionString: process.env.DATABASE_URL || 'postgresql://edgechain:edgechain@localhost:5432/edgechain',
+  ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
+});
 
 // Get registered device
-const device = db.prepare('SELECT * FROM devices LIMIT 1').get();
+const deviceResult = await db.query('SELECT * FROM devices LIMIT 1');
+const device = deviceResult.rows[0];
 
 if (!device) {
   console.error('❌ No device registered. Please register a device first.');
+  await db.end();
   process.exit(1);
 }
 
@@ -126,4 +131,5 @@ console.log(`   Current Epoch: ${stats.privacy.current_epoch}`);
 console.log('\n✅ IPFS INTEGRATION TEST COMPLETE!');
 console.log('═══════════════════════════════════════\n');
 
+await db.end();
 process.exit(0);
