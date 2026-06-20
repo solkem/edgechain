@@ -605,8 +605,8 @@ __metadata:
 
 "@edgechain/fl@file:../../packages/fl::locator=%40edgechain%2Ffreedom-node%40workspace%3Aapps%2Ffreedom-node":
   version: 0.1.0
-  resolution: "@edgechain/fl@file:../../packages/fl#../../packages/fl::hash=02ae59&locator=%40edgechain%2Ffreedom-node%40workspace%3Aapps%2Ffreedom-node"
-  checksum: 10c0/38aa944038b4e045ad8300051d2a83b0339fc652a8a38040b296e81c5ed1cf2ac6ed492f9d7e2452549b2a6d04785fa0aa43203047ede3f7ab9eef39ed2e61f9
+  resolution: "@edgechain/fl@file:../../packages/fl#../../packages/fl::hash=77ef85&locator=%40edgechain%2Ffreedom-node%40workspace%3Aapps%2Ffreedom-node"
+  checksum: 10c0/51ed28b7947bbdbbb4468deb42cb9fdb50fadf6401b27e3d6e0c30b95255253d5bbbd9136a2fd1ec05cc2640a7901be9d866bebb8497ff88fcb26398de232ddd
   languageName: node
   linkType: hard
 

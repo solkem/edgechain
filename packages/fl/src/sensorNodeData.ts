@@ -67,17 +67,10 @@ export function convertSensorNodeDataToFLDataset(
   const { averages, farmMetadata, sensorData } = bundle;
   const dataPoints: FarmDataPoint[] = [];
 
-  console.log('🔄 Converting Sensor Node data to FL training dataset...');
-  console.log(`   Temperature: ${averages.temperature.toFixed(1)}°C`);
-  console.log(`   Humidity: ${averages.humidity.toFixed(1)}%`);
-  console.log(`   Readings: ${averages.readings}`);
-
   // Estimate rainfall from humidity
   // Higher humidity typically correlates with more rainfall
   // This is a simplified model; in production, use actual rain sensors
   const estimatedRainfall = estimateRainfallFromHumidity(averages.humidity);
-
-  console.log(`   Estimated rainfall: ${estimatedRainfall.toFixed(1)}mm/season`);
 
   // Generate historical training data points
   // Each point represents one growing season
@@ -130,10 +123,6 @@ export function convertSensorNodeDataToFLDataset(
       end: Date.now(),
     },
   };
-
-  console.log(`✅ Generated ${numSeasons} training samples from Sensor Node data`);
-  console.log(`   Crop: ${farmMetadata.cropType}`);
-  console.log(`   Average yield: ${(dataPoints.reduce((sum, d) => sum + d.yield, 0) / numSeasons).toFixed(2)} tons/ha`);
 
   return dataset;
 }
