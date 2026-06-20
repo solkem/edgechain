@@ -24,7 +24,7 @@ export default function EdgeChainApp() {
           <Route path="/" element={<LoginRoute />} />
           <Route path="/register" element={<RegisterRoute />} />
           <Route path="/selection" element={<SelectionRoute />} />
-          <Route path="/arduino" element={<IoTRoute />} /> {/* Keep /arduino path for backward compatibility */}
+          <Route path="/sensor-node" element={<IoTRoute />} />
           <Route path="/train" element={<TrainRoute />} />
           <Route path="/train-privacy" element={<PrivacyTrainRoute />} />
           <Route path="/aggregation" element={<AggregationRoute />} />

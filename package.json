@@ -6,10 +6,10 @@
     "dev": "turbo run dev",
     "predev": "node scripts/check-toolchain.mjs",
     "build": "turbo run build",
-    "build:node": "turbo run build --filter=@edgechain/contract --filter=@edgechain/api --filter=@edgechain/cli",
+    "build:node": "turbo run build --filter=@edgechain/fl --filter=@edgechain/mars --filter=@edgechain/contract --filter=@edgechain/cli",
     "build:ui": "turbo run build --filter=edgechain-ui",
     "prebuild": "node scripts/check-toolchain.mjs",
-    "build:all": "cd packages/contract && npx turbo run build && cd ../api && npx turbo run build && cd ../cli && npx turbo run build && cd ../ui && npx turbo run build",
+    "build:all": "cd packages/fl && npm run build && cd ../mars && npm run build && cd ../contract && npx turbo run build && cd ../cli && npx turbo run build && cd ../ui && npx turbo run build",
     "prebuild:all": "node scripts/check-toolchain.mjs",
     "clean": "turbo run clean",
     "test": "turbo run test",
@@ -79,8 +79,9 @@
   "packageManager": "yarn@4.9.2",
   "workspaces": [
     "compact",
+    "packages/fl",
+    "packages/mars",
     "packages/ui",
-    "packages/api",
     "packages/cli",
     "packages/contract"
   ]

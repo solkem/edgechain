@@ -56,7 +56,7 @@ async function runTests() {
 
     // Test 2: Generate Keypair
     section('Test 2: Generate Device Keys');
-    const keypair = await request('POST', '/api/arduino/auth/generate-keypair');
+    const keypair = await request('POST', '/api/sensor-node/auth/generate-keypair');
     devicePubkey = keypair.public_key;
     deviceSecret = keypair.private_key.slice(0, 64); // Use as device secret
     log('green', `✓ Keys generated`);
@@ -64,7 +64,7 @@ async function runTests() {
 
     // Test 3: Register Device (skip auth for now)
     section('Test 3: Register Device');
-    const registration = await request('POST', '/api/arduino/registry/register', {
+    const registration = await request('POST', '/api/sensor-node/registry/register', {
       device_pubkey: devicePubkey,
       owner_wallet: TEST_WALLET,
       collection_mode: 'auto',
@@ -75,7 +75,7 @@ async function runTests() {
 
     // Test 4: Generate ZK Proof
     section('Test 4: Generate ZK Proof');
-    const proof = await request('POST', '/api/arduino/zk/generate-proof', {
+    const proof = await request('POST', '/api/sensor-node/zk/generate-proof', {
       temperature: 25.5,
       humidity: 65.0,
       timestamp: Math.floor(Date.now() / 1000),
@@ -89,7 +89,7 @@ async function runTests() {
 
     // Test 5: Submit Private Reading
     section('Test 5: Submit Private Reading');
-    const submission = await request('POST', '/api/arduino/zk/submit-private-reading', {
+    const submission = await request('POST', '/api/sensor-node/zk/submit-private-reading', {
       proof: proof.proof,
       public_inputs: proof.public_inputs,
       temperature: 25.5,
@@ -103,7 +103,7 @@ async function runTests() {
     // Test 6: Replay Attack Prevention
     section('Test 6: Replay Attack Prevention');
     try {
-      await request('POST', '/api/arduino/zk/submit-private-reading', {
+      await request('POST', '/api/sensor-node/zk/submit-private-reading', {
         proof: proof.proof,
         public_inputs: proof.public_inputs,
         temperature: 25.5,
@@ -117,7 +117,7 @@ async function runTests() {
 
     // Test 7: Privacy Stats
     section('Test 7: Privacy Statistics');
-    const stats = await request('GET', '/api/arduino/zk/stats');
+    const stats = await request('GET', '/api/sensor-node/zk/stats');
     log('green', `✓ Stats retrieved`);
     log('blue', `  Submissions: ${stats.nullifiers.total_nullifiers}`);
     log('blue', `  Epoch: ${stats.privacy.current_epoch}`);
@@ -126,7 +126,7 @@ async function runTests() {
     // Test 8: Invalid Range
     section('Test 8: Range Validation');
     try {
-      const invalidProof = await request('POST', '/api/arduino/zk/generate-proof', {
+      const invalidProof = await request('POST', '/api/sensor-node/zk/generate-proof', {
         temperature: 100, // Too high
         humidity: 50,
         timestamp: Math.floor(Date.now() / 1000),
@@ -135,7 +135,7 @@ async function runTests() {
         collection_mode: 'auto',
       });
 
-      await request('POST', '/api/arduino/zk/submit-private-reading', {
+      await request('POST', '/api/sensor-node/zk/submit-private-reading', {
         proof: invalidProof.proof,
         public_inputs: invalidProof.public_inputs,
         temperature: 100,

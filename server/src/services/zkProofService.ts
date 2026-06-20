@@ -125,7 +125,7 @@ export class ZKProofService {
       publicInputs,
       metadata: {
         proofGenerationTime,
-        circuitName: 'arduino-iot-private',
+        circuitName: 'sensor-node-private',
         version: '1.0.0',
       },
     };

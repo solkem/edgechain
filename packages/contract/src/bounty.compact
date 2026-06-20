@@ -59,7 +59,7 @@ export ledger adminPubkeyHash: Bytes<32>;
 // Current epoch (updated by admin)
 export ledger currentEpoch: Field;
 
-// Device registry Merkle root (synced from device-iot contract)
+// Device registry Merkle root (synced from Sensor Node contract)
 export ledger deviceMerkleRoot: Bytes<32>;
 
 // ============================================================================

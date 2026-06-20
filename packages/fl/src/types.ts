@@ -1,8 +1,3 @@
-/**
- * FL Type Definitions for Backend
- * (Subset of types from packages/ui/src/fl/types.ts)
- */
-
 export interface ModelArchitecture {
   inputDim: number;
   hiddenLayers: number[];
@@ -40,6 +35,16 @@ export interface ModelSubmission {
   txHash?: string;
 }
 
+export type AggregationAlgorithm = 'fedavg' | 'weighted-fedavg' | 'median';
+
+export interface AggregationConfig {
+  algorithm: AggregationAlgorithm;
+  minSubmissions: number;
+  weightingStrategy: 'equal' | 'accuracy' | 'dataset-size';
+  outlierDetection: boolean;
+  outlierThreshold: number;
+}
+
 export interface AggregationResult {
   round: number;
   modelVersion: number;
@@ -72,12 +77,4 @@ export interface GlobalModel {
     globalMse: number;
     confidence: number;
   };
-}
-
-export interface AggregationConfig {
-  algorithm: 'fedavg' | 'weighted-fedavg' | 'median';
-  minSubmissions: number;
-  weightingStrategy: 'equal' | 'accuracy' | 'dataset-size';
-  outlierDetection: boolean;
-  outlierThreshold: number;
 }

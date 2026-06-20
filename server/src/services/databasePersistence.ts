@@ -1,7 +1,7 @@
 /**
  * Database Persistence Service
  *
- * Handles persisting Arduino IoT data to SQLite database
+ * Handles persisting Sensor Node data to SQLite database
  * Supports wallet-based device ownership and historical tracking
  */
 

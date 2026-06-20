@@ -34,13 +34,13 @@ export function Selection({
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
           <button 
-            onClick={() => navigate('/arduino')} 
+            onClick={() => navigate('/sensor-node')} 
             className="bg-white border-2 border-gray-200 hover:border-blue-500 rounded-lg p-6 text-left transition-all hover:shadow-md hover:cursor-pointer"
           >
             <div className="w-14 h-14 bg-gray-100 rounded-lg mb-3 flex items-center justify-center">
               <span className="text-2xl">📡</span>
             </div>
-            <h3 className="text-xl font-bold text-black mb-2">Arduino IoT</h3>
+            <h3 className="text-xl font-bold text-black mb-2">Sensor Node</h3>
             <p className="text-gray-600 text-sm">Collect sensor data from your farm</p>
           </button>
           <button 

@@ -13,6 +13,7 @@
 
 import { getDatabase } from '../database';
 import * as crypto from 'crypto';
+import type { MarsScore } from '@edgechain/mars';
 
 export interface NullifierRecord {
   nullifier: string;
@@ -20,6 +21,9 @@ export interface NullifierRecord {
   data_hash: string;
   reward: number;
   collection_mode: string;
+  mars_action?: string;
+  mars_composite?: number;
+  mars_score_json?: string;
   spent_at: number;
 }
 
@@ -53,7 +57,8 @@ export class NullifierTrackingService {
     nullifier: string,
     epoch: number,
     data_hash: string,
-    reward: number
+    reward: number,
+    marsScore?: MarsScore
   ): void {
     // Check if already spent (double-spend attempt)
     if (this.isNullifierSpent(nullifier, epoch)) {
@@ -66,12 +71,24 @@ export class NullifierTrackingService {
         epoch,
         data_hash,
         reward,
+        mars_action,
+        mars_composite,
+        mars_score_json,
         spent_at
-      ) VALUES (?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const now = Math.floor(Date.now() / 1000);
-    stmt.run(nullifier, epoch, data_hash, reward, now);
+    stmt.run(
+      nullifier,
+      epoch,
+      data_hash,
+      reward,
+      marsScore?.action ?? null,
+      marsScore?.composite ?? null,
+      marsScore ? JSON.stringify(marsScore) : null,
+      now
+    );
 
     console.log(`🔒 Nullifier marked as spent: ${nullifier.slice(0, 16)}... (epoch ${epoch})`);
   }

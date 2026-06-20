@@ -53,6 +53,27 @@ interface IncentiveData {
   nextTierThreshold: number;
 }
 
+interface MarsScore {
+  roundId: number;
+  siteId: string;
+  hasScore: number;
+  physicalPlausibility: number;
+  spatialJury: number;
+  temporalConsistency: number;
+  gradientNormBounds: number;
+  composite: number;
+  action: 'accept' | 'flag' | 'reject' | 'skip_round';
+  eligibleForReward: boolean;
+}
+
+interface MarsDecision {
+  score: MarsScore;
+  reward: number;
+  rewardUnit: string;
+  source: 'private-proof' | 'signed-reading';
+  decidedAt: number;
+}
+
 // Backend response types
 interface BackendConsistency {
   device_pubkey: string;
@@ -133,12 +154,13 @@ export function IoTDashboard() {
   const [anonymitySetSize, setAnonymitySetSize] = useState<number>(0);
   const [lastRewardNotification, setLastRewardNotification] = useState<number>(Date.now());
   const [accumulatedRewards, setAccumulatedRewards] = useState<number>(0);
+  const [latestMarsDecision, setLatestMarsDecision] = useState<MarsDecision | null>(null);
 
   // Track when collection was first activated (NEVER resets - persists forever)
   const [collectionActivatedAt, setCollectionActivatedAt] = useState<number | null>(null);
 
   // Real-time uptime tracking (in seconds)
-  const [timeDataCollected, setTimeDataCollected] = useState<number>(0); // Cumulative time Arduino sent data
+  const [timeDataCollected, setTimeDataCollected] = useState<number>(0); // Cumulative time Sensor Node sent data
   const [timeSinceActivated, setTimeSinceActivated] = useState<number>(0); // Total time since first activation
 
   // Real-time consistency tracking
@@ -185,7 +207,7 @@ export function IoTDashboard() {
     return () => clearInterval(interval);
   }, [collectionActivatedAt]);
 
-  // Calculate timeDataCollected from sensor readings (cumulative time Arduino sent data)
+  // Calculate timeDataCollected from sensor readings (cumulative time Sensor Node sent data)
   useEffect(() => {
     if (sensorData.length === 0) {
       setTimeDataCollected(0);
@@ -271,7 +293,7 @@ export function IoTDashboard() {
 
     try {
       // Fetch device info, consistency, and incentives
-      const response = await fetch(`${API_BASE}/api/arduino/my-device/${wallet.address}`);
+      const response = await fetch(`${API_BASE}/api/sensor-node/my-device/${wallet.address}`);
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -284,7 +306,7 @@ export function IoTDashboard() {
       const data = await response.json();
 
       // Update device info with merkle root
-      const registryResponse = await fetch(`${API_BASE}/api/arduino/registry`);
+      const registryResponse = await fetch(`${API_BASE}/api/sensor-node/registry`);
       const registryData = await registryResponse.json();
 
       setDeviceInfo(prev => ({
@@ -440,7 +462,7 @@ export function IoTDashboard() {
   /**
    * @deprecated DO NOT USE - Creates fake device without actual hardware
    * Device registration now happens automatically via checkAndRegisterDevice()
-   * when a real Arduino connects via BLE and sends its first reading.
+   * when a real Sensor Node connects via BLE and sends its first reading.
    *
    * This function was used for demo/testing but creates misleading UX where
    * users think they have a device registered when they don't have hardware.
@@ -455,7 +477,7 @@ export function IoTDashboard() {
       setError(null);
       const devicePubkey = `device_${wallet.address.substring(0, 16)}`;
 
-      const response = await fetch(`${API_BASE}/api/arduino/registry/register`, {
+      const response = await fetch(`${API_BASE}/api/sensor-node/registry/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -509,7 +531,7 @@ export function IoTDashboard() {
   const initializeDeviceSecret = () => {
     if (!deviceSecret && deviceInfo?.pubkey) {
       // Generate deterministic secret from device pubkey (DEMO ONLY)
-      // In production, this would be securely generated and stored on Arduino
+      // In production, this would be securely generated and stored on Sensor Node
       const secret = Array.from(deviceInfo.pubkey.slice(0, 64))
         .map((c, i) => String.fromCharCode(c.charCodeAt(0) + i % 10))
         .join('')
@@ -526,7 +548,7 @@ export function IoTDashboard() {
    */
   const fetchZKStats = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/arduino/zk/stats`);
+      const response = await fetch(`${API_BASE}/api/sensor-node/zk/stats`);
       const data = await response.json();
 
       setZkProofStats(data);
@@ -558,7 +580,7 @@ export function IoTDashboard() {
     const startTime = Date.now();
 
     try {
-      const response = await fetch(`${API_BASE}/api/arduino/zk/generate-proof`, {
+      const response = await fetch(`${API_BASE}/api/sensor-node/zk/generate-proof`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -598,7 +620,7 @@ export function IoTDashboard() {
    */
   const submitPrivateReading = async (proof: any, temperature: number, humidity: number) => {
     try {
-      const response = await fetch(`${API_BASE}/api/arduino/zk/submit-private-reading`, {
+      const response = await fetch(`${API_BASE}/api/sensor-node/zk/submit-private-reading`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -618,6 +640,16 @@ export function IoTDashboard() {
 
       console.log('✅ PRIVATE READING SUBMITTED');
       console.log(`   Reward: ${data.reward} tDUST`);
+      if (data.mars_score) {
+        console.log(`   MARS: ${data.mars_score.action} (${data.mars_score.composite.toFixed(3)})`);
+        setLatestMarsDecision({
+          score: data.mars_score,
+          reward: data.reward || 0,
+          rewardUnit: 'tDUST',
+          source: 'private-proof',
+          decidedAt: Date.now(),
+        });
+      }
       console.log(`   Your identity: ANONYMOUS`);
       console.log(`   Nullifier: ${data.nullifier.slice(0, 16)}...`);
 
@@ -672,10 +704,10 @@ export function IoTDashboard() {
 
       console.log(`🔍 Checking registration for device: ${device_pubkey.slice(0, 16)}...`);
       console.log(`   API_BASE: ${API_BASE}`);
-      console.log(`   Endpoint: ${API_BASE}/api/arduino/registry/check`);
+      console.log(`   Endpoint: ${API_BASE}/api/sensor-node/registry/check`);
 
       // 1. Check if device is already registered
-      const checkResponse = await fetch(`${API_BASE}/api/arduino/registry/check`, {
+      const checkResponse = await fetch(`${API_BASE}/api/sensor-node/registry/check`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ device_pubkey }),
@@ -688,7 +720,7 @@ export function IoTDashboard() {
 
         // Update device info state
         setDeviceInfo({
-          deviceId: `arduino-${device_pubkey.slice(0, 8)}`,
+          deviceId: `sensor-node-${device_pubkey.slice(0, 8)}`,
           pubkey: device_pubkey,
           registered: true,
           collectionMode: 'auto',
@@ -698,22 +730,22 @@ export function IoTDashboard() {
       }
 
       // 2. Device not registered → auto-register it
-      console.log('📝 Auto-registering new Arduino device...');
+      console.log('📝 Auto-registering new Sensor Node...');
       console.log(`   Wallet: ${wallet.address}`);
       console.log(`   Device: ${device_pubkey.slice(0, 16)}...`);
 
-      const registerResponse = await fetch(`${API_BASE}/api/arduino/registry/register`, {
+      const registerResponse = await fetch(`${API_BASE}/api/sensor-node/registry/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           device_pubkey,
           owner_wallet: wallet.address,
           collection_mode: 'auto',
-          device_id: `arduino-${Date.now()}`,
+          device_id: `sensor-node-${Date.now()}`,
           metadata: {
             registered_via: 'ble',
             first_seen: Date.now(),
-            device_type: 'Arduino Nano 33 BLE Sense',
+            device_type: 'ESP32 Sensor Node',
           },
         }),
       });
@@ -728,7 +760,7 @@ export function IoTDashboard() {
 
         // Update device info state
         setDeviceInfo({
-          deviceId: registerResult.registration.device_id || `arduino-${device_pubkey.slice(0, 8)}`,
+          deviceId: registerResult.registration.device_id || `sensor-node-${device_pubkey.slice(0, 8)}`,
           pubkey: device_pubkey,
           registered: true,
           collectionMode: 'auto',
@@ -797,7 +829,7 @@ export function IoTDashboard() {
 
       // Submit reading to backend for real-time reward distribution
       try {
-        const submitResponse = await fetch(`${API_BASE}/api/arduino/readings/submit`, {
+        const submitResponse = await fetch(`${API_BASE}/api/sensor-node/readings/submit`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -815,6 +847,16 @@ export function IoTDashboard() {
           console.log('✅ Reading submitted successfully');
           console.log(`   IPFS CID: ${submitResult.ipfs_cid}`);
           console.log(`   Reward distributed: ${submitResult.reward_amount} tDUST`);
+          if (submitResult.mars_score) {
+            console.log(`   MARS: ${submitResult.mars_score.action} (${submitResult.mars_score.composite.toFixed(3)})`);
+            setLatestMarsDecision({
+              score: submitResult.mars_score,
+              reward: submitResult.reward_amount || 0,
+              rewardUnit: submitResult.reward_unit || 'tDUST',
+              source: 'signed-reading',
+              decidedAt: Date.now(),
+            });
+          }
           console.log(`   Transaction: ${submitResult.tx_hash || 'pending'}`);
 
           // Accumulate rewards and show notification every 60 seconds
@@ -912,7 +954,7 @@ export function IoTDashboard() {
       // Setup listeners
       await setupBLEListeners(device, characteristic);
 
-      setSuccess('✅ Auto-reconnected to your Arduino!');
+      setSuccess('✅ Auto-reconnected to your Sensor Node!');
       setTimeout(() => setSuccess(null), 3000);
 
       return true;
@@ -972,13 +1014,13 @@ export function IoTDashboard() {
       if (err.message?.includes('cancelled') || err.message?.includes('chooser')) {
         friendlyMessage = '🔍 No device selected. Please click "Connect IoT Kit via BLE" again and select "EdgeChain-Demo" from the list.';
       } else if (err.message?.includes('not found') || err.message?.includes('No device')) {
-        friendlyMessage = '📡 No Arduino found nearby. Make sure your Arduino is powered on, has EdgeChain firmware flashed, and is within 10 meters.';
+        friendlyMessage = '📡 No Sensor Node found nearby. Make sure your Sensor Node is powered on, has EdgeChain firmware flashed, and is within 10 meters.';
       } else if (err.message?.includes('permission') || err.message?.includes('denied')) {
         friendlyMessage = '🔒 Bluetooth permission denied. Please enable Bluetooth in your browser settings and try again.';
       } else if (err.message?.includes('not supported')) {
         friendlyMessage = '⚠️ Web Bluetooth not supported. Please use Chrome, Edge, or Opera browser.';
       } else if (err.message?.includes('GATT') || err.message?.includes('connect')) {
-        friendlyMessage = '⚡ Connection failed. Make sure the Arduino is not already connected to another device, then try again.';
+        friendlyMessage = '⚡ Connection failed. Make sure the Sensor Node is not already connected to another device, then try again.';
       } else if (err.message) {
         friendlyMessage = `❌ Connection error: ${err.message}`;
       }
@@ -1074,7 +1116,7 @@ export function IoTDashboard() {
       else {
         console.log('⚠️  DIRECT MODE: Submitting without privacy...');
 
-        const response = await fetch(`${API_BASE}/api/arduino/simulate`, {
+        const response = await fetch(`${API_BASE}/api/sensor-node/simulate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1127,7 +1169,7 @@ export function IoTDashboard() {
   };
 
   /**
-   * Start training FL model with Arduino sensor data
+   * Start training FL model with Sensor Node data
    */
   const handleTrainWithSensorData = () => {
     // Store sensor data in localStorage for FL training to access
@@ -1138,7 +1180,7 @@ export function IoTDashboard() {
       return;
     }
 
-    localStorage.setItem('arduino_sensor_data', JSON.stringify({
+    localStorage.setItem('sensor_node_data', JSON.stringify({
       sensorData,
       averages,
       farmMetadata,
@@ -1195,9 +1237,9 @@ export function IoTDashboard() {
           <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
             <div className="mb-6 text-center space-y-3">
               <div className="text-5xl">📡</div>
-              <h2 className="text-2xl font-semibold">Connect Your Arduino IoT Kit</h2>
+              <h2 className="text-2xl font-semibold">Connect Your Sensor Node Kit</h2>
               <p className="text-sm text-gray-600">
-                Connect your Arduino Nano 33 BLE Sense via Bluetooth to start earning rewards
+                Connect your ESP32 Sensor Node via Bluetooth to start earning rewards
               </p>
             </div>
 
@@ -1205,10 +1247,10 @@ export function IoTDashboard() {
             <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Requirements</p>
               <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
-                <li>Arduino Nano 33 BLE Sense with EdgeChain firmware flashed</li>
+                <li>ESP32 Sensor Node with EdgeChain firmware flashed</li>
                 <li>Wallet connected (for device ownership)</li>
                 <li>Browser with Web Bluetooth support (Chrome, Edge, Opera)</li>
-                <li>Arduino powered on and within BLE range (~10 meters)</li>
+                <li>Sensor Node powered on and within BLE range (~10 meters)</li>
               </ul>
             </div>
 
@@ -1217,7 +1259,7 @@ export function IoTDashboard() {
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">How it works</p>
               <ol className="text-sm text-gray-600 space-y-1 list-decimal list-inside">
                 <li>Click “Connect IoT Kit” below</li>
-                <li>Select your Arduino from BLE picker (named “EdgeChain-XXXX”)</li>
+                <li>Select your Sensor Node from BLE picker (named “EdgeChain-XXXX”)</li>
                 <li>Device auto-registers to your wallet on first reading</li>
                 <li>Start earning 0.1 DUST per verified reading</li>
               </ol>
@@ -1250,14 +1292,14 @@ export function IoTDashboard() {
               <p className="text-sm text-gray-600">
                 Need EdgeChain firmware? Download it{' '}
                 <a
-                  href="https://github.com/solkem/edgechain-midnight-hackathon/blob/main/arduino/edgechain_iot/edgechain_iot.ino"
+                  href="https://github.com/solkem/edgechain/blob/main/firmware/esp32-ndani/src/main.cpp"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-semibold text-blue-600 hover:text-blue-700"
                 >
                   here
                 </a>{' '}
-                and flash to your Arduino Nano 33 BLE Sense.
+                and flash to your ESP32 Sensor Node.
               </p>
             </div>
           </div>
@@ -1382,7 +1424,7 @@ export function IoTDashboard() {
             </details>
 
             {/* PRIORITY 2 & 3: INCENTIVES */}
-            <div className="grid gap-6 md:grid-cols-1">
+            <div className="grid gap-6 md:grid-cols-2">
               {/* tDUST INCENTIVES */}
               <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
                 <div className="mb-4 flex items-center gap-2 text-lg font-semibold">
@@ -1415,6 +1457,54 @@ export function IoTDashboard() {
                     Claim rewards
                   </button>
                 </div>
+              </div>
+
+              {/* MARS Reward Decision */}
+              <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                <div className="mb-4 flex items-center gap-2 text-lg font-semibold">
+                  <span>🧭</span> MARS Reward Decision
+                </div>
+
+                {latestMarsDecision ? (
+                  <div className="space-y-4">
+                    <div className={`rounded-lg border p-4 ${getMarsActionTone(latestMarsDecision.score.action)}`}>
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Action</p>
+                          <p className="text-2xl font-bold capitalize text-black">
+                            {latestMarsDecision.score.action.replace('_', ' ')}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Reward</p>
+                          <p className="text-2xl font-bold text-black">
+                            {latestMarsDecision.reward.toFixed(3)}
+                          </p>
+                          <p className="text-xs text-gray-600">{latestMarsDecision.rewardUnit}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <MarsMetric label="Composite" value={latestMarsDecision.score.composite} />
+                      <MarsMetric label="Physical" value={latestMarsDecision.score.physicalPlausibility} />
+                      <MarsMetric label="Attestation" value={latestMarsDecision.score.hasScore} boolean />
+                      <MarsMetric label="Eligible" value={latestMarsDecision.score.eligibleForReward ? 1 : 0} boolean />
+                    </div>
+
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-600">
+                      Source: <span className="font-semibold text-black">
+                        {latestMarsDecision.source === 'private-proof' ? 'Private ZK proof' : 'Signed sensor reading'}
+                      </span>
+                      <span className="mx-2">•</span>
+                      {new Date(latestMarsDecision.decidedAt).toLocaleTimeString()}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">
+                    Submit a verified reading to see the MARS accept, flag, or reject decision.
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1595,4 +1685,37 @@ export function IoTDashboard() {
       </div>
     </div>
   );
+}
+
+function MarsMetric({ label, value, boolean = false }: { label: string; value: number; boolean?: boolean }) {
+  return (
+    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</p>
+      <p className="text-lg font-bold text-black">{formatMarsScore(value, boolean)}</p>
+    </div>
+  );
+}
+
+function formatMarsScore(value: number, boolean: boolean): string {
+  if (boolean && value === 1) {
+    return 'Yes';
+  }
+
+  if (boolean && value === 0) {
+    return 'No';
+  }
+
+  return value.toFixed(3);
+}
+
+function getMarsActionTone(action: MarsScore['action']): string {
+  if (action === 'accept') {
+    return 'border-green-200 bg-green-50';
+  }
+
+  if (action === 'flag') {
+    return 'border-yellow-200 bg-yellow-50';
+  }
+
+  return 'border-red-200 bg-red-50';
 }

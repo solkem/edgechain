@@ -1,23 +1,23 @@
 /**
- * Arduino IoT Sensor Integration for Federated Learning
+ * Sensor Node Integration for Federated Learning
  *
- * This module converts Arduino sensor data (temperature, humidity) into
+ * This module converts Sensor Node data (temperature, humidity) into
  * training data for the FL crop yield prediction model.
  *
  * Flow:
- * Arduino Sensors → BLE Gateway → Storage → Training Data → FL Model
+ * Sensor Node → BLE Gateway → Storage → Training Data → FL Model
  */
 
 import type { FarmDataset, FarmDataPoint } from './types';
 
 /**
- * Arduino sensor reading from storage
+ * Sensor Node reading from storage
  */
-export interface ArduinoSensorData {
+export interface SensorNodeData {
   timestamp: number;
   temperature: number; // °C
   humidity: number; // %
-  source: 'arduino' | 'simulated';
+  source: 'sensor-node' | 'simulated';
 }
 
 /**
@@ -33,10 +33,10 @@ export interface FarmMetadata {
 }
 
 /**
- * Stored Arduino data bundle
+ * Stored Sensor Node data bundle
  */
-export interface ArduinoDataBundle {
-  sensorData: ArduinoSensorData[];
+export interface SensorNodeDataBundle {
+  sensorData: SensorNodeData[];
   averages: {
     temperature: number;
     humidity: number;
@@ -47,52 +47,52 @@ export interface ArduinoDataBundle {
 }
 
 /**
- * Load Arduino sensor data from localStorage
+ * Load Sensor Node data from localStorage
  */
-export function loadArduinoSensorData(): ArduinoDataBundle | null {
+export function loadSensorNodeData(): SensorNodeDataBundle | null {
   try {
-    const data = localStorage.getItem('arduino_sensor_data');
+    const data = localStorage.getItem('sensor_node_data');
     if (!data) return null;
 
-    const bundle = JSON.parse(data) as ArduinoDataBundle;
-    console.log(`📡 Loaded ${bundle.sensorData.length} Arduino sensor readings`);
+    const bundle = JSON.parse(data) as SensorNodeDataBundle;
+    console.log(`📡 Loaded ${bundle.sensorData.length} Sensor Node readings`);
     return bundle;
   } catch (error) {
-    console.error('Failed to load Arduino sensor data:', error);
+    console.error('Failed to load Sensor Node data:', error);
     return null;
   }
 }
 
 /**
- * Clear Arduino sensor data from storage
+ * Clear Sensor Node data from storage
  */
-export function clearArduinoSensorData(): void {
-  localStorage.removeItem('arduino_sensor_data');
-  console.log('🗑️ Cleared Arduino sensor data');
+export function clearSensorNodeData(): void {
+  localStorage.removeItem('sensor_node_data');
+  console.log('🗑️ Cleared Sensor Node data');
 }
 
 /**
- * Convert Arduino sensor data to FL training dataset
+ * Convert Sensor Node data to FL training dataset
  *
  * Strategy:
- * - Use temperature and humidity from Arduino sensors
+ * - Use temperature and humidity from Sensor Nodes
  * - Estimate rainfall from humidity patterns (higher humidity = more rain)
  * - Combine with farm metadata (soil, irrigation, fertilizer)
  * - Generate realistic yield predictions based on conditions
  *
- * @param bundle - Arduino data bundle
+ * @param bundle - Sensor Node data bundle
  * @param farmerId - Midnight wallet address
  * @param numSeasons - Number of historical seasons to simulate
  */
-export function convertArduinoDataToFLDataset(
-  bundle: ArduinoDataBundle,
+export function convertSensorNodeDataToFLDataset(
+  bundle: SensorNodeDataBundle,
   farmerId: string,
   numSeasons: number = 20
 ): FarmDataset {
   const { averages, farmMetadata, sensorData } = bundle;
   const dataPoints: FarmDataPoint[] = [];
 
-  console.log('🔄 Converting Arduino sensor data to FL training dataset...');
+  console.log('🔄 Converting Sensor Node data to FL training dataset...');
   console.log(`   Temperature: ${averages.temperature.toFixed(1)}°C`);
   console.log(`   Humidity: ${averages.humidity.toFixed(1)}%`);
   console.log(`   Readings: ${averages.readings}`);
@@ -156,7 +156,7 @@ export function convertArduinoDataToFLDataset(
     },
   };
 
-  console.log(`✅ Generated ${numSeasons} training samples from Arduino data`);
+  console.log(`✅ Generated ${numSeasons} training samples from Sensor Node data`);
   console.log(`   Crop: ${farmMetadata.cropType}`);
   console.log(`   Average yield: ${(dataPoints.reduce((sum, d) => sum + d.yield, 0) / numSeasons).toFixed(2)} tons/ha`);
 
@@ -293,9 +293,9 @@ function calculateYield(params: {
 }
 
 /**
- * Get summary of Arduino data for display
+ * Get summary of Sensor Node data for display
  */
-export function getArduinoDataSummary(bundle: ArduinoDataBundle): {
+export function getSensorNodeDataSummary(bundle: SensorNodeDataBundle): {
   temperature: string;
   humidity: string;
   readings: number;
@@ -322,9 +322,9 @@ export function getArduinoDataSummary(bundle: ArduinoDataBundle): {
 }
 
 /**
- * Check if Arduino data is available and valid
+ * Check if Sensor Node data is available and valid
  */
-export function hasValidArduinoData(): boolean {
-  const bundle = loadArduinoSensorData();
+export function hasValidSensorNodeData(): boolean {
+  const bundle = loadSensorNodeData();
   return bundle !== null && bundle.sensorData.length >= 5;
 }

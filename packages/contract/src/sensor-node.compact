@@ -3,7 +3,7 @@ pragma language_version >= 0.16.0;
 import CompactStandardLibrary;
 
 /**
- * EdgeChain Arduino IoT Smart Contract - Production Version
+ * EdgeChain Sensor Node Smart Contract - Production Version
  *
  * Architecture:
  * - Single Merkle Root: One tree for all devices (larger anonymity set)

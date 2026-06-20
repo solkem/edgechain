@@ -14,8 +14,9 @@
     "lint": "eslint src"
   },
   "dependencies": {
-    "@edgechain/api": "workspace:*",
     "@edgechain/contract": "workspace:*",
+    "@midnight-ntwrk/midnight-js-network-id": "^3.0.0",
+    "@midnight-ntwrk/midnight-js-types": "^3.0.0",
     "pino": "^8.16.1",
     "ws": "^8.14.2"
   },

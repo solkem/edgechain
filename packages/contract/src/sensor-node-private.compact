@@ -3,7 +3,7 @@ pragma language_version >= 0.16.0;
 import CompactStandardLibrary;
 
 /**
- * EdgeChain Arduino IoT Privacy Circuit - Simplified Single-Tree Implementation
+ * EdgeChain Sensor Node Privacy Circuit - Simplified Single-Tree Implementation
  *
  * This circuit implements the Two-Layer Privacy Architecture:
  * - Layer 1 (Registration): Device proves ownership of private key (done off-chain)

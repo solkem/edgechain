@@ -186,7 +186,7 @@ Phase B introduces Midnight at the precise point where its guarantees become str
 
 Demonstrable today:
 
-- ESP32 firmware scaffolding in [`firmware/esp32-msingi`](firmware/esp32-msingi)
+- ESP32 firmware scaffolding in [`firmware/esp32-ndani`](firmware/esp32-ndani)
 - In-repo Node.js proof server in [`proof-server`](proof-server)
 - Unified backend flows in [`server`](server)
 - React UI in [`packages/ui`](packages/ui)
@@ -214,14 +214,18 @@ Longer-term directions:
 
 ## Repository Layout
 
+For a production-domain view of the current folders and the recommended target
+shape, see [`ARCHITECTURE.md`](ARCHITECTURE.md).
+
 ```text
 edgechain/
 |- .github/
 |  |- workflows/        CI/CD, including Python Lab validation
 |- packages/
 |  |- contract/         Compact contracts and deployment scripts
+|  |- fl/               Production FL aggregation and model-update types
+|  |- mars/             Production MARS scoring and reward eligibility
 |  |- ui/               React frontend
-|  |- api/              Workspace API package
 |  |- cli/              CLI tools and scripts
 |- research/
 |  |- python-lab/       Synthetic FL, MARS scoring, attack, and oversight experiments
@@ -232,8 +236,6 @@ edgechain/
 |- docs/                Project documentation
 |- scripts/             Repository toolchain checks
 |- demo/                Demo assets and supporting material
-|- arduino/             Deprecated BLE-era firmware path (kept for reference)
-|- gateway/             Legacy gateway tooling
 |- compact/             Contract compilation artifacts
 ```
 
@@ -243,7 +245,7 @@ Current deployment artifacts recorded in [`packages/contract/deployment.json`](p
 
 | Contract | Address |
 |----------|---------|
-| Arduino IoT | `02001d6243d08ba466d6a3e32d9a04dd1d283d8fe2b9714cde81a25fa9081087b30a` |
+| Sensor Node | `02001d6243d08ba466d6a3e32d9a04dd1d283d8fe2b9714cde81a25fa9081087b30a` |
 | Federated Learning | `02002f44e466b8c8a1422e269156a6bb4e098cde1007203adf7181eb6659211dbe39` |
 
 ### Live Services
@@ -251,7 +253,7 @@ Current deployment artifacts recorded in [`packages/contract/deployment.json`](p
 | Service | URL |
 |---------|-----|
 | Demo UI | [edgechain-midnight-ui.fly.dev](https://edgechain-midnight-ui.fly.dev) |
-| API Backend | [edgechain-api.fly.dev](https://edgechain-api.fly.dev) |
+| Unified Backend | [edgechain-midnight.fly.dev](https://edgechain-midnight.fly.dev) |
 | IPFS Service | [edgechain-ipfs.fly.dev](https://edgechain-ipfs.fly.dev) |
 
 ---

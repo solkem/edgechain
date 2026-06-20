@@ -1,5 +1,5 @@
 -- EdgeChain Database Schema
--- Production-grade persistent storage for Arduino IoT data
+-- Production-grade persistent storage for Sensor Node data
 
 -- Device Registry (Single-Tree Architecture)
 CREATE TABLE IF NOT EXISTS devices (
@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS devices (
   device_id TEXT,
   metadata TEXT, -- JSON
   merkle_leaf_hash TEXT NOT NULL,
-  authorization_reward_paid INTEGER DEFAULT 0, -- Boolean: 0.1 tDUST paid for verified readings
+  authorization_reward_paid INTEGER DEFAULT 0, -- Boolean: one-time authorization reward paid
   created_at INTEGER DEFAULT (strftime('%s', 'now'))
 );
 
@@ -43,6 +43,7 @@ CREATE INDEX IF NOT EXISTS idx_readings_created ON sensor_readings(created_at);
 CREATE TABLE IF NOT EXISTS batch_proofs (
   batch_id TEXT PRIMARY KEY,
   device_pubkey TEXT NOT NULL,
+  collection_mode TEXT,
   readings_count INTEGER NOT NULL,
   proof_data TEXT, -- ZK proof JSON
   public_inputs TEXT, -- JSON
@@ -90,6 +91,7 @@ CREATE INDEX IF NOT EXISTS idx_nullifiers_batch ON nullifiers(batch_id);
 -- Merkle Roots (historical tracking - single tree)
 CREATE TABLE IF NOT EXISTS merkle_roots (
   root_hash TEXT PRIMARY KEY,
+  collection_mode TEXT,
   device_count INTEGER NOT NULL,
   published_to_chain INTEGER DEFAULT 0, -- Boolean
   tx_hash TEXT,
@@ -122,6 +124,9 @@ CREATE TABLE IF NOT EXISTS spent_nullifiers (
   epoch INTEGER NOT NULL,
   data_hash TEXT NOT NULL,
   reward REAL NOT NULL,
+  mars_action TEXT,
+  mars_composite REAL,
+  mars_score_json TEXT,
   spent_at INTEGER DEFAULT (strftime('%s', 'now')),
   PRIMARY KEY (nullifier, epoch)
 );
@@ -141,7 +146,11 @@ CREATE TABLE IF NOT EXISTS zk_proof_submissions (
   temperature REAL NOT NULL,
   humidity REAL NOT NULL,
   timestamp_device INTEGER NOT NULL,
-  reward REAL NOT NULL, -- Fixed at 0.1 tDUST for all devices
+  collection_mode TEXT,
+  reward REAL NOT NULL, -- MARS-gated reward amount
+  mars_action TEXT,
+  mars_composite REAL,
+  mars_score_json TEXT,
   ipfs_cid TEXT, -- Optional: IPFS storage
   verified INTEGER DEFAULT 1, -- Boolean: proof verified
   created_at INTEGER DEFAULT (strftime('%s', 'now')),

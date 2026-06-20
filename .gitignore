@@ -49,6 +49,7 @@ compile-output.log
 **/*.md
 !README.md
 !**/README.md
+!ARCHITECTURE.md
 **/*.pdf
 private-docs/
 

@@ -36,7 +36,7 @@ console.log(`   Timestamp: ${reading.timestamp}`);
 // Step 1: Generate ZK proof
 console.log('\n🔐 Step 1: Generating ZK Proof...');
 
-const proofResponse = await fetch('http://localhost:3001/api/arduino/zk/generate-proof', {
+const proofResponse = await fetch('http://localhost:3001/api/sensor-node/zk/generate-proof', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -62,7 +62,7 @@ console.log(`   Epoch: ${proofData.public_inputs.epoch}`);
 // Step 2: Submit private reading with IPFS upload
 console.log('\n📤 Step 2: Submitting Private Reading with IPFS Upload...');
 
-const submitResponse = await fetch('http://localhost:3001/api/arduino/zk/submit-private-reading', {
+const submitResponse = await fetch('http://localhost:3001/api/sensor-node/zk/submit-private-reading', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -96,7 +96,7 @@ if (submitData.ipfs_cid) {
   // Step 3: Retrieve from IPFS to verify
   console.log('\n🔍 Step 3: Retrieving from IPFS to verify...');
 
-  const retrieveResponse = await fetch(`http://localhost:3001/api/arduino/zk/ipfs/${submitData.ipfs_cid}`);
+  const retrieveResponse = await fetch(`http://localhost:3001/api/sensor-node/zk/ipfs/${submitData.ipfs_cid}`);
 
   if (retrieveResponse.ok) {
     const retrievedData = await retrieveResponse.json();
@@ -113,7 +113,7 @@ if (submitData.ipfs_cid) {
 
 // Step 4: Check stats
 console.log('\n📊 Step 4: Checking Stats...');
-const statsResponse = await fetch('http://localhost:3001/api/arduino/zk/stats');
+const statsResponse = await fetch('http://localhost:3001/api/sensor-node/zk/stats');
 const stats = await statsResponse.json();
 
 console.log('\n📈 Current Statistics:');

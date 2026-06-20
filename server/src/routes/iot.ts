@@ -1,5 +1,5 @@
 /**
- * Arduino Integration Routes
+ * Sensor Node Integration Routes
  *
  * Handles device registration, BLE data, and ZK proof generation
  */
@@ -11,6 +11,7 @@ import { DatabasePersistenceService } from '../services/databasePersistence';
 import { DeviceAuthService } from '../services/deviceAuth';
 import { NullifierTrackingService } from '../services/nullifierTracking';
 import { ZKProofService } from '../services/zkProofService';
+import { MarsScoringService, CollectionMode } from '../services/marsScoring';
 import { ipfsStorage } from '../services/ipfsStorage';
 import { SignedReading } from '../types/iot';
 // TODO: Re-enable in Phase 3 (Midnight SDK integration)
@@ -23,11 +24,12 @@ const dbService = new DatabasePersistenceService();
 const authService = new DeviceAuthService();
 const nullifierService = new NullifierTrackingService();
 const zkProofService = new ZKProofService();
+const marsScoringService = new MarsScoringService();
 
 // ============= DEVICE AUTHENTICATION ENDPOINTS =============
 
 /**
- * POST /api/arduino/auth/request-challenge
+ * POST /api/sensor-node/auth/request-challenge
  * Request authentication challenge for device registration
  * Device must sign this challenge to prove ownership of private key
  */
@@ -59,7 +61,7 @@ router.post('/auth/request-challenge', (req, res) => {
 });
 
 /**
- * POST /api/arduino/auth/verify-signature
+ * POST /api/sensor-node/auth/verify-signature
  * Verify device signature on challenge
  * This proves the device owns the private key corresponding to device_pubkey
  */
@@ -97,9 +99,9 @@ router.post('/auth/verify-signature', async (req, res) => {
 });
 
 /**
- * POST /api/arduino/auth/generate-keypair
+ * POST /api/sensor-node/auth/generate-keypair
  * Generate ED25519 keypair for testing (DEMO ONLY)
- * In production, this should ONLY run on the Arduino device!
+ * In production, this should ONLY run on the Sensor Node!
  * Set DEMO_MODE=true in environment to enable.
  */
 router.post('/auth/generate-keypair', async (req, res) => {
@@ -134,7 +136,7 @@ router.post('/auth/generate-keypair', async (req, res) => {
 // ============= DEVICE REGISTRATION ENDPOINTS =============
 
 /**
- * POST /api/arduino/registry/register
+ * POST /api/sensor-node/registry/register
  * Register a new IoT device with collection mode
  * REQUIRES: owner_wallet (Lace wallet address)
  * OPTIONAL: authenticated (if true, verifies device signature)
@@ -209,7 +211,7 @@ router.post('/registry/register', async (req, res) => {
 });
 
 /**
- * POST /api/arduino/registry/check
+ * POST /api/sensor-node/registry/check
  * Check if device is in approved registry
  */
 router.post('/registry/check', (req, res) => {
@@ -232,7 +234,7 @@ router.post('/registry/check', (req, res) => {
 });
 
 /**
- * POST /api/arduino/registry/proof
+ * POST /api/sensor-node/registry/proof
  * Get Merkle proof for a device
  */
 router.post('/registry/proof', (req, res) => {
@@ -258,7 +260,7 @@ router.post('/registry/proof', (req, res) => {
 });
 
 /**
- * GET /api/arduino/registry/devices
+ * GET /api/sensor-node/registry/devices
  * List all registered devices
  */
 router.get('/registry/devices', (_req, res) => {
@@ -278,8 +280,8 @@ router.get('/registry/devices', (_req, res) => {
 });
 
 /**
- * POST /api/arduino/prove
- * Generate ZK proof for Arduino reading
+ * POST /api/sensor-node/prove
+ * Generate ZK proof for Sensor Node reading
  * (Gateway endpoint - called after receiving BLE data)
  */
 router.post('/prove', async (req, res) => {
@@ -337,9 +339,20 @@ router.post('/prove', async (req, res) => {
       },
     };
 
+    const expectedReward = marsScoringService.calculateSensorReward({
+      siteId: device_pubkey,
+      roundId: epoch,
+      temperature: Number(reading_obj.t ?? reading_obj.temperature ?? 0),
+      humidity: Number(reading_obj.h ?? reading_obj.humidity ?? 0),
+      timestamp: Number(reading_obj.ts ?? Date.now()),
+      collectionMode: normalizeCollectionMode(claimed_mode),
+      hasValidAttestation: true,
+    });
+
     console.log('✅ ZK Proof generated successfully');
     console.log(`   Collection mode: ${claimed_mode}`);
-    console.log(`   Expected reward: ${claimed_mode === 'auto' ? '0.1' : '0.02'} DUST\n`);
+    console.log(`   MARS action: ${expectedReward.score.action}`);
+    console.log(`   Expected reward: ${expectedReward.reward} ${expectedReward.rewardUnit}\n`);
 
     res.json(mockProof);
   } catch (error: any) {
@@ -349,17 +362,11 @@ router.post('/prove', async (req, res) => {
 });
 
 /**
- * POST /api/arduino/submit-proof
+ * POST /api/sensor-node/submit-proof
  * Submit proof to backend verifier
  */
 // NOTE: Nullifier tracking now uses ONLY database-backed NullifierTrackingService
 // for consistency across server restarts (removed in-memory Set per audit)
-
-// Reward amounts based on collection mode
-const REWARD_AMOUNTS = {
-  auto: 0.1,    // Higher reward for automatic collection
-  manual: 0.02, // Lower reward for manual entry (testing/fallback)
-};
 
 router.post('/submit-proof', async (req, res) => {
   try {
@@ -420,27 +427,43 @@ router.post('/submit-proof', async (req, res) => {
     // 4. TODO: Verify actual ZK proof using Compact/Midnight
     // For now, mock verification passes
 
-    // 5. Calculate reward based on collection_mode
-    const reward = REWARD_AMOUNTS[collection_mode as 'auto' | 'manual'] || 0;
+    // 5. Calculate reward eligibility through MARS
+    const collectionMode = normalizeCollectionMode(collection_mode);
+    const rewardDecision = marsScoringService.calculateSensorReward({
+      siteId: claim_nullifier,
+      roundId: epoch || currentEpoch,
+      temperature: Number(data_payload.t),
+      humidity: Number(data_payload.h),
+      timestamp: Number(data_payload.ts ?? Date.now()),
+      collectionMode,
+      hasValidAttestation: true,
+      metadata: {
+        dataHash: data_hash,
+      },
+    });
+    const reward = rewardDecision.reward;
 
     // 6. Mark nullifier as spent in database (persistent across restarts)
     nullifierService.markNullifierSpent(
       claim_nullifier,
       epoch || currentEpoch,
       data_hash || 'direct_submission',
-      reward
+      reward,
+      rewardDecision.score
     );
 
     const verification = {
       valid: true,
       reward,
-      collection_mode,
+      collection_mode: collectionMode,
+      mars_score: rewardDecision.score,
       datapoint_added: true,
     };
 
     console.log('✅ VERIFIED!');
-    console.log(`🔧 Collection mode: ${collection_mode}`);
-    console.log(`💰 Reward: ${reward} DUST (${collection_mode} collection)`);
+    console.log(`🔧 Collection mode: ${collectionMode}`);
+    console.log(`🧭 MARS action: ${rewardDecision.score.action} (${rewardDecision.score.composite.toFixed(3)})`);
+    console.log(`💰 Reward: ${reward} tDUST (${collectionMode} collection)`);
     console.log('📊 Datapoint added to aggregation\n');
 
     res.json(verification);
@@ -454,8 +477,8 @@ router.post('/submit-proof', async (req, res) => {
 });
 
 /**
- * POST /api/arduino/simulate
- * Simulate receiving Arduino data (for testing without hardware)
+ * POST /api/sensor-node/simulate
+ * Simulate receiving Sensor Node data (for testing without hardware)
  * Persists reading to database
  */
 router.post('/simulate', (req, res) => {
@@ -495,7 +518,7 @@ router.post('/simulate', (req, res) => {
 // ============= ZK PROOF GENERATION ENDPOINTS =============
 
 /**
- * POST /api/arduino/zk/generate-proof
+ * POST /api/sensor-node/zk/generate-proof
  * Generate ZK proof for private sensor reading
  * This endpoint creates a zero-knowledge proof that demonstrates device authorization
  * without revealing device identity
@@ -561,7 +584,7 @@ router.post('/zk/generate-proof', async (req, res) => {
 });
 
 /**
- * POST /api/arduino/zk/submit-private-reading
+ * POST /api/sensor-node/zk/submit-private-reading
  * Submit anonymous sensor reading with ZK proof
  * This is the privacy-preserving alternative to direct reading submission
  */
@@ -614,16 +637,29 @@ router.post('/zk/submit-private-reading', async (req, res) => {
       });
     }
 
-    // 4. Calculate reward
+    // 4. Calculate reward eligibility through MARS
     const collectionMode = public_inputs.collectionMode === 0 ? 'auto' : 'manual';
-    const reward = public_inputs.collectionMode === 0 ? 0.1 : 0.02;
+    const rewardDecision = marsScoringService.calculateSensorReward({
+      siteId: public_inputs.nullifier,
+      roundId: public_inputs.epoch,
+      temperature: Number(temperature),
+      humidity: Number(humidity),
+      timestamp: Number(timestamp ?? Date.now()),
+      collectionMode,
+      hasValidAttestation: true,
+      metadata: {
+        dataHash: public_inputs.dataHash,
+      },
+    });
+    const reward = rewardDecision.reward;
 
     // 5. Mark nullifier as spent
     nullifierService.markNullifierSpent(
       public_inputs.nullifier,
       public_inputs.epoch,
       public_inputs.dataHash,
-      reward
+      reward,
+      rewardDecision.score
     );
 
     // 6. Store anonymous reading in database
@@ -639,8 +675,11 @@ router.post('/zk/submit-private-reading', async (req, res) => {
         timestamp_device,
         collection_mode,
         reward,
+        mars_action,
+        mars_composite,
+        mars_score_json,
         verified
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const result = stmt.run(
@@ -653,12 +692,16 @@ router.post('/zk/submit-private-reading', async (req, res) => {
       timestamp,
       collectionMode,
       reward,
+      rewardDecision.score.action,
+      rewardDecision.score.composite,
+      JSON.stringify(rewardDecision.score),
       1 // verified = true
     );
 
     const submissionId = result.lastInsertRowid;
 
     console.log('✅ VERIFIED AND STORED IN DATABASE!');
+    console.log(`🧭 MARS action: ${rewardDecision.score.action} (${rewardDecision.score.composite.toFixed(3)})`);
     console.log(`💰 Reward: ${reward} tDUST`);
     console.log(`📊 Reading stored anonymously (ID: ${submissionId})`);
 
@@ -677,6 +720,7 @@ router.post('/zk/submit-private-reading', async (req, res) => {
         },
         collection_mode: collectionMode,
         reward,
+        mars_score: rewardDecision.score,
         verified: true,
         submitted_at: Math.floor(Date.now() / 1000),
       };
@@ -706,6 +750,7 @@ router.post('/zk/submit-private-reading', async (req, res) => {
       valid: true,
       reward,
       collection_mode: collectionMode,
+      mars_score: rewardDecision.score,
       nullifier: public_inputs.nullifier,
       epoch: public_inputs.epoch,
       ipfs_cid: ipfsCid,
@@ -718,7 +763,7 @@ router.post('/zk/submit-private-reading', async (req, res) => {
 });
 
 /**
- * GET /api/arduino/zk/stats
+ * GET /api/sensor-node/zk/stats
  * Get ZK proof statistics
  */
 router.get('/zk/stats', (_req, res) => {
@@ -756,7 +801,7 @@ router.get('/zk/stats', (_req, res) => {
 });
 
 /**
- * GET /api/arduino/zk/ipfs/:cid
+ * GET /api/sensor-node/zk/ipfs/:cid
  * Retrieve ZK proof from IPFS by CID
  * Demonstrates public verifiability while maintaining privacy!
  */
@@ -794,7 +839,7 @@ router.get('/zk/ipfs/:cid', async (req, res) => {
 });
 
 /**
- * GET /api/arduino/zk/submissions
+ * GET /api/sensor-node/zk/submissions
  * Get recent ZK proof submissions with IPFS links
  */
 router.get('/zk/submissions', (_req, res) => {
@@ -810,6 +855,9 @@ router.get('/zk/submissions', (_req, res) => {
         timestamp_device,
         collection_mode,
         reward,
+        mars_action,
+        mars_composite,
+        mars_score_json,
         ipfs_cid,
         verified,
         created_at
@@ -823,6 +871,7 @@ router.get('/zk/submissions', (_req, res) => {
     // Add IPFS gateway URLs
     const submissionsWithUrls = submissions.map((sub) => ({
       ...sub,
+      mars_score: parseMarsScore(sub.mars_score_json),
       ipfs_gateway_url: sub.ipfs_cid ? ipfsStorage.getGatewayUrl(sub.ipfs_cid) : null,
     }));
 
@@ -839,14 +888,14 @@ router.get('/zk/submissions', (_req, res) => {
 // ============= REAL-TIME READING SUBMISSION & REWARD DISTRIBUTION =============
 
 /**
- * POST /api/arduino/readings/submit
+ * POST /api/sensor-node/readings/submit
  * Submit sensor reading with signature for instant reward distribution
  *
  * This endpoint:
  * 1. Verifies EdDSA signature
  * 2. Checks device is registered
  * 3. Stores reading to database (simplified for demo)
- * 4. Distributes 0.1 tDUST reward instantly (for demo - every 5 seconds)
+ * 4. Uses MARS to determine reward eligibility for the demo transfer
  */
 router.post('/readings/submit', async (req, res) => {
   try {
@@ -906,11 +955,25 @@ router.post('/readings/submit', async (req, res) => {
     const readingId = `${device_pubkey}-${Date.now()}`;
     console.log(`💾 Saving reading: ${readingId}`);
 
-    // Step 6: Calculate reward (0.1 tDUST for auto-collection)
-    const rewardAmount = collection_mode === 'auto' ? 0.1 : 0.02;
+    // Step 6: Calculate reward eligibility through MARS
+    const normalizedCollectionMode = normalizeCollectionMode(collection_mode);
+    const rewardDecision = marsScoringService.calculateSensorReward({
+      siteId: device_pubkey,
+      roundId: Math.floor(Date.now() / 86_400_000),
+      temperature: Number(readingData.t ?? readingData.temperature),
+      humidity: Number(readingData.h ?? readingData.humidity),
+      timestamp: Number(readingData.ts ?? Date.now()),
+      collectionMode: normalizedCollectionMode,
+      hasValidAttestation: isValidSignature,
+      metadata: {
+        ownerWallet: owner_wallet,
+      },
+    });
+    const rewardAmount = rewardDecision.reward;
 
     // Step 7: Distribute tDUST reward (INSTANT for demo)
     console.log('\n💰 Distributing reward...');
+    console.log(`   MARS action: ${rewardDecision.score.action} (${rewardDecision.score.composite.toFixed(3)})`);
     console.log(`   Amount: ${rewardAmount} tDUST`);
     console.log(`   Recipient: ${owner_wallet}`);
 
@@ -927,6 +990,7 @@ router.post('/readings/submit', async (req, res) => {
       ipfs_cid: mockCid,
       reward_amount: rewardAmount,
       reward_unit: 'tDUST',
+      mars_score: rewardDecision.score,
       tx_hash: txHash,
       message: `Reading verified! ${rewardAmount} tDUST distributed to ${owner_wallet.slice(0, 10)}...`
     });
@@ -943,7 +1007,7 @@ router.post('/readings/submit', async (req, res) => {
 // ============= REWARD ENDPOINTS =============
 
 /**
- * POST /api/arduino/claim-rewards
+ * POST /api/sensor-node/claim-rewards
  * Transfer tDUST rewards from deployment wallet to farmer
  * TODO: Re-enable in Phase 3 (Midnight SDK integration)
  */
@@ -975,7 +1039,7 @@ router.post('/claim-rewards', async (req, res) => {
 });
 
 /**
- * GET /api/arduino/wallet-balance
+ * GET /api/sensor-node/wallet-balance
  * Get deployment wallet balance
  * TODO: Re-enable in Phase 3 (Midnight SDK integration)
  */
@@ -993,7 +1057,7 @@ router.get('/wallet-balance', async (_req, res) => {
 });
 
 /**
- * GET /api/arduino/my-device/:wallet
+ * GET /api/sensor-node/my-device/:wallet
  * Get device information for a specific wallet address
  */
 router.get('/my-device/:wallet', (req, res) => {
@@ -1028,7 +1092,7 @@ router.get('/my-device/:wallet', (req, res) => {
 });
 
 /**
- * GET /api/arduino/my-readings/:wallet
+ * GET /api/sensor-node/my-readings/:wallet
  * Get sensor readings for a specific wallet's device
  */
 router.get('/my-readings/:wallet', (req, res) => {
@@ -1053,7 +1117,7 @@ router.get('/my-readings/:wallet', (req, res) => {
 });
 
 /**
- * GET /api/arduino/registry
+ * GET /api/sensor-node/registry
  * Get registry status with dual merkle roots
  */
 router.get('/registry', (_req, res) => {
@@ -1073,7 +1137,7 @@ router.get('/registry', (_req, res) => {
 });
 
 /**
- * POST /api/arduino/reset
+ * POST /api/sensor-node/reset
  * Reset device registry (demo purposes only)
  * PROTECTED: Requires DEMO_MODE=true
  */
@@ -1094,5 +1158,21 @@ router.post('/reset', (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+function normalizeCollectionMode(value: unknown): CollectionMode {
+  return value === 'manual' ? 'manual' : 'auto';
+}
+
+function parseMarsScore(value: string | null | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
 
 export { router as iotRouter, registryService };

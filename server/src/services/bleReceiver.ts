@@ -1,13 +1,11 @@
 /**
- * BLE Receiver Service (Node.js Gateway)
+ * BLE Receiver Service
  *
- * This is a mock/simulation for the gateway BLE receiver
+ * This is a mock/simulation for local BLE receiver behavior.
  * In production, this would use the Web Bluetooth API (browser) or noble (Node.js)
- *
- * For the actual demo, use the browser-based implementation in gateway/ble_receiver.ts
  */
 
-import { SignedReading, ArduinoReading } from '../types/iot';
+import { SignedReading, SensorNodeReading } from '../types/iot';
 
 export class BLEReceiverService {
   private onReadingCallback?: (reading: SignedReading) => void;
@@ -24,9 +22,9 @@ export class BLEReceiverService {
   }
 
   /**
-   * Parse Arduino payload
+   * Parse Sensor Node payload
    */
-  parseArduinoPayload(buffer: ArrayBuffer): SignedReading {
+  parseSensorNodePayload(buffer: ArrayBuffer): SignedReading {
     const view = new Uint8Array(buffer);
     let idx = 0;
 
@@ -58,7 +56,7 @@ export class BLEReceiverService {
   }
 
   /**
-   * Simulate receiving a reading from Arduino (for testing)
+   * Simulate receiving a reading from Sensor Node (for testing)
    */
   simulateReading(
     temperature: number,
@@ -72,7 +70,7 @@ export class BLEReceiverService {
       ts,
     });
 
-    // Mock signature (in real system, this comes from Arduino)
+    // Mock signature (in real system, this comes from Sensor Node)
     const signature = 'a'.repeat(128); // 64 bytes = 128 hex chars
 
     const signedReading: SignedReading = {

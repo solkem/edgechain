@@ -45,7 +45,45 @@ export function initializeDatabase() {
     }
   })();
 
+  ensureRuntimeColumns();
+
   console.log(`   ✅ Database initialized at: ${DB_PATH}`);
+}
+
+function ensureRuntimeColumns() {
+  ensureColumns('batch_proofs', [
+    ['collection_mode', 'TEXT'],
+  ]);
+
+  ensureColumns('merkle_roots', [
+    ['collection_mode', 'TEXT'],
+  ]);
+
+  ensureColumns('spent_nullifiers', [
+    ['mars_action', 'TEXT'],
+    ['mars_composite', 'REAL'],
+    ['mars_score_json', 'TEXT'],
+  ]);
+
+  ensureColumns('zk_proof_submissions', [
+    ['collection_mode', 'TEXT'],
+    ['mars_action', 'TEXT'],
+    ['mars_composite', 'REAL'],
+    ['mars_score_json', 'TEXT'],
+  ]);
+}
+
+function ensureColumns(tableName: string, columns: [string, string][]) {
+  const existingColumns = new Set(
+    (db.prepare(`PRAGMA table_info(${tableName})`).all() as { name: string }[])
+      .map((column) => column.name)
+  );
+
+  for (const [columnName, columnType] of columns) {
+    if (!existingColumns.has(columnName)) {
+      db.prepare(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnType}`).run();
+    }
+  }
 }
 
 // Device operations (single-tree architecture)

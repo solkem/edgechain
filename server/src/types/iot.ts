@@ -1,15 +1,15 @@
 /**
- * Arduino Integration Types
+ * Sensor Node integration types
  */
 
 export interface SignedReading {
   reading_json: string;
   signature: string; // hex
   device_pubkey: string; // hex
-  timestamp: number; // when received by gateway
+  timestamp: number; // when received by the local receiver
 }
 
-export interface ArduinoReading {
+export interface SensorNodeReading {
   t: number; // temperature in Celsius
   h: number; // humidity percentage
   ts: number; // device timestamp (seconds since boot)

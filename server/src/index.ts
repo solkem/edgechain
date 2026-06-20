@@ -30,13 +30,6 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '50mb' })); // Large limit for model weights
 
-// Serve gateway HTML from the gateway directory
-// __dirname in production: /app/dist
-// Gateway location in Docker: /app/gateway
-const gatewayPath = path.join(__dirname, '../gateway');
-console.log(`📁 Serving gateway files from: ${gatewayPath}`);
-app.use('/gateway', express.static(gatewayPath));
-
 // Serve frontend static files from packages/ui/dist
 // __dirname in production: /app/dist
 // Frontend location in Docker: /app/packages/ui/dist
@@ -71,19 +64,19 @@ app.get('/api', (_req, res) => {
     description: 'Unified backend for EdgeChain: Federated Learning + IoT devices with Midnight Testnet',
     services: {
       'Federated Learning': '/api/fl',
-      'Arduino IoT': '/api/arduino',
+      'Sensor Node': '/api/sensor-node',
       'Manual Observations': '/api/manual-observations',
       'WhatsApp Pilot Adapter': '/api/whatsapp',
-      'Device Registry': '/api/arduino/registry',
+      'Device Registry': '/api/sensor-node/registry',
       'Database Stats': '/api/db-stats'
     },
     endpoints: {
       health: '/health',
       fl: '/api/fl',
-      arduino: '/api/arduino',
+      sensor_node: '/api/sensor-node',
       manual_observations: '/api/manual-observations',
       whatsapp: '/api/whatsapp',
-      registry: '/api/arduino/registry',
+      registry: '/api/sensor-node/registry',
       stats: '/api/db-stats'
     },
     status: 'running'
@@ -92,7 +85,7 @@ app.get('/api', (_req, res) => {
 
 // API Routes (must be before catch-all route)
 app.use('/api/fl', aggregationRouter);
-app.use('/api/arduino', iotRouter); // Keep /api/arduino path for backward compatibility
+app.use('/api/sensor-node', iotRouter);
 app.use('/api/manual-observations', manualObservationsRouter);
 app.use('/api/whatsapp', whatsappRouter);
 
@@ -108,10 +101,10 @@ app.listen(PORT, () => {
   console.log('===========================================');
   console.log(`📡 Server running on port ${PORT}`);
   console.log(`🔗 FL API: http://localhost:${PORT}/api/fl`);
-  console.log(`🔗 Arduino API: http://localhost:${PORT}/api/arduino`);
+  console.log(`🔗 Sensor Node API: http://localhost:${PORT}/api/sensor-node`);
   console.log(`💚 Health check: http://localhost:${PORT}/health`);
   console.log('===========================================\n');
   console.log('✅ Ready to receive:');
   console.log('   👨‍🌾 Farmer model submissions (FL)');
-  console.log('   📊 Arduino sensor data (IoT)\n');
+  console.log('   📊 Sensor Node data (IoT)\n');
 });

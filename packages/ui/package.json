@@ -11,8 +11,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@edgechain/api": "workspace:*",
     "@edgechain/contract": "workspace:*",
+    "@edgechain/fl": "workspace:*",
     "@midnight-ntwrk/compact-runtime": "^0.14.0",
     "@midnight-ntwrk/dapp-connector-api": "^4.0.0",
     "@midnight-ntwrk/midnight-js-fetch-zk-config-provider": "^3.0.0",

@@ -38,7 +38,7 @@ export class DeviceAuthService {
 
   /**
    * Generate ED25519 keypair for device
-   * NOTE: This should run on Arduino, not server!
+   * NOTE: This should run on Sensor Node, not server!
    * Including here for testing/simulation purposes
    */
   static async generateKeypair(): Promise<DeviceKeypair> {
@@ -131,7 +131,7 @@ export class DeviceAuthService {
 
   /**
    * Sign a message with device private key
-   * NOTE: This should run on Arduino, not server!
+   * NOTE: This should run on Sensor Node, not server!
    * Including here for testing/simulation purposes
    */
   static async signMessage(message: string, privateKeyHex: string): Promise<string> {

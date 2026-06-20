@@ -3,7 +3,7 @@
  *
  * Manages approved IoT devices with a SINGLE Merkle tree:
  * - All devices in one tree (larger anonymity set)
- * - Fixed reward: 0.1 DUST for all verified readings
+ * - Reward eligibility is decided by MARS scoring after verification
  *
  * Key Innovation: Leaf = H(device_pubkey)
  * Simpler hash, larger anonymity set, better privacy
@@ -86,7 +86,7 @@ export class DeviceRegistryService {
     this.devices.set(device_pubkey, registration);
     this.rebuildGlobalRoot();
 
-    // Note: Database persistence is handled by the route layer (arduino.ts)
+    // Note: Database persistence is handled by the route layer (sensor-node.ts)
     // which calls dbService.registerDevice() before this method.
     // This avoids duplicate database inserts.
 

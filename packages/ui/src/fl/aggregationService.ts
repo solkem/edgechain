@@ -31,7 +31,7 @@ import type {
 // API CONFIGURATION
 // ============================================================================
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://edgechain-api.fly.dev';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://edgechain-midnight.fly.dev';
 
 // ============================================================================
 // SUBMISSION STORAGE (Backend API - shared across devices)
@@ -46,7 +46,7 @@ const CURRENT_ROUND_KEY = 'edgechain_current_round';
  */
 export async function storeSubmission(submission: ModelSubmission): Promise<void> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/submissions`, {
+    const response = await fetch(`${API_BASE_URL}/api/fl/submit`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -60,7 +60,7 @@ export async function storeSubmission(submission: ModelSubmission): Promise<void
 
     const result = await response.json();
     console.log(`📥 Stored submission from ${submission.farmerId.slice(0, 10)}...`);
-    console.log(`📊 Total submissions: ${result.currentSubmissions}/${result.requiredSubmissions}`);
+    console.log(`📊 Submission count: ${result.submissionCount}`);
   } catch (error) {
     console.error('Failed to store submission via API:', error);
     // Fallback to localStorage
@@ -72,21 +72,13 @@ export async function storeSubmission(submission: ModelSubmission): Promise<void
 }
 
 /**
- * Load pending submissions for current round from API
+ * Load pending submissions from local fallback storage.
+ *
+ * The unified backend owns live aggregation state and intentionally exposes
+ * aggregate status rather than raw pending model submissions.
  */
 export async function loadPendingSubmissions(): Promise<ModelSubmission[]> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/submissions`);
-    if (!response.ok) {
-      throw new Error(`Failed to load submissions: ${response.statusText}`);
-    }
-    const data = await response.json();
-    return data.submissions || [];
-  } catch (error) {
-    console.error('Failed to load submissions from API:', error);
-    // Fallback to localStorage
-    return loadPendingSubmissionsLocal();
-  }
+  return loadPendingSubmissionsLocal();
 }
 
 /**
@@ -115,7 +107,7 @@ export function clearPendingSubmissions(): void {
  */
 export async function getCurrentRound(): Promise<number> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/round`);
+    const response = await fetch(`${API_BASE_URL}/api/fl/status`);
     if (!response.ok) {
       throw new Error(`Failed to get round: ${response.statusText}`);
     }
@@ -156,6 +148,32 @@ export interface AggregationStatus {
 export async function checkAggregationReadiness(
   config: AggregationConfig = DEFAULT_AGGREGATION_CONFIG
 ): Promise<AggregationStatus> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/fl/status`);
+    if (!response.ok) {
+      throw new Error(`Failed to load FL status: ${response.statusText}`);
+    }
+
+    const status = await response.json();
+    const currentSubmissions = status.pendingSubmissions ?? 0;
+    const requiredSubmissions = status.minSubmissions ?? config.minSubmissions;
+    const canAggregate = currentSubmissions >= requiredSubmissions;
+
+    return {
+      canAggregate,
+      currentSubmissions,
+      requiredSubmissions,
+      pendingSubmissions: [],
+      message: status.globalModelAvailable
+        ? `✅ Global model v${status.globalModelVersion} available`
+        : canAggregate
+          ? `✅ Ready to aggregate! (${currentSubmissions} submissions)`
+          : `⏳ Waiting for more submissions (${currentSubmissions}/${requiredSubmissions})`,
+    };
+  } catch (error) {
+    console.error('Failed to load FL status from API:', error);
+  }
+
   const submissions = await loadPendingSubmissions();
   const canAggregate = submissions.length >= config.minSubmissions;
 

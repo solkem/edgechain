@@ -57,8 +57,8 @@ const Navbar = () => {
       href: "/selection",
     },
     {
-      label: "Arduino",
-      href: "/arduino",
+      label: "Sensor Node",
+      href: "/sensor-node",
     },
     {
       label: "Train",

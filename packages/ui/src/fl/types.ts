@@ -4,6 +4,18 @@
  * This file defines all TypeScript types for the EdgeChain FL system
  */
 
+import type { GlobalModel, ModelSubmission, ModelWeights } from '@edgechain/fl';
+
+export type {
+  AggregationAlgorithm,
+  AggregationConfig,
+  AggregationResult,
+  GlobalModel,
+  ModelArchitecture,
+  ModelSubmission,
+  ModelWeights,
+} from '@edgechain/fl';
+
 // ============================================================================
 // DATA COLLECTION
 // ============================================================================
@@ -44,37 +56,6 @@ export interface FarmDataset {
     start: number;
     end: number;
   };
-}
-
-// ============================================================================
-// MODEL ARCHITECTURE
-// ============================================================================
-
-/**
- * Neural network architecture for crop yield prediction
- * Simple feedforward network suitable for browser training
- */
-export interface ModelArchitecture {
-  inputDim: number;          // number of input features
-  hiddenLayers: number[];    // neurons per hidden layer [64, 32, 16]
-  outputDim: number;         // 1 (yield prediction)
-  activation: string;        // 'relu' for hidden, 'linear' for output
-  optimizer: string;         // 'adam'
-  loss: string;              // 'meanSquaredError'
-  metrics: string[];         // ['mae', 'mse']
-}
-
-/**
- * Model weights (parameters) that can be serialized
- */
-export interface ModelWeights {
-  layers: {
-    name: string;
-    weights: number[][][];   // 3D array of weight matrices
-    biases: number[][];      // 2D array of bias vectors
-  }[];
-  totalParameters: number;
-  architecture: ModelArchitecture;
 }
 
 // ============================================================================
@@ -125,97 +106,6 @@ export interface TrainingResult {
   datasetSize: number;
   trainingTime: number;      // milliseconds
   timestamp: number;
-}
-
-// ============================================================================
-// SUBMISSION
-// ============================================================================
-
-/**
- * Model update submission to FL aggregator
- * This is what gets sent to the blockchain with ZK-proof
- */
-export interface ModelSubmission {
-  farmerId: string;          // Midnight wallet address
-  modelWeights: ModelWeights;
-  weightsHash: string;       // SHA-256 hash of weights
-  metrics: {
-    loss: number;
-    mae: number;
-    accuracy: number;        // 1 - (mae / mean_yield)
-  };
-  datasetSize: number;       // number of samples trained on
-  round: number;             // FL round number
-  modelVersion: number;      // global model version used
-  timestamp: number;
-
-  // ZK-proof related (filled after signing)
-  signature?: string;
-  txHash?: string;
-}
-
-// ============================================================================
-// AGGREGATION
-// ============================================================================
-
-/**
- * Aggregation algorithm type
- */
-export type AggregationAlgorithm = 'fedavg' | 'weighted-fedavg' | 'median';
-
-/**
- * Aggregation configuration
- */
-export interface AggregationConfig {
-  algorithm: AggregationAlgorithm;
-  minSubmissions: number;    // minimum submissions to aggregate
-  weightingStrategy: 'equal' | 'accuracy' | 'dataset-size';
-  outlierDetection: boolean; // remove outlier submissions
-  outlierThreshold: number;  // z-score threshold
-}
-
-/**
- * Aggregation result
- */
-export interface AggregationResult {
-  round: number;
-  modelVersion: number;      // new version number
-  globalWeights: ModelWeights;
-  numSubmissions: number;
-  participatingFarmers: string[];
-  aggregationMetrics: {
-    averageLoss: number;
-    averageMae: number;
-    weightedAccuracy: number;
-  };
-  timestamp: number;
-  txHash?: string;           // on-chain record
-}
-
-// ============================================================================
-// MODEL DISTRIBUTION
-// ============================================================================
-
-/**
- * Global model package for download
- */
-export interface GlobalModel {
-  version: number;
-  round: number;
-  weights: ModelWeights;
-  architecture: ModelArchitecture;
-  metadata: {
-    trainedBy: number;       // number of farmers
-    totalSamples: number;    // total training samples
-    averageAccuracy: number;
-    createdAt: number;
-    ipfsHash?: string;       // IPFS storage hash
-  };
-  performanceMetrics: {
-    globalMae: number;
-    globalMse: number;
-    confidence: number;
-  };
 }
 
 // ============================================================================

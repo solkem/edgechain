@@ -1,8 +1,8 @@
 // @ts-nocheck
 /**
- * Arduino IoT Contract Deployment Script
+ * Sensor Node Contract Deployment Script
  *
- * Deploys the Arduino IoT contract with dual Merkle roots to Midnight Testnet
+ * Deploys the Sensor Node contract with dual Merkle roots to Midnight Testnet
  */
 
 import { WalletBuilder } from "@midnight-ntwrk/wallet";
@@ -64,12 +64,12 @@ const waitForFunds = (wallet: Wallet) =>
 
 async function main() {
   console.log("╔════════════════════════════════════════════════════════════════╗");
-  console.log("║         Arduino IoT Contract Deployment to Midnight           ║");
+  console.log("║         Sensor Node Contract Deployment to Midnight           ║");
   console.log("╚════════════════════════════════════════════════════════════════╝\n");
 
   console.log("📝 This script will:");
   console.log("   1. Load or generate deployment wallet");
-  console.log("   2. Deploy Arduino IoT contract with dual Merkle roots");
+  console.log("   2. Deploy Sensor Node contract with dual Merkle roots");
   console.log("   3. Save contract address for backend integration\n");
 
   try {
@@ -143,22 +143,22 @@ async function main() {
       console.log(`✅ Balance: ${Number(balance) / 1_000_000} tDUST\n`);
     }
 
-    // Load compiled Arduino IoT contract
-    console.log("📦 Loading Arduino IoT contract...");
-    const contractPath = path.join(__dirname, "..", "dist", "managed", "arduino-iot");
+    // Load compiled Sensor Node contract
+    console.log("📦 Loading Sensor Node contract...");
+    const contractPath = path.join(__dirname, "..", "dist", "managed", "sensor-node");
     const contractModulePath = path.join(contractPath, "contract", "index.cjs");
 
     if (!fs.existsSync(contractModulePath)) {
-      console.error("\n❌ Arduino IoT contract not found!");
+      console.error("\n❌ Sensor Node contract not found!");
       console.error(`   Expected: ${contractModulePath}\n`);
       console.error("   Please run:");
       console.error("   cd packages/contract");
-      console.error("   compact compile src/arduino-iot.compact ./src/managed/arduino-iot");
+      console.error("   compact compile src/sensor-node.compact ./src/managed/sensor-node");
       console.error("   npm run build\n");
       process.exit(1);
     }
 
-    const ArduinoIoTModule = await import(contractModulePath);
+    const SensorNodeModule = await import(contractModulePath);
 
     // Get wallet state first (needed for walletProvider)
     const walletState = await Rx.firstValueFrom(wallet.state());
@@ -171,7 +171,7 @@ async function main() {
     // Create witness functions for the contract
     const witnesses = {
       deviceSignature: () => {
-        // Placeholder - real signatures come from Arduino devices
+        // Placeholder - real signatures come from Sensor Node devices
         const signature = new Uint8Array(64);
         crypto.getRandomValues(signature);
         return signature;
@@ -190,7 +190,7 @@ async function main() {
 
     // Create contract instance with ONLY witnesses
     // Constructor parameters are passed during deployment, not instantiation
-    const contractInstance = new ArduinoIoTModule.Contract(witnesses);
+    const contractInstance = new SensorNodeModule.Contract(witnesses);
     console.log("   ✅ Contract loaded\n");
 
     const walletProvider = {
@@ -224,7 +224,7 @@ async function main() {
     const zkConfigPath = contractPath;
     const providers = {
       privateStateProvider: levelPrivateStateProvider({
-        privateStateStoreName: "arduino-iot-deployment-state"
+        privateStateStoreName: "sensor-node-deployment-state"
       }),
       publicDataProvider: indexerPublicDataProvider(
         TESTNET_CONFIG.indexer,
@@ -238,7 +238,7 @@ async function main() {
     console.log("   ✅ Providers configured\n");
 
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("🚀 DEPLOYING ARDUINO IOT CONTRACT TO MIDNIGHT TESTNET");
+    console.log("🚀 DEPLOYING SENSOR NODE CONTRACT TO MIDNIGHT TESTNET");
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
     console.log("   ⏳ Generating zero-knowledge proofs...");
     console.log("   This takes 30-60 seconds - please be patient!\n");
@@ -247,7 +247,7 @@ async function main() {
     // The Midnight SDK will call contractInstance.initialState() internally with these args
     const deployed = await deployContract(providers, {
       contract: contractInstance,
-      privateStateId: "arduinoIoTDeploymentState",
+      privateStateId: "sensorNodeDeploymentState",
       initialPrivateState: {},
       args: [adminPubkey]  // Pass admin pubkey to constructor (field name is 'args' not 'constructorArguments')
     } as any);  // Type assertion since args may not be in official types yet
@@ -255,7 +255,7 @@ async function main() {
     const contractAddress = deployed.deployTxData.public.contractAddress;
 
     console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("🎉 ARDUINO IOT CONTRACT DEPLOYED SUCCESSFULLY!");
+    console.log("🎉 SENSOR NODE CONTRACT DEPLOYED SUCCESSFULLY!");
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
     console.log("📝 CONTRACT DETAILS:\n");
     console.log(`   Address: ${contractAddress}`);
@@ -265,7 +265,7 @@ async function main() {
     console.log(`   Deployment wallet: ${state.address}\n`);
 
     // Save deployment info
-    deploymentData.arduinoIoT = {
+    deploymentData.sensorNode = {
       contractAddress,
       adminPubkey: Buffer.from(adminPubkey).toString('hex'),
       deployedAt: new Date().toISOString(),
@@ -287,7 +287,7 @@ async function main() {
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     console.log("1. ✅ Contract is deployed and ready");
     console.log("2. 🔧 Update backend to use contract address");
-    console.log("3. 📱 Register Arduino devices to build Merkle roots");
+    console.log("3. 📱 Register Sensor Node devices to build Merkle roots");
     console.log("4. 🚀 Start collecting sensor data with ZK proofs");
     console.log("5. 💰 Rewards will be distributed automatically\n");
 

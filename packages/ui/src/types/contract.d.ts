@@ -12,8 +12,3 @@ declare module '@edgechain/contract/dist/managed/edgechain/contract/index.cjs' {
     [key: string]: any;
   }
 }
-
-declare module '@edgechain/api' {
-  // API module stub - add actual exports as needed
-  export const api: any;
-}

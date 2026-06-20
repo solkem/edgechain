@@ -43,9 +43,6 @@ COPY --from=builder /app/dist ./dist
 # Copy database schema files (SQL files are not compiled by TypeScript)
 COPY server/src/database/schema.sql ./dist/database/schema.sql
 
-# Copy gateway files
-COPY gateway ./gateway
-
 # Copy frontend build
 COPY packages/ui/dist ./packages/ui/dist
 

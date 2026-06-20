@@ -9,7 +9,7 @@
  * - Smartphone as IoT gateway (no expensive gateway needed)
  * - Simple sensors: DHT22 (temp/humidity), soil moisture probes
  * - Manual rain gauge readings via smartphone camera
- * - Open-source hardware (Arduino, ESP32, Raspberry Pi Zero)
+ * - Open-source hardware (Sensor Node, ESP32, Raspberry Pi Zero)
  *
  * Data Sources:
  * - DIY weather station ($20-40): DHT22 sensor + rain gauge
@@ -106,7 +106,7 @@ export function validateDataPoint(data: Partial<FarmDataPoint>): string | null {
 /**
  * Simulate affordable IoT sensor stream
  * In production, this would connect to:
- * - ESP32/Arduino via Bluetooth
+ * - ESP32/Sensor Node via Bluetooth
  * - Smartphone camera for manual readings
  * - Free weather APIs (OpenWeatherMap, etc.)
  */

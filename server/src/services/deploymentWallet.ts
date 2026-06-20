@@ -2,7 +2,7 @@
  * Deployment Wallet Service
  *
  * Manages the deployment wallet for distributing tDUST rewards
- * to farmers who submit valid Arduino sensor data
+ * to farmers who submit valid Sensor Node data
  */
 
 import { WalletBuilder } from "@midnight-ntwrk/wallet";
