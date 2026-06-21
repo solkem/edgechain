@@ -20,14 +20,15 @@
     }
   },
   "scripts": {
-    "compact": "compact compile src/edgechain.compact ./src/managed/edgechain",
+    "compact": "yarn compact:edgechain",
+    "compact:edgechain": "compact compile src/edgechain.compact ./src/managed/edgechain",
     "compact:sensor-node": "compact compile src/sensor-node.compact ./src/managed/sensor-node",
-    "compact:sensor-node-private": "compact compile src/sensor-node-private.compact ./dist/managed/sensor-node-private",
+    "compact:sensor-node-private": "compact compile src/sensor-node-private.compact ./src/managed/sensor-node-private",
     "build": "node ./scripts/build.mjs",
     "build:ts": "tsc --project tsconfig.json",
     "deploy": "npm run build:ts && node dist/deploy-simple.js",
     "deploy:sensor-node": "npm run build:ts && node dist/deploy-device.js",
-    "deploy:sensor-node-private": "npm run compact:sensor-node-private && npm run build:ts && node dist/deploy-device.js",
+    "deploy:sensor-node-private": "npm run compact:sensor-node-private && npm run build && node dist/deploy-device.js",
     "view-contract": "npm run build:ts && node dist/view-contract.js",
     "lint": "eslint src",
     "typecheck": "tsc -p tsconfig.json --noEmit",

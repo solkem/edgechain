@@ -237,7 +237,6 @@ edgechain/
 |- docs/                Project documentation
 |- scripts/             Repository toolchain checks
 |- demo/                Demo assets and supporting material
-|- compact/             Contract compilation artifacts
 ```
 
 ### Deployed Contracts

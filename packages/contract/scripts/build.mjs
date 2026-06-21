@@ -29,7 +29,7 @@ run('tsc', ['--project', 'tsconfig.build.json']);
 
 mkdirSync(managedDistDir, { recursive: true });
 
-for (const managedName of ['edgechain', 'sensor-node']) {
+for (const managedName of ['edgechain', 'sensor-node', 'sensor-node-private']) {
   const sourcePath = path.join(managedSrcDir, managedName);
   if (!existsSync(sourcePath)) continue;
 

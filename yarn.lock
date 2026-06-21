@@ -591,18 +591,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@edgechain/edgechain-compact@workspace:compact":
-  version: 0.0.0-use.local
-  resolution: "@edgechain/edgechain-compact@workspace:compact"
-  dependencies:
-    eslint: "npm:^8.52.0"
-    ts-node: "npm:^10.9.2"
-    typescript: "npm:^5.2.2"
-  bin:
-    run-compact: src/run-compact.cjs
-  languageName: unknown
-  linkType: soft
-
 "@edgechain/fl@file:../../packages/fl::locator=%40edgechain%2Ffreedom-node%40workspace%3Aapps%2Ffreedom-node":
   version: 0.1.0
   resolution: "@edgechain/fl@file:../../packages/fl#../../packages/fl::hash=77ef85&locator=%40edgechain%2Ffreedom-node%40workspace%3Aapps%2Ffreedom-node"

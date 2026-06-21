@@ -78,7 +78,6 @@
   },
   "packageManager": "yarn@4.9.2",
   "workspaces": [
-    "compact",
     "packages/fl",
     "packages/mars",
     "apps/web",

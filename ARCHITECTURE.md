@@ -70,14 +70,11 @@ edgechain/
     reward eligibility, and reward allocation.
 
   packages/contract/
-    Compact contracts, TypeScript deployment scripts, and deployment metadata.
+    Canonical home for Compact contract source, generated managed artifacts,
+    TypeScript deployment scripts, and deployment metadata.
 
   packages/cli/
     Midnight CLI launcher/config tooling.
-
-  compact/
-    Contract compilation support/artifacts. Treat carefully: clarify canonical
-    generated-vs-source responsibilities before moving.
 
   research/python-lab/
     Python research lab for synthetic Odzi data, FL experiments, MARS scoring,
@@ -161,17 +158,20 @@ receiver/proof coordinator.
 
 ```text
 packages/contract/src/*.compact
+packages/contract/src/managed/<contract-name>/
 packages/contract/src/deploy-*.ts
 packages/contract/deployment.json
 proof-server/circuits/attestation.compact
-compact/
 packages/cli/
 ```
 
-Production risk: source contracts, proof circuits, generated artifacts, and CLI
-launchers are not visually separated by responsibility. Before moving these,
-identify which Compact files are canonical source, which are generated, and
-which are demo-only.
+Contract source and Midnight-generated artifacts are now visually separated by
+responsibility: `packages/contract/src/*.compact` is human-authored source,
+`packages/contract/src/managed/<contract-name>/` is compiler output, and
+`packages/contract/dist/managed/<contract-name>/` is the package output consumed
+by apps. The remaining architectural question is whether
+`proof-server/circuits/attestation.compact` is a production proof circuit or a
+demo/server-local artifact.
 
 ## Recommended Target Shape
 
