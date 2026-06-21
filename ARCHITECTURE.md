@@ -34,6 +34,35 @@ Web Experience
   dashboard components.
 ```
 
+## Farmer-Owned Nodes And Exit Rights
+
+EdgeChain should be a reference implementation for farmer-owned digital
+infrastructure, not the owner of the farmer's hardware, data, or ability to
+leave the system.
+
+The node names describe deployment roles first:
+
+```text
+Sensor Node
+  Farmer-owned field hardware: microcontroller, sensors, radio, secure element,
+  and firmware.
+
+Freedom Node
+  Farmer-owned edge computer: backend services, proof orchestration, local
+  storage, transport adapters, and Midnight prover integration.
+
+EdgeChain
+  Software that can run on those nodes to coordinate data, proofs, rewards,
+  analytics, and cooperative services.
+```
+
+Design implication: EdgeChain services may coordinate the workflow, but the
+farmer should retain practical exit rights. Future production boundaries should
+keep raw observations exportable, firmware auditable and replaceable, data
+formats documented, transports pluggable, and proof/storage providers
+replaceable where possible. IPFS, Midnight, and EdgeChain-operated services are
+important implementation choices, not permanent locks on farmer-owned nodes.
+
 ## Current Repository Mapping
 
 ```text
@@ -113,6 +142,13 @@ experimental MARS variants.
 Target direction:
 
 ```text
+firmware/sensor-node/
+  Canonical home for farmer-owned Sensor Node firmware variants.
+
+apps/proof-server/
+  Freedom Node proof/device orchestration service, colocated with other runnable
+  applications.
+
 packages/fl/
   Canonical production FL aggregation and model-update types. Created.
 
@@ -181,20 +217,21 @@ This is the target direction, not the current structure:
 edgechain/
   apps/
     web/
-    api/
     freedom-node/
+    proof-server/
+    ipfs-service/
 
   packages/
-    domain/
+    protocols/
     fl/
     mars/
-    contracts/
-    proofs/
+    contract/
     storage/
     shared-types/
 
   firmware/
-    esp32-ndani/
+    sensor-node/
+      esp32-ndani/
 
   research/
     python-lab/

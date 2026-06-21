@@ -215,7 +215,8 @@ Longer-term directions:
 ## Repository Layout
 
 For a production-domain view of the current folders and the recommended target
-shape, see [`ARCHITECTURE.md`](ARCHITECTURE.md).
+shape, including the Farmer-Owned Nodes and Exit Rights principle, see
+[`ARCHITECTURE.md`](ARCHITECTURE.md).
 
 ```text
 edgechain/
