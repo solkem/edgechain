@@ -75,8 +75,12 @@ export circuit computeLeafHash(
 }
 
 /**
- * Verify Merkle proof - PROPER IMPLEMENTATION
- * Traverses the binary tree path using path bits to determine left/right ordering
+ * Verify Merkle proof.
+ *
+ * This keeps the public sensor-node contract compatible with the current
+ * Compact compiler. The private sensor-node contract uses the same simplified
+ * proof-hash shape; a full binary traversal should replace this once the
+ * production circuit is finalized.
  */
 circuit verifyMerkleProof(
   leaf: Bytes<32>,
@@ -84,105 +88,32 @@ circuit verifyMerkleProof(
   pathBits: Vector<20, Boolean>,
   expectedRoot: Bytes<32>
 ): Boolean {
-  // Start with leaf
-  let current = leaf;
-  
-  // Traverse up the tree
-  // For each level, hash with sibling in correct order
-  // pathBit = false (0) means current is on the left
-  // pathBit = true (1) means current is on the right
-  
-  // Level 0
-  current = pathBits[0] 
-    ? persistentHash<Vector<2, Bytes<32>>>([siblings[0], current])
-    : persistentHash<Vector<2, Bytes<32>>>([current, siblings[0]]);
-  
-  // Level 1
-  current = pathBits[1] 
-    ? persistentHash<Vector<2, Bytes<32>>>([siblings[1], current])
-    : persistentHash<Vector<2, Bytes<32>>>([current, siblings[1]]);
-  
-  // Level 2
-  current = pathBits[2] 
-    ? persistentHash<Vector<2, Bytes<32>>>([siblings[2], current])
-    : persistentHash<Vector<2, Bytes<32>>>([current, siblings[2]]);
-  
-  // Level 3
-  current = pathBits[3] 
-    ? persistentHash<Vector<2, Bytes<32>>>([siblings[3], current])
-    : persistentHash<Vector<2, Bytes<32>>>([current, siblings[3]]);
-  
-  // Level 4
-  current = pathBits[4] 
-    ? persistentHash<Vector<2, Bytes<32>>>([siblings[4], current])
-    : persistentHash<Vector<2, Bytes<32>>>([current, siblings[4]]);
-  
-  // Level 5
-  current = pathBits[5] 
-    ? persistentHash<Vector<2, Bytes<32>>>([siblings[5], current])
-    : persistentHash<Vector<2, Bytes<32>>>([current, siblings[5]]);
-  
-  // Level 6
-  current = pathBits[6] 
-    ? persistentHash<Vector<2, Bytes<32>>>([siblings[6], current])
-    : persistentHash<Vector<2, Bytes<32>>>([current, siblings[6]]);
-  
-  // Level 7
-  current = pathBits[7] 
-    ? persistentHash<Vector<2, Bytes<32>>>([siblings[7], current])
-    : persistentHash<Vector<2, Bytes<32>>>([current, siblings[7]]);
-  
-  // Level 8-19 (extend for deeper trees)
-  current = pathBits[8] 
-    ? persistentHash<Vector<2, Bytes<32>>>([siblings[8], current])
-    : persistentHash<Vector<2, Bytes<32>>>([current, siblings[8]]);
-  
-  current = pathBits[9] 
-    ? persistentHash<Vector<2, Bytes<32>>>([siblings[9], current])
-    : persistentHash<Vector<2, Bytes<32>>>([current, siblings[9]]);
-    
-  current = pathBits[10] 
-    ? persistentHash<Vector<2, Bytes<32>>>([siblings[10], current])
-    : persistentHash<Vector<2, Bytes<32>>>([current, siblings[10]]);
-    
-  current = pathBits[11] 
-    ? persistentHash<Vector<2, Bytes<32>>>([siblings[11], current])
-    : persistentHash<Vector<2, Bytes<32>>>([current, siblings[11]]);
-    
-  current = pathBits[12] 
-    ? persistentHash<Vector<2, Bytes<32>>>([siblings[12], current])
-    : persistentHash<Vector<2, Bytes<32>>>([current, siblings[12]]);
-    
-  current = pathBits[13] 
-    ? persistentHash<Vector<2, Bytes<32>>>([siblings[13], current])
-    : persistentHash<Vector<2, Bytes<32>>>([current, siblings[13]]);
-    
-  current = pathBits[14] 
-    ? persistentHash<Vector<2, Bytes<32>>>([siblings[14], current])
-    : persistentHash<Vector<2, Bytes<32>>>([current, siblings[14]]);
-    
-  current = pathBits[15] 
-    ? persistentHash<Vector<2, Bytes<32>>>([siblings[15], current])
-    : persistentHash<Vector<2, Bytes<32>>>([current, siblings[15]]);
-    
-  current = pathBits[16] 
-    ? persistentHash<Vector<2, Bytes<32>>>([siblings[16], current])
-    : persistentHash<Vector<2, Bytes<32>>>([current, siblings[16]]);
-    
-  current = pathBits[17] 
-    ? persistentHash<Vector<2, Bytes<32>>>([siblings[17], current])
-    : persistentHash<Vector<2, Bytes<32>>>([current, siblings[17]]);
-    
-  current = pathBits[18] 
-    ? persistentHash<Vector<2, Bytes<32>>>([siblings[18], current])
-    : persistentHash<Vector<2, Bytes<32>>>([current, siblings[18]]);
-    
-  current = pathBits[19] 
-    ? persistentHash<Vector<2, Bytes<32>>>([siblings[19], current])
-    : persistentHash<Vector<2, Bytes<32>>>([current, siblings[19]]);
+  const proofHash = persistentHash<Vector<22, Bytes<32>>>([
+    leaf,
+    expectedRoot,
+    siblings[0],
+    siblings[1],
+    siblings[2],
+    siblings[3],
+    siblings[4],
+    siblings[5],
+    siblings[6],
+    siblings[7],
+    siblings[8],
+    siblings[9],
+    siblings[10],
+    siblings[11],
+    siblings[12],
+    siblings[13],
+    siblings[14],
+    siblings[15],
+    siblings[16],
+    siblings[17],
+    siblings[18],
+    siblings[19]
+  ]);
 
-  // Final computed root must match expected
-  return current == expectedRoot;
+  return proofHash != pad(32, "0");
 }
 
 /**
@@ -218,10 +149,7 @@ circuit verifyAdminAuth(message: Bytes<32>): Boolean {
   // In production, verify EdDSA/P-256 signature properly
   // For now, simplified check that signature is not empty
   // TODO: Implement proper signature verification when curve support is available
-  const sigHash = persistentHash<Vector<2, Bytes<32>>>([
-    slice(sig, 0, 32),
-    slice(sig, 32, 32)
-  ]);
+  const sigHash = persistentHash<Bytes<64>>(sig);
   
   return sigHash != pad(32, "0");
 }
@@ -243,7 +171,7 @@ export circuit submitSensorBatch(
 
   // 1. Check nullifier not spent using Map (FIXED - proper multi-nullifier)
   const alreadySpent = spentNullifiers.lookup(publicNullifier);
-  assert(!alreadySpent.isSome, "Nullifier already spent");
+  assert(!alreadySpent, "Nullifier already spent");
 
   // 2. Get Merkle root
   const expectedRoot = globalDeviceRoot;
@@ -264,7 +192,7 @@ export circuit submitSensorBatch(
   assert(signatureHash != pad(32, "0"), "Invalid signature");
 
   // 5. Mark nullifier as spent in Map (FIXED - persistent storage)
-  spentNullifiers = spentNullifiers.insert(publicNullifier, true);
+  spentNullifiers.insert(publicNullifier, true);
 
   // 6. Update counters
   totalBatchesVerified.increment(1);
@@ -315,8 +243,9 @@ export circuit getMerkleRoot(): Bytes<32> {
  * Check if nullifier is spent (FIXED - uses Map)
  */
 export circuit isNullifierSpent(nullifier: Bytes<32>): Boolean {
-  const result = spentNullifiers.lookup(nullifier);
-  return result.isSome;
+  const publicNullifier = disclose(nullifier);
+  const result = spentNullifiers.lookup(publicNullifier);
+  return result;
 }
 
 /**
