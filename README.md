@@ -190,7 +190,7 @@ Demonstrable today:
 - In-repo Node.js proof server in [`proof-server`](proof-server)
 - Unified backend flows in [`apps/freedom-node`](apps/freedom-node)
 - React UI in [`apps/web`](apps/web)
-- IPFS integration in [`ipfs-service`](ipfs-service)
+- IPFS integration in [`apps/ipfs-service`](apps/ipfs-service)
 - Compact contracts and deployment artifacts in [`packages/contract`](packages/contract)
 - Python research lab in [`research/python-lab`](research/python-lab) for synthetic FL, MARS scoring, adversarial scenarios, and oversight evaluation
 - Two contracts deployed on Midnight testnet02
@@ -221,19 +221,19 @@ shape, see [`ARCHITECTURE.md`](ARCHITECTURE.md).
 edgechain/
 |- .github/
 |  |- workflows/        CI/CD, including Python Lab validation
+|- apps/
+|  |- web/              React frontend
+|  |- freedom-node/     Unified backend
+|  |- ipfs-service/     Storacha/IPFS microservice
 |- packages/
 |  |- contract/         Compact contracts and deployment scripts
 |  |- fl/               Production FL aggregation and model-update types
 |  |- mars/             Production MARS scoring and reward eligibility
 |  |- cli/              CLI tools and scripts
-|- apps/
-|  |- web/              React frontend
-|  |- freedom-node/     Unified backend
 |- research/
 |  |- python-lab/       Synthetic FL, MARS scoring, attack, and oversight experiments
 |- proof-server/        In-repo Node.js service (Express + WS + LoRa serial). Distinct from the official `midnightntwrk/proof-server:7.0.0` Docker container (Midnight's ZK prover, 6 workers); both run on the Freedom Node alongside each other.
 |- firmware/            ESP32 firmware
-|- ipfs-service/        Storacha/IPFS microservice
 |- docs/                Project documentation
 |- scripts/             Repository toolchain checks
 |- demo/                Demo assets and supporting material
@@ -266,7 +266,7 @@ Current deployment artifacts recorded in [`packages/contract/deployment.json`](p
 - Node.js 22+
 - Yarn 4.x
 - Python 3.12+ and [`uv`](https://docs.astral.sh/uv/) for the research lab
-- npm for non-workspace folders
+- npm for standalone service folders such as `apps/ipfs-service` and `proof-server`
 - PlatformIO for firmware work
 - Optional hardware for full integration testing
 
@@ -298,7 +298,7 @@ yarn dev
 # Or run services individually
 cd apps/freedom-node && npm install && npm run dev
 cd proof-server && npm install && npm run dev
-cd ipfs-service && npm install && npm run dev
+cd apps/ipfs-service && npm install && npm run dev
 yarn workspace @edgechain/web dev
 ```
 

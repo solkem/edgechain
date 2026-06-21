@@ -53,13 +53,13 @@ edgechain/
     and ZK-proof service integration. It uses PostgreSQL through DATABASE_URL
     and initializes schema from src/database/schema.sql at startup.
 
-  ipfs-service/
-    Storacha/IPFS microservice. Production architecture should decide whether
-    this remains a standalone service or becomes a Freedom Node/backend module.
-
   apps/web/
     React application and UI-side demo logic. It currently contains FL and IoT
     helpers that should not become the long-term canonical production logic.
+
+  apps/ipfs-service/
+    Storacha/IPFS microservice. Production architecture should decide whether
+    this remains a standalone service or becomes a Freedom Node/backend module.
 
   packages/fl/
     Canonical TypeScript FL package for shared model-update types and
