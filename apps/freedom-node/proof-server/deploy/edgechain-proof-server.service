@@ -7,8 +7,8 @@ After=network.target
 Type=simple
 User=__EDGECHAIN_USER__
 Group=__EDGECHAIN_USER__
-WorkingDirectory=__EDGECHAIN_HOME__/edgechain/proof-server
-ExecStart=/usr/bin/node __EDGECHAIN_HOME__/edgechain/proof-server/dist/index.js
+WorkingDirectory=__EDGECHAIN_HOME__/edgechain/apps/freedom-node/proof-server
+ExecStart=/usr/bin/node __EDGECHAIN_HOME__/edgechain/apps/freedom-node/proof-server/dist/index.js
 Restart=on-failure
 RestartSec=10
 StandardOutput=syslog
@@ -17,13 +17,13 @@ SyslogIdentifier=edgechain-proof-server
 
 # Environment
 Environment=NODE_ENV=production
-EnvironmentFile=-__EDGECHAIN_HOME__/edgechain/proof-server/.env
+EnvironmentFile=-__EDGECHAIN_HOME__/edgechain/apps/freedom-node/proof-server/.env
 
 # Security hardening
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=read-only
-ReadWritePaths=__EDGECHAIN_HOME__/edgechain/proof-server/data __EDGECHAIN_HOME__/edgechain/proof-server/logs
+ReadWritePaths=__EDGECHAIN_HOME__/edgechain/apps/freedom-node/proof-server/data __EDGECHAIN_HOME__/edgechain/apps/freedom-node/proof-server/logs
 PrivateTmp=true
 
 [Install]

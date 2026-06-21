@@ -70,17 +70,15 @@ edgechain/
   firmware/esp32-ndani/
     Canonical ESP32 firmware path for the current Sensor Node work.
 
-  proof-server/
-    In-repo Node.js Freedom Node service: LoRa receiver, BRACE verification,
-    Merkle/nullifier helpers, and Midnight prover orchestration. This is
-    distinct from the official Midnight proof-server container used for ZK
-    proving workers.
-
   apps/freedom-node/
     Unified backend for current demo flows: FL aggregation routes, IoT routes,
     manual observations, WhatsApp adapter, persistence, IPFS, device registry,
     and ZK-proof service integration. It uses PostgreSQL through DATABASE_URL
     and initializes schema from src/database/schema.sql at startup.
+    Its proof-server/ subservice owns LoRa receiver, BRACE verification,
+    Merkle/nullifier helpers, and Midnight prover orchestration. This is
+    distinct from the official Midnight proof-server container used for ZK
+    proving workers.
 
   apps/web/
     React application and UI-side demo logic. It currently contains FL and IoT
@@ -147,9 +145,9 @@ firmware/esp32-ndani/
   physical path lean; "Sensor Node" is the deployment role, not a required
   folder layer.
 
-apps/proof-server/
-  Freedom Node proof/device orchestration service, colocated with other runnable
-  applications.
+apps/freedom-node/proof-server/
+  Freedom Node proof/device orchestration service, nested under the Freedom
+  Node software boundary.
 
 packages/fl/
   Canonical production FL aggregation and model-update types. Created.
@@ -180,10 +178,10 @@ apps/freedom-node/src/services/nullifierTracking.ts
 apps/freedom-node/src/services/zkProofService.ts
   Current backend-side IoT and privacy routes/services.
 
-proof-server/src/lora-receiver.ts
-proof-server/src/brace-verifier.ts
-proof-server/src/acr-handler.ts
-proof-server/src/midnight-prover.ts
+apps/freedom-node/proof-server/src/lora-receiver.ts
+apps/freedom-node/proof-server/src/brace-verifier.ts
+apps/freedom-node/proof-server/src/acr-handler.ts
+apps/freedom-node/proof-server/src/midnight-prover.ts
   Freedom Node-side device/proof orchestration.
 ```
 
@@ -199,7 +197,7 @@ packages/contract/src/*.compact
 packages/contract/src/managed/<contract-name>/
 packages/contract/src/deploy-*.ts
 packages/contract/deployment.json
-proof-server/circuits/attestation.compact
+apps/freedom-node/proof-server/circuits/attestation.compact
 packages/cli/
 ```
 
@@ -208,8 +206,8 @@ responsibility: `packages/contract/src/*.compact` is human-authored source,
 `packages/contract/src/managed/<contract-name>/` is compiler output, and
 `packages/contract/dist/managed/<contract-name>/` is the package output consumed
 by apps. The remaining architectural question is whether
-`proof-server/circuits/attestation.compact` is a production proof circuit or a
-demo/server-local artifact.
+`apps/freedom-node/proof-server/circuits/attestation.compact` is a production
+proof circuit or a demo/server-local artifact.
 
 ## Recommended Target Shape
 
@@ -220,7 +218,7 @@ edgechain/
   apps/
     web/
     freedom-node/
-    proof-server/
+      proof-server/
     ipfs-service/
 
   packages/

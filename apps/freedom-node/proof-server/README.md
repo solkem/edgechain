@@ -44,7 +44,7 @@ Manual:
 ```bash
 # Clone the repository
 git clone https://github.com/solkem/edgechain.git
-cd edgechain/proof-server
+cd edgechain/apps/freedom-node/proof-server
 
 # Install dependencies
 npm install
@@ -199,7 +199,7 @@ Events:
 ## Architecture
 
 ```
-proof-server/
+apps/freedom-node/proof-server/
 ├── src/
 │   ├── index.ts           # Entry point, Express server
 │   ├── lora-receiver.ts   # RYLR896 LoRa module driver

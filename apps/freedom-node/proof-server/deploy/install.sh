@@ -2,7 +2,7 @@
 #
 # EdgeChain Proof Server - Freedom Node Deployment Script
 #
-# Usage: curl -sfL https://raw.githubusercontent.com/solkem/edgechain/main/proof-server/deploy/install.sh | bash
+# Usage: curl -sfL https://raw.githubusercontent.com/solkem/edgechain/main/apps/freedom-node/proof-server/deploy/install.sh | bash
 #
 
 set -euo pipefail
@@ -19,7 +19,7 @@ if [ -z "${INSTALL_HOME:-}" ]; then
     INSTALL_HOME="$HOME"
 fi
 INSTALL_DIR="${INSTALL_DIR:-$INSTALL_HOME/edgechain}"
-PROOF_SERVER_DIR="$INSTALL_DIR/proof-server"
+PROOF_SERVER_DIR="$INSTALL_DIR/apps/freedom-node/proof-server"
 SERVICE_TEMPLATE="$PROOF_SERVER_DIR/deploy/edgechain-proof-server.service"
 SERVICE_TARGET="/etc/systemd/system/$SERVICE_NAME.service"
 

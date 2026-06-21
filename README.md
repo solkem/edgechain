@@ -187,7 +187,7 @@ Phase B introduces Midnight at the precise point where its guarantees become str
 Demonstrable today:
 
 - ESP32 firmware scaffolding in [`firmware/esp32-ndani`](firmware/esp32-ndani)
-- In-repo Node.js proof server in [`proof-server`](proof-server)
+- In-repo Node.js proof server in [`apps/freedom-node/proof-server`](apps/freedom-node/proof-server)
 - Unified backend flows in [`apps/freedom-node`](apps/freedom-node)
 - React UI in [`apps/web`](apps/web)
 - IPFS integration in [`apps/ipfs-service`](apps/ipfs-service)
@@ -224,7 +224,8 @@ edgechain/
 |  |- workflows/        CI/CD, including Python Lab validation
 |- apps/
 |  |- web/              React frontend
-|  |- freedom-node/     Unified backend
+|  |- freedom-node/     Unified backend and Freedom Node services
+|  |  |- proof-server/  In-repo proof/device orchestration service
 |  |- ipfs-service/     Storacha/IPFS microservice
 |- packages/
 |  |- contract/         Compact contracts and deployment scripts
@@ -233,7 +234,6 @@ edgechain/
 |  |- cli/              CLI tools and scripts
 |- research/
 |  |- python-lab/       Synthetic FL, MARS scoring, attack, and oversight experiments
-|- proof-server/        In-repo Node.js service (Express + WS + LoRa serial). Distinct from the official `midnightntwrk/proof-server:7.0.0` Docker container (Midnight's ZK prover, 6 workers); both run on the Freedom Node alongside each other.
 |- firmware/            ESP32 firmware
 |- docs/                Project documentation
 |- scripts/             Repository toolchain checks
@@ -266,7 +266,7 @@ Current deployment artifacts recorded in [`packages/contract/deployment.json`](p
 - Node.js 22+
 - Yarn 4.x
 - Python 3.12+ and [`uv`](https://docs.astral.sh/uv/) for the research lab
-- npm for standalone service folders such as `apps/ipfs-service` and `proof-server`
+- npm for standalone service folders such as `apps/ipfs-service` and `apps/freedom-node/proof-server`
 - PlatformIO for firmware work
 - Optional hardware for full integration testing
 
@@ -297,7 +297,7 @@ yarn dev
 
 # Or run services individually
 cd apps/freedom-node && npm install && npm run dev
-cd proof-server && npm install && npm run dev
+cd apps/freedom-node/proof-server && npm install && npm run dev
 cd apps/ipfs-service && npm install && npm run dev
 yarn workspace @edgechain/web dev
 ```
@@ -446,7 +446,7 @@ EdgeChain backend gets Postgres credentials from the Fly secret
 `DATABASE_URL`; rotate via Fly if needed. Do not commit generated Postgres
 passwords to the repository.
 
-### Proof Server (`proof-server/`)
+### Proof Server (`apps/freedom-node/proof-server/`)
 
 | Variable | Notes |
 |----------|-------|
@@ -509,7 +509,7 @@ The design principle is simple: day-one value should not require blockchain lite
 | [`docs/README.md`](docs/README.md) | project documentation entry point |
 | [`docs/user_stories.html`](docs/user_stories.html) | product user stories |
 | [`research/python-lab/README.md`](research/python-lab/README.md) | Python research lab overview, commands, and experiment framing |
-| [`proof-server/README.md`](proof-server/README.md) | proof-server operations |
+| [`apps/freedom-node/proof-server/README.md`](apps/freedom-node/proof-server/README.md) | proof-server operations |
 
 ---
 
