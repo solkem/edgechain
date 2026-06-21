@@ -142,8 +142,10 @@ experimental MARS variants.
 Target direction:
 
 ```text
-firmware/sensor-node/
-  Canonical home for farmer-owned Sensor Node firmware variants.
+firmware/esp32-ndani/
+  Canonical home for the current farmer-owned Sensor Node firmware. Keep the
+  physical path lean; "Sensor Node" is the deployment role, not a required
+  folder layer.
 
 apps/proof-server/
   Freedom Node proof/device orchestration service, colocated with other runnable
@@ -230,8 +232,7 @@ edgechain/
     shared-types/
 
   firmware/
-    sensor-node/
-      esp32-ndani/
+    esp32-ndani/
 
   research/
     python-lab/
