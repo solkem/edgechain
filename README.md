@@ -248,9 +248,9 @@ edgechain/
 |- demo/                Demo assets and supporting material
 ```
 
-### Deployed Contracts
+### Testnet Deployment Artifacts
 
-Current deployment artifacts recorded in [`packages/contract/deployment.json`](packages/contract/deployment.json):
+Current Midnight testnet02 deployment artifacts recorded in [`packages/contract/deployment.json`](packages/contract/deployment.json). These contracts support prototype validation and are not production deployments.
 
 | Contract | Address |
 |----------|---------|
