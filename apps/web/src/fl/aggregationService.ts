@@ -42,7 +42,10 @@ const CURRENT_ROUND_KEY = 'edgechain_current_round';
 
 /**
  * Store model submission (encrypted)
- * Sends to backend API for shared storage across devices
+ *
+ * Preferred path: send the signed model-weight package to the Freedom Node API
+ * so submissions are shared across devices. Fallback path: store locally so the
+ * demo can still run without backend availability.
  */
 export async function storeSubmission(submission: ModelSubmission): Promise<void> {
   try {
@@ -96,6 +99,9 @@ function loadPendingSubmissionsLocal(): ModelSubmission[] {
 
 /**
  * Clear submissions after aggregation
+ *
+ * Only clears the browser fallback queue. The backend owns its own in-memory or
+ * persistent submission state.
  */
 export function clearPendingSubmissions(): void {
   localStorage.removeItem(SUBMISSIONS_KEY);
@@ -104,6 +110,9 @@ export function clearPendingSubmissions(): void {
 
 /**
  * Get current round number from API
+ *
+ * The backend is authoritative for live demo rounds. localStorage is retained
+ * for isolated browser demos and offline development.
  */
 export async function getCurrentRound(): Promise<number> {
   try {
@@ -123,6 +132,9 @@ export async function getCurrentRound(): Promise<number> {
 
 /**
  * Increment round number (called after aggregation)
+ *
+ * Browser-only fallback bookkeeping. Backend-driven aggregation advances rounds
+ * server-side, so this should not be treated as consensus state.
  */
 export function incrementRound(): void {
   const newRound = parseInt(localStorage.getItem(CURRENT_ROUND_KEY) || '1', 10) + 1;
@@ -144,6 +156,10 @@ export interface AggregationStatus {
 
 /**
  * Check if we have enough submissions to run aggregation
+ *
+ * The API status endpoint intentionally returns counts and model availability,
+ * not raw pending submissions. Raw model updates should not be exposed just to
+ * render readiness UI.
  */
 export async function checkAggregationReadiness(
   config: AggregationConfig = DEFAULT_AGGREGATION_CONFIG
@@ -198,6 +214,10 @@ export async function checkAggregationReadiness(
  * 4. Save to storage (local for demo, IPFS for production)
  * 5. Update contract with new model hash
  * 6. Clear submissions and advance round
+ *
+ * This function is the browser/demo aggregation path. The production direction
+ * is a service-side aggregator or decentralized compute worker that writes a
+ * verified model artifact and on-chain completion signal.
  */
 export async function runAggregation(
   config: AggregationConfig = DEFAULT_AGGREGATION_CONFIG,
@@ -220,7 +240,9 @@ export async function runAggregation(
   console.log(`📥 Loaded ${submissions.length} submissions`);
   onProgress?.(20, `Processing ${submissions.length} submissions...`);
 
-  // Step 2: Run FedAvg algorithm
+  // Step 2: Run FedAvg algorithm. The pure aggregation math lives in
+  // @edgechain/fl via modelStore re-exports so backend and browser paths can
+  // share the same implementation.
   const currentRound = await getCurrentRound();
   const history = loadAggregationHistory();
   const currentVersion = history.length > 0 ? history[history.length - 1].modelVersion : 0;
@@ -283,7 +305,9 @@ let aggregationWatcher: NodeJS.Timeout | null = null;
 
 /**
  * Start automatic aggregation monitoring
- * Checks every N seconds if we have enough submissions
+ *
+ * Polling keeps the prototype simple. Production should prefer an event-driven
+ * trigger from submission storage, a queue, or contract/indexer events.
  */
 export function startAggregationWatcher(
   intervalSeconds: number = 30,
@@ -332,6 +356,9 @@ export function stopAggregationWatcher(): void {
 
 /**
  * Get aggregation statistics
+ *
+ * Stats are dashboard-oriented and derived from local history, not an audited
+ * source of truth.
  */
 export async function getAggregationStats() {
   const history = loadAggregationHistory();
@@ -373,6 +400,9 @@ export async function getAggregationStats() {
 
 /**
  * Reset all aggregation data (for testing)
+ *
+ * This is intentionally broad because it supports demo resets. Do not wire this
+ * to production controls without authentication and scope checks.
  */
 export function resetAggregationSystem(): void {
   clearPendingSubmissions();

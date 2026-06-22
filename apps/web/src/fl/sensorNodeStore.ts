@@ -23,6 +23,10 @@ export type {
 
 /**
  * Load Sensor Node data from browser localStorage.
+ *
+ * IoTDashboard writes a short-lived bundle here immediately before navigating
+ * into the FL training flow. This module deliberately keeps no hardware or BLE
+ * dependencies; it only bridges the UI route handoff.
  */
 export function loadSensorNodeData(): SensorNodeDataBundle | null {
   try {
@@ -38,11 +42,21 @@ export function loadSensorNodeData(): SensorNodeDataBundle | null {
   }
 }
 
+/**
+ * Remove the route-handoff bundle after it has been consumed for training.
+ * Clearing eagerly reduces the chance of accidentally reusing stale readings.
+ */
 export function clearSensorNodeData(): void {
   localStorage.removeItem('sensor_node_data');
   console.log('Cleared Sensor Node data');
 }
 
+/**
+ * Minimum viable guard for training readiness.
+ *
+ * The threshold is intentionally low for the prototype; production validation
+ * should check sampling windows, sensor health, and per-feature completeness.
+ */
 export function hasValidSensorNodeData(): boolean {
   const bundle = loadSensorNodeData();
   return bundle !== null && bundle.sensorData.length >= 5;

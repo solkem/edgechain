@@ -31,7 +31,8 @@ export class GradientManager {
   private ipfsServiceUrl: string;
 
   constructor() {
-    // IPFS microservice endpoint
+    // IPFS microservice endpoint. Vite apps normally expose import.meta.env;
+    // this fallback exists for older React tooling and test environments.
     this.ipfsServiceUrl = process.env.REACT_APP_IPFS_SERVICE_URL || 'http://localhost:3002';
   }
 
@@ -104,7 +105,12 @@ export class GradientManager {
 
   /**
    * Train local model on features and compute gradients
-   * Implements Federated Averaging (FedAvg) algorithm
+   *
+   * This produces a model delta for FedAvg-style aggregation:
+   * gradient = locally trained weights - original global weights.
+   *
+   * The current labels are synthetic placeholder labels, so this path
+   * demonstrates privacy mechanics rather than production agronomic training.
    */
   private async trainLocalModel(
     features: MLFeatures[],
@@ -112,7 +118,9 @@ export class GradientManager {
   ): Promise<number[][]> {
     console.log('   🔬 Preparing training data...');
 
-    // Convert features to tensors
+    // Convert feature objects into a dense 2D tensor:
+    // [num_readings, num_features]. Feature order must stay aligned with the
+    // global model architecture used by the privacy FL flow.
     const X = tf.tensor2d(features.map(f => [
       f.soil_moisture_normalized,
       f.temperature_normalized,
@@ -147,13 +155,15 @@ export class GradientManager {
         batchSize: Math.min(32, features.length)
       });
 
-      // Get updated local weights. Do not dispose these directly; TensorFlow.js
-      // may return tensors owned by the model.
+      // getWeights returns tensors representing current model state. They are
+      // read to compute deltas, but the model remains responsible for them.
       const localWeights = globalModel.getWeights();
 
       console.log('   📊 Computing gradients (Δw = w_local - w_global)...');
 
-      // Compute gradients: Δw = w_local - w_global
+      // Compute deltas layer-by-layer. arraySync is acceptable for the small
+      // prototype model; larger models should avoid blocking readbacks from GPU
+      // memory and stream/serialize more carefully.
       const gradients = localWeights.map((localW, idx) => {
         const diff = localW.sub(originalWeights[idx]);
         const values = diff.arraySync() as number[];
@@ -174,7 +184,10 @@ export class GradientManager {
 
   /**
    * Calculate data quality score (0-100)
-   * Used for reward calculation in L4
+   *
+   * Used for prototype reward calculation in L4. This is a transparent heuristic
+   * that combines freshness, sample count, sensor stability, and update size; it
+   * is not yet a fraud-resistant contribution-quality proof.
    */
   private calculateQualityScore(features: MLFeatures[], gradients: number[][]): number {
     // Quality metrics:
@@ -217,6 +230,9 @@ export class GradientManager {
 
   /**
    * Encrypt gradient bundle with farmer's key (AES-256-GCM)
+   *
+   * The IV is prepended to the ciphertext because AES-GCM needs the same IV for
+   * decryption. The IV is not secret, but it must be unique per encryption.
    */
   private async encryptGradients(
     bundle: GradientBundle,
@@ -350,7 +366,10 @@ export class GradientManager {
 
   /**
    * Generate cryptographic commitment
-   * Commitment = Hash(gradients || farmer_key || round_id)
+   *
+   * Prototype commitment = Hash(gradients_hash || farmer_key || round_id).
+   * Production should avoid exporting raw farmer keys into commitment material;
+   * use a dedicated signing/commitment key or hardware-backed derivation.
    */
   private async generateCommitment(
     bundle: GradientBundle,
@@ -392,6 +411,9 @@ export class GradientManager {
 
   /**
    * Calculate reward amount based on quality score
+   *
+   * Demo units are tDUST-style accounting values for UI flow only, not a
+   * finalized farmer compensation model.
    */
   calculateReward(qualityScore: number): number {
     const baseReward = 100; // 100 tDUST base

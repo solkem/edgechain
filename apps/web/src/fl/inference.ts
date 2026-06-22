@@ -39,6 +39,10 @@ export {
 /**
  * Make crop yield prediction using a trained model
  *
+ * The model is reconstructed on each call from the serialized architecture and
+ * weights. This keeps persisted artifacts simple, but it also means callers
+ * should batch predictions when possible to avoid repeated model setup cost.
+ *
  * @param input - Farmer's current agricultural conditions
  * @param weights - Model weights (local or global)
  * @param modelVersion - Version of the model being used
@@ -73,7 +77,8 @@ export async function predictYield(
       throw new Error('Model returned a non-finite prediction');
     }
 
-    // Simplified confidence/explanation until model uncertainty is implemented.
+    // These are transparent heuristics for the prototype UI. They should not be
+    // treated as calibrated model uncertainty or causal feature attribution.
     const confidence = calculateConfidence(input);
     const explanation = calculateFeatureImportance(input);
 
@@ -95,6 +100,9 @@ export async function predictYield(
 
 /**
  * Predict yield using global model
+ *
+ * The global model is loaded from browser-local storage. In production this
+ * should come from a verified model registry/artifact hash.
  */
 export async function predictWithGlobalModel(
   input: PredictionInput
@@ -129,7 +137,8 @@ export async function predictWithLocalModel(
  * - High confidence if inputs are within typical ranges
  * - Lower confidence for edge cases
  *
- * In production: Use dropout-based uncertainty or ensemble methods
+ * Production replacements could include dropout-based uncertainty, conformal
+ * prediction, ensembles, or validation-set calibration.
  */
 function calculateConfidence(input: PredictionInput): number {
   // Typical ranges for agricultural data
@@ -182,7 +191,8 @@ function calculateConfidence(input: PredictionInput): number {
  * Shows which factors have the most impact on yield prediction
  * Helps farmers understand what to focus on
  *
- * Method: Perturb each feature slightly and measure prediction change
+ * Current implementation is a fixed agronomic heuristic, not a true model
+ * explanation. Keep the output phrased as guidance rather than proof.
  */
 function calculateFeatureImportance(input: PredictionInput): { topFactors: { feature: string; impact: number }[] } {
   // Simplified feature importance
@@ -229,6 +239,10 @@ function calculateFeatureImportance(input: PredictionInput): { topFactors: { fea
  * Make predictions for multiple scenarios (e.g., "what if" analysis)
  *
  * Example: "What if I increase fertilizer by 20%?"
+ *
+ * This simple implementation prioritizes clarity over speed. If prediction
+ * volume grows, build one model and one tensor batch instead of looping through
+ * predictYield, which rebuilds the model each time.
  */
 export async function batchPredict(
   inputs: PredictionInput[],
@@ -307,6 +321,9 @@ function loadGlobalModelFromStorage(): GlobalModel | null {
 
 /**
  * Save prediction to history
+ *
+ * Prediction history is user-facing convenience state. It is kept local because
+ * predictions may reveal farm conditions or intentions.
  */
 export function savePredictionToHistory(prediction: PredictionOutput): void {
   try {

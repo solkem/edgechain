@@ -22,6 +22,10 @@ import type { RawIoTReading, MLFeatures } from '../iot/privacyTypes';
 
 /**
  * FL Training Result
+ *
+ * Returned to UI callers after one local privacy-preserving FL cycle. It keeps
+ * cryptographic/storage references and an audit trail, but intentionally omits
+ * raw readings, extracted features, and plaintext gradients.
  */
 export interface FLTrainingResult {
   // L3: Encrypted gradient metadata
@@ -48,7 +52,9 @@ export interface FLTrainingResult {
 /**
  * Privacy-Preserving FL Orchestrator
  *
- * Implements the complete EdgeChain privacy architecture
+ * Implements the complete EdgeChain privacy architecture by coordinating
+ * specialized modules. Keep business logic in those modules where possible;
+ * this class should remain the sequence controller and privacy audit boundary.
  */
 export class PrivacyOrchestrator {
   private vault: LocalDataVault;
@@ -70,6 +76,10 @@ export class PrivacyOrchestrator {
   /**
    * Initialize orchestrator with farmer credentials
    *
+   * The password initializes local encryption for the browser-held vault.
+   * Contract initialization is optional so the privacy demo can run before a
+   * wallet/contract path is available.
+   *
    * @param farmerPassword - Farmer's password (derives encryption keys)
    * @param deviceId - Device ID for this IoT device
    * @param walletApi - Midnight wallet API (for contract interactions)
@@ -84,11 +94,13 @@ export class PrivacyOrchestrator {
     console.log('🔐 Initializing Privacy-Preserving FL Orchestrator...');
     console.log(`   Device: ${deviceId}`);
 
-    // Initialize L1: Local Data Vault
+    // Initialize L1: Local Data Vault. The vault owns encryption/decryption;
+    // the orchestrator stores the key reference only to pass it to L3.
     await this.vault.initialize(farmerPassword, deviceId);
     this.farmerKey = this.vault['farmerKey']; // Access private field for orchestration
 
-    // Generate device secret (for nullifier generation)
+    // Prototype device secret for nullifier generation. Production should derive
+    // or unwrap this from a hardware-backed device identity.
     this.deviceSecret = crypto.getRandomValues(new Uint8Array(32));
 
     // Initialize L4: Contract SDK (if wallet provided)
@@ -118,6 +130,9 @@ export class PrivacyOrchestrator {
    * @param roundId - Current FL round ID
    * @param deviceId - Device ID for this contribution
    * @param privateInputs - Private inputs for ZK proof (device registration)
+   *
+   * Failure model: if L4 submission fails after L3 succeeds, encrypted gradients
+   * remain retrievable by CID and the commitment step can be retried.
    */
   async executeTrainingCycle(
     globalModel: tf.LayersModel,
@@ -170,6 +185,8 @@ export class PrivacyOrchestrator {
     console.log('📝 LAYER 2: Feature Extraction');
     console.log('─────────────────────────────────────────────────');
 
+    // Features are derived from encrypted/local readings and are held only in
+    // memory for this training cycle. They must be deleted after L3.
     const features = this.featureExtractor.extractFeatures(encryptedReadings);
     privacyAudit.l2_features_created = features.length;
 
@@ -227,7 +244,8 @@ export class PrivacyOrchestrator {
     let rewardEarned: number | undefined;
 
     try {
-      // Create contribution parameters
+      // Create public contribution parameters from encrypted-gradient metadata.
+      // This step should never require raw readings or plaintext features.
       const contributionParams = await this.contract.createContributionParams(
         gradientMetadata,
         this.deviceSecret
@@ -241,7 +259,8 @@ export class PrivacyOrchestrator {
 
       console.log('');
 
-      // Submit to contract (if private inputs provided)
+      // Submit to contract only when caller supplies device-registration proof
+      // inputs. Without them, the cycle still produces retriable L3 artifacts.
       if (privateInputs) {
         const farmerKeyBytes = await crypto.subtle.exportKey('raw', this.farmerKey);
 
@@ -355,6 +374,9 @@ export class PrivacyOrchestrator {
 
   /**
    * Query contract: Get reward balance
+   *
+   * The nullifier lets the app query claim state without exposing the reusable
+   * device secret itself.
    */
   async getRewardBalance(): Promise<number> {
     if (!this.deviceSecret) {
@@ -387,6 +409,10 @@ export class PrivacyOrchestrator {
 
   /**
    * Verify all privacy guarantees are maintained
+   *
+   * This is a runtime sanity check for the demo boundary, not a formal privacy
+   * proof. It documents which invariants the orchestration layer is responsible
+   * for maintaining.
    */
   verifyPrivacyGuarantees(): {
     valid: boolean;

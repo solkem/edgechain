@@ -1,3 +1,11 @@
+/**
+ * Inference and weight-handling smoke tests.
+ *
+ * These tests protect the browser FL contract that serialized weights can be
+ * round-tripped into a TF.js model and used for local prediction without
+ * leaking model/tensor resources.
+ */
+
 import assert from 'node:assert/strict';
 import * as tf from '@tensorflow/tfjs';
 import {

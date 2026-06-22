@@ -22,7 +22,10 @@ import { prepareTrainingData } from '@edgechain/fl';
 
 /**
  * Create a simple feedforward neural network for crop yield prediction
- * Architecture designed to run efficiently in browser
+ * Architecture designed to run efficiently in browser.
+ *
+ * The architecture is intentionally small: every farmer trains locally, so the
+ * model must fit browser memory and complete quickly on ordinary devices.
  */
 export function createModel(architecture: ModelArchitecture): tf.LayersModel {
   const model = tf.sequential();
@@ -74,6 +77,11 @@ export function createModel(architecture: ModelArchitecture): tf.LayersModel {
 
 /**
  * Default architecture for crop yield prediction
+ *
+ * Input features must match @edgechain/fl prepareTrainingData:
+ * 5 normalized numeric features + 5 one-hot soil types + 4 one-hot irrigation
+ * types. Changing this shape requires updating feature preparation and any
+ * stored model weights together.
  */
 export const DEFAULT_ARCHITECTURE: ModelArchitecture = {
   inputDim: 14,           // 5 numeric + 5 soil types + 4 irrigation types
@@ -103,6 +111,10 @@ export const DEFAULT_TRAINING_CONFIG: TrainingConfig = {
 
 /**
  * Extract weights from TensorFlow model
+ *
+ * TF.js tensors cannot be sent directly over JSON or submitted to the
+ * aggregation service. This converts each trainable layer into plain nested
+ * arrays so model updates can be hashed, persisted, and aggregated.
  */
 export async function extractModelWeights(model: tf.LayersModel): Promise<ModelWeights> {
   const layers: ModelWeights['layers'] = [];
@@ -156,6 +168,9 @@ export async function extractModelWeights(model: tf.LayersModel): Promise<ModelW
 
 /**
  * Load weights into TensorFlow model
+ *
+ * Stored weights only include layers that actually have parameters. Dropout
+ * layers are skipped because they have no weights and only affect training.
  */
 export async function loadModelWeights(
   model: tf.LayersModel,
@@ -212,7 +227,13 @@ export async function loadModelWeights(
 
 /**
  * Train model locally on farmer's device
- * Returns training result with metrics and final weights
+ *
+ * Privacy boundary: this function receives already-prepared farm data, trains
+ * in the browser, and returns only model weights/metrics. Raw data does not
+ * leave this runtime through the training path.
+ *
+ * TensorFlow.js allocates backend memory outside normal JS objects, so all
+ * tensors/models created here must be disposed in the finally block.
  */
 export async function trainLocalModel(
   dataset: FarmDataset,
@@ -224,7 +245,8 @@ export async function trainLocalModel(
 
   console.log(`🚀 Starting local training with ${dataset.totalSamples} samples...`);
 
-  // Prepare training data
+  // prepareTrainingData owns feature ordering and normalization. Keep model
+  // inputDim synchronized with that shared package contract.
   const { inputs, targets } = prepareTrainingData(dataset);
 
   const xs = tf.tensor2d(inputs);
@@ -234,7 +256,8 @@ export async function trainLocalModel(
   try {
     console.log(`Input shape: ${xs.shape}, Target shape: ${ys.shape}`);
 
-    // Load initial weights if provided (for FL)
+    // In FL rounds after v0, local clients fine-tune from the latest global
+    // model rather than training from random initialization.
     if (initialWeights) {
       await loadModelWeights(model, initialWeights);
       console.log('📥 Loaded initial global model weights');
@@ -277,9 +300,8 @@ export async function trainLocalModel(
       }
     };
 
-    // Build callbacks array
-    // NOTE: Early stopping disabled due to TensorFlow.js callback interface issues
-    // The model will train for all epochs (50 by default)
+    // NOTE: Early stopping is configured at the type level but disabled here
+    // until the TF.js callback behavior is made deterministic across browsers.
     const callbacks: tf.CustomCallbackArgs[] = [metricsCallback];
 
     // Train the model
@@ -338,6 +360,9 @@ export async function trainLocalModel(
 
 /**
  * Evaluate model on test data
+ *
+ * This mirrors the local training preprocessing path to ensure metrics are
+ * comparable with the weights submitted to aggregation.
  */
 export async function evaluateModel(
   weights: ModelWeights,
@@ -376,7 +401,9 @@ export async function evaluateModel(
 
 /**
  * Serialize model weights to JSON string
- * Used for storage and transmission
+ *
+ * Used for local persistence, hashing, and HTTP submission. The output is not a
+ * TF.js model format; callers must recreate the architecture before loading it.
  */
 export function serializeWeights(weights: ModelWeights): string {
   return JSON.stringify(weights);
@@ -391,7 +418,10 @@ export function deserializeWeights(serialized: string): ModelWeights {
 
 /**
  * Calculate hash of model weights
- * Used for integrity verification
+ *
+ * Used for integrity verification and signing. Browser crypto is preferred so
+ * the hash is a real SHA-256 digest; the fallback only supports non-browser
+ * tests and should not be used as a security primitive.
  */
 export async function hashModelWeights(weights: ModelWeights): Promise<string> {
   const serialized = serializeWeights(weights);
@@ -424,6 +454,9 @@ const TRAINING_HISTORY_KEY = 'edgechain_training_history';
 
 /**
  * Save trained model weights locally
+ *
+ * Stores the farmer's latest local model update in browser storage for the demo
+ * flow. Production clients should use encrypted durable storage.
  */
 export function saveLocalModel(weights: ModelWeights): void {
   try {

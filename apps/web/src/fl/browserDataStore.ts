@@ -44,6 +44,11 @@ const IOT_READINGS_KEY = 'edgechain_iot_readings';
 
 /**
  * Save dataset to browser localStorage.
+ *
+ * This is prototype persistence for the browser demo. Production clients should
+ * use an encrypted, quota-aware store such as IndexedDB or a native secure
+ * storage layer, depending on where local training runs.
+ *
  * Data never leaves the farmer's device through this helper.
  */
 export function saveDatasetLocally(dataset: FarmDataset): void {
@@ -71,6 +76,10 @@ export function loadDatasetLocally(): FarmDataset | null {
   }
 }
 
+/**
+ * Persist raw-ish IoT readings for the current browser session/demo flow.
+ * These records are used to build local training datasets and are not synced.
+ */
 export function saveIoTReadings(readings: IoTSensorReading[]): void {
   try {
     const serialized = JSON.stringify(readings);
@@ -81,6 +90,12 @@ export function saveIoTReadings(readings: IoTSensorReading[]): void {
   }
 }
 
+/**
+ * Load locally staged IoT readings.
+ *
+ * Returning an empty list keeps UI flows simple: absence of browser data is not
+ * an exceptional state because the app can fall back to generated demo data.
+ */
 export function loadIoTReadings(): IoTSensorReading[] {
   try {
     const serialized = localStorage.getItem(IOT_READINGS_KEY);
@@ -93,6 +108,10 @@ export function loadIoTReadings(): IoTSensorReading[] {
   }
 }
 
+/**
+ * Clear browser-local FL input data without touching model weights or
+ * aggregation artifacts, which are managed by training.ts and modelStore.ts.
+ */
 export function clearAllLocalData(): void {
   localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem(IOT_READINGS_KEY);
