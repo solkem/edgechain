@@ -130,6 +130,8 @@ Reward values in the lab are abstract accounting units for simulation and fairne
 
 EdgeChain currently demonstrates the full privacy-preserving FL workflow end to end, but several components are intentionally prototype-grade. Local model training runs in the browser with TensorFlow.js, demo datasets are used when live sensor-node data is unavailable, and some infrastructure paths use simulated ZK proofs, mock IPFS CIDs, local browser storage, and simulation-mode contract calls. These choices keep the prototype runnable while preserving the intended architecture.
 
+IPFS is used as an artifact layer for model, proof, and audit data; it should not be treated as privacy or permanence by itself. Sensitive artifacts must be encrypted before upload, and production durability requires pinning, replicated storage providers, lifecycle rules, and potentially Filecoin-style storage deals.
+
 The production path replaces these scaffolds with hardware-backed device identity, real Compact/Midnight proof generation, durable encrypted model storage, native or edge-node local training, persistent aggregation state, and audited on-chain reward settlement.
 
 ---
