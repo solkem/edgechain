@@ -9,6 +9,7 @@ import type {
   AgentChatMessage,
   PilotSession,
 } from '../agent/types';
+import { PilotBrand } from '../agent/PilotBrand';
 
 export function FarmAssistant({
   session,
@@ -127,8 +128,9 @@ export function FarmAssistant({
       <div className="mx-auto max-w-5xl">
         <header className="mb-5 flex flex-col gap-4 border-2 border-black bg-white p-5 shadow-[6px_6px_0_#000] md:flex-row md:items-center md:justify-between">
           <div>
+            <PilotBrand compact />
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-700">
-              Virtual Ndani Kit Farm Assistant
+              <span className="mt-4 block">Virtual Ndani Kit Farm Assistant</span>
             </p>
             <h1 className="mt-1 text-3xl font-black">{session.farmer.display_name}</h1>
             <p className="text-sm text-gray-600">

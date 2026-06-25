@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { AgentApiError } from '../agent/api';
+import { PilotBrand } from '../agent/PilotBrand';
 
 export function PilotLogin({
   onSubmit,
@@ -30,8 +31,9 @@ export function PilotLogin({
     <main className="min-h-screen bg-[#f7f7f2] px-5 py-10 flex items-center">
       <div className="mx-auto grid w-full max-w-5xl gap-8 lg:grid-cols-[1.1fr_0.9fr]">
         <section className="flex flex-col justify-center">
+          <PilotBrand />
           <p className="mb-4 text-sm font-bold uppercase tracking-[0.22em] text-blue-700">
-            EdgeChain Odzi Pilot
+            <span className="mt-8 block">EdgeChain Odzi Pilot</span>
           </p>
           <h1 className="max-w-2xl text-5xl font-black leading-[0.98] text-black md:text-7xl">
             Meet your farm’s Virtual Ndani Kit.

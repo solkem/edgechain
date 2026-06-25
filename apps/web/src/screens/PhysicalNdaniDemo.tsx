@@ -9,6 +9,7 @@ import type {
   PhysicalNdaniDemoSession,
   PilotSession,
 } from '../agent/types';
+import { PilotBrand } from '../agent/PilotBrand';
 
 export function PhysicalNdaniDemo({ session }: { session: PilotSession }) {
   const navigate = useNavigate();
@@ -71,8 +72,9 @@ export function PhysicalNdaniDemo({ session }: { session: PilotSession }) {
         <header className="border-4 border-[#f1d34f] bg-black p-5 sm:p-7">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
+              <PilotBrand compact inverse />
               <p className="inline-block bg-[#f1d34f] px-3 py-2 text-sm font-black uppercase tracking-[0.18em] text-black">
-                Demonstration data
+                <span className="mt-5 block">Demonstration data</span>
               </p>
               <h1 className="mt-4 text-4xl font-black leading-none sm:text-6xl">
                 See how the physical Ndani Kit works
