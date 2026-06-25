@@ -62,6 +62,7 @@ jobs:
           VITE_MIDNIGHT_INDEXER_URL: https://indexer.testnet-02.midnight.network/api/v1/graphql
           VITE_MIDNIGHT_INDEXER_WS: wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws
           VITE_MIDNIGHT_NODE_URL: https://rpc.testnet-02.midnight.network
+          VITE_API_URL: https://edgechain-midnight.fly.dev
           VITE_AGENT_ENABLED: 'true'
           VITE_VIRTUAL_NDANI_ENABLED: 'true'
           VITE_VIRTUAL_NDANI_COORDINATOR_ENABLED: 'true'
