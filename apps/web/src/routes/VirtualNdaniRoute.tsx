@@ -23,6 +23,9 @@ export function VirtualNdaniRoute() {
       />
     );
   }
+  if (agent.session.farmer.system_role === 'coordinator') {
+    return <Navigate to="/coordinator" replace />;
+  }
 
   return <VirtualNdani session={agent.session} onLogout={agent.logout} />;
 }
