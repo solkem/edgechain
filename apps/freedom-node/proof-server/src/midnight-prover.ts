@@ -40,7 +40,7 @@ export interface MerkleProof {
 export interface SensorData {
     temperature: number;
     humidity: number;
-    pressure: number;
+    pressure: number | null;
     soilMoisture: number;
 }
 
@@ -309,11 +309,12 @@ export class MidnightProver {
      */
     private computeDataHash(sensorData: SensorData): string {
         const hash = createHash('sha256');
-        const buffer = Buffer.alloc(16);
+        // Hash only values transmitted by ESP32 Ndani DataPacket v1.
+        // Pressure remains null until a future packet version includes it.
+        const buffer = Buffer.alloc(12);
         buffer.writeFloatLE(sensorData.temperature, 0);
         buffer.writeFloatLE(sensorData.humidity, 4);
-        buffer.writeFloatLE(sensorData.pressure, 8);
-        buffer.writeFloatLE(sensorData.soilMoisture, 12);
+        buffer.writeFloatLE(sensorData.soilMoisture, 8);
         hash.update(buffer);
         return hash.digest('hex');
     }

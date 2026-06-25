@@ -1,6 +1,8 @@
 import Hero from "@/components/hero";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { PILOT_AGENT_ENABLED } from "../agent/api";
 
 export function Login({
   onConnect,
@@ -22,6 +24,7 @@ export function Login({
   setIsDeploying: (deploying: boolean) => void;
 }) {
   const [deployError, setDeployError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const connectAndMaybeDeploy = async () => {
     setDeployError(null);
@@ -79,6 +82,14 @@ export function Login({
           <Hero />
 
           <div className="text-xl font-[orbitron] font-bold text-end  absolute bottom-6 right-6 z-20">
+            {PILOT_AGENT_ENABLED && (
+              <button
+                onClick={() => navigate('/pilot-login')}
+                className="mb-3 block w-[280px] border-2 border-black bg-white px-6 py-4 text-base font-semibold text-black hover:bg-black hover:text-white"
+              >
+                Farmer AI Access
+              </button>
+            )}
             <button
               onClick={connectToWallet}
               disabled={isConnecting || isDeploying}

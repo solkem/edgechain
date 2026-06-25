@@ -1,0 +1,443 @@
+import type {
+  AgentMessageResponse,
+  AgentConversationResponse,
+  PilotSession,
+  VirtualNdaniDevice,
+  VirtualNdaniEvent,
+  VirtualNdaniCycle,
+  VirtualNdaniReading,
+  GuidedReadingDraft,
+  VirtualNdaniContribution,
+  CoordinatorFleetDevice,
+  CoordinatorReadingReview,
+  PilotOperationsMetrics,
+  PilotEvidenceReport,
+  PhysicalBindingChallenge,
+  PhysicalBindingResult,
+  PhysicalManualComparison,
+  PhysicalNdaniDemoSession,
+} from './types';
+
+const configuredApiUrl = String(import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+export const PILOT_AGENT_ENABLED = import.meta.env.VITE_AGENT_ENABLED === 'true';
+export const VIRTUAL_NDANI_ENABLED =
+  PILOT_AGENT_ENABLED && import.meta.env.VITE_VIRTUAL_NDANI_ENABLED !== 'false';
+export const VIRTUAL_NDANI_COORDINATOR_ENABLED =
+  VIRTUAL_NDANI_ENABLED
+  && import.meta.env.VITE_VIRTUAL_NDANI_COORDINATOR_ENABLED !== 'false';
+export const VIRTUAL_NDANI_PHYSICAL_BINDING_ENABLED =
+  VIRTUAL_NDANI_COORDINATOR_ENABLED
+  && import.meta.env.VITE_VIRTUAL_NDANI_PHYSICAL_BINDING_ENABLED === 'true';
+export const VIRTUAL_NDANI_PIPELINE_DEMO_ENABLED =
+  VIRTUAL_NDANI_ENABLED
+  && import.meta.env.VITE_VIRTUAL_NDANI_PIPELINE_DEMO_ENABLED === 'true';
+
+export class AgentApiError extends Error {
+  constructor(
+    public readonly code: string,
+    public readonly status: number
+  ) {
+    super(code);
+  }
+}
+
+export async function loadPilotSession(): Promise<PilotSession | null> {
+  const response = await request('/api/v1/auth/session', { method: 'GET' });
+  if (response.status === 401) return null;
+  if (!response.ok) throw await toApiError(response);
+  return response.json() as Promise<PilotSession>;
+}
+
+export async function loginPilotFarmer(
+  pilotCode: string,
+  pin: string
+): Promise<void> {
+  const response = await request('/api/v1/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({
+      pilot_code: pilotCode.trim(),
+      pin,
+    }),
+  });
+  if (!response.ok) throw await toApiError(response);
+}
+
+export async function logoutPilotFarmer(): Promise<void> {
+  const response = await request('/api/v1/auth/logout', { method: 'POST' });
+  if (!response.ok && response.status !== 401) {
+    throw await toApiError(response);
+  }
+}
+
+export async function sendAgentMessage(input: {
+  farmId: string;
+  text: string;
+  externalMessageId: string;
+}): Promise<AgentMessageResponse> {
+  const response = await request('/api/v1/agent/messages', {
+    method: 'POST',
+    body: JSON.stringify({
+      farm_id: input.farmId,
+      text: input.text,
+      external_message_id: input.externalMessageId,
+    }),
+  });
+  if (!response.ok) throw await toApiError(response);
+  return response.json() as Promise<AgentMessageResponse>;
+}
+
+export async function loadLatestAgentConversation(
+  farmId: string
+): Promise<AgentConversationResponse | null> {
+  const response = await request(
+    `/api/v1/agent/conversations/latest?farm_id=${encodeURIComponent(farmId)}`,
+    { method: 'GET' }
+  );
+  if (response.status === 404) return null;
+  if (!response.ok) throw await toApiError(response);
+  return response.json() as Promise<AgentConversationResponse>;
+}
+
+export async function loadVirtualNdaniDevices(): Promise<VirtualNdaniDevice[]> {
+  const response = await request('/api/v1/virtual-ndani', { method: 'GET' });
+  if (!response.ok) throw await toApiError(response);
+  const body = await response.json() as {
+    success: true;
+    devices: VirtualNdaniDevice[];
+  };
+  return body.devices;
+}
+
+export async function loadVirtualNdaniTimeline(
+  deviceId: string
+): Promise<VirtualNdaniEvent[]> {
+  const response = await request(
+    `/api/v1/virtual-ndani/${encodeURIComponent(deviceId)}/timeline?limit=12`,
+    { method: 'GET' }
+  );
+  if (!response.ok) throw await toApiError(response);
+  const body = await response.json() as {
+    success: true;
+    events: VirtualNdaniEvent[];
+  };
+  return body.events;
+}
+
+export async function loadVirtualNdaniContributions(
+  deviceId: string
+): Promise<VirtualNdaniContribution[]> {
+  const response = await request(
+    `/api/v1/virtual-ndani/${encodeURIComponent(deviceId)}/contributions?limit=10`,
+    { method: 'GET' }
+  );
+  if (!response.ok) throw await toApiError(response);
+  const body = await response.json() as {
+    success: true;
+    contributions: VirtualNdaniContribution[];
+  };
+  return body.contributions;
+}
+
+export async function loadPhysicalManualComparison(
+  deviceId: string
+): Promise<PhysicalManualComparison> {
+  const response = await request(
+    `/api/v1/virtual-ndani/${encodeURIComponent(deviceId)}/physical-comparison`,
+    { method: 'GET' }
+  );
+  if (!response.ok) throw await toApiError(response);
+  const body = await response.json() as {
+    success: true;
+    comparison: PhysicalManualComparison;
+  };
+  return body.comparison;
+}
+
+export async function createPhysicalNdaniDemo(
+  deviceId: string
+): Promise<PhysicalNdaniDemoSession> {
+  const response = await request(
+    `/api/v1/virtual-ndani/${encodeURIComponent(deviceId)}/demo-sessions`,
+    { method: 'POST', body: '{}' }
+  );
+  if (!response.ok) throw await toApiError(response);
+  const body = await response.json() as {
+    success: true;
+    session: PhysicalNdaniDemoSession;
+  };
+  return body.session;
+}
+
+export async function loadPhysicalNdaniDemo(
+  deviceId: string,
+  sessionId: string
+): Promise<PhysicalNdaniDemoSession> {
+  const response = await request(
+    `/api/v1/virtual-ndani/${encodeURIComponent(deviceId)}/demo-sessions/${encodeURIComponent(sessionId)}`,
+    { method: 'GET' }
+  );
+  if (!response.ok) throw await toApiError(response);
+  const body = await response.json() as {
+    success: true;
+    session: PhysicalNdaniDemoSession;
+  };
+  return body.session;
+}
+
+export async function deletePhysicalNdaniDemo(
+  deviceId: string,
+  sessionId: string
+): Promise<void> {
+  const response = await request(
+    `/api/v1/virtual-ndani/${encodeURIComponent(deviceId)}/demo-sessions/${encodeURIComponent(sessionId)}`,
+    { method: 'DELETE' }
+  );
+  if (!response.ok) throw await toApiError(response);
+}
+
+export async function loadCoordinatorFleet(): Promise<CoordinatorFleetDevice[]> {
+  const response = await request('/api/v1/coordinator/virtual-ndani', {
+    method: 'GET',
+  });
+  if (!response.ok) throw await toApiError(response);
+  const body = await response.json() as {
+    success: true;
+    devices: CoordinatorFleetDevice[];
+  };
+  return body.devices;
+}
+
+export async function loadCoordinatorReviews(): Promise<CoordinatorReadingReview[]> {
+  const response = await request('/api/v1/coordinator/reading-reviews', {
+    method: 'GET',
+  });
+  if (!response.ok) throw await toApiError(response);
+  const body = await response.json() as {
+    success: true;
+    reviews: CoordinatorReadingReview[];
+  };
+  return body.reviews;
+}
+
+export async function submitCoordinatorReview(input: {
+  readingId: string;
+  decision: 'approved' | 'excluded';
+  reason: string;
+  coordinatorDurationSeconds?: number;
+}): Promise<void> {
+  const response = await request(
+    `/api/v1/coordinator/reading-reviews/${encodeURIComponent(input.readingId)}`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        decision: input.decision,
+        reason: input.reason,
+        coordinator_duration_seconds: input.coordinatorDurationSeconds,
+      }),
+    }
+  );
+  if (!response.ok) throw await toApiError(response);
+}
+
+export async function runCoordinatorOperations(): Promise<void> {
+  const response = await request('/api/v1/coordinator/operations/run', {
+    method: 'POST',
+    body: '{}',
+  });
+  if (!response.ok) throw await toApiError(response);
+}
+
+export async function loadCoordinatorMetrics(): Promise<PilotOperationsMetrics> {
+  const response = await request('/api/v1/coordinator/metrics', {
+    method: 'GET',
+  });
+  if (!response.ok) throw await toApiError(response);
+  const body = await response.json() as {
+    success: true;
+    metrics: PilotOperationsMetrics;
+  };
+  return body.metrics;
+}
+
+export async function loadCoordinatorEvidenceReport(): Promise<PilotEvidenceReport> {
+  const response = await request('/api/v1/coordinator/evidence-report', {
+    method: 'GET',
+  });
+  if (!response.ok) throw await toApiError(response);
+  const body = await response.json() as {
+    success: true;
+    report: PilotEvidenceReport;
+  };
+  return body.report;
+}
+
+export async function downloadCoordinatorEvidenceCsv(): Promise<void> {
+  const response = await request('/api/v1/coordinator/evidence-report.csv', {
+    method: 'GET',
+    headers: { Accept: 'text/csv' },
+  });
+  if (!response.ok) throw await toApiError(response);
+  const blob = await response.blob();
+  const disposition = response.headers.get('content-disposition') || '';
+  const filename = disposition.match(/filename="([^"]+)"/)?.[1]
+    || 'edgechain-virtual-ndani-evidence.csv';
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
+export async function issuePhysicalBindingChallenge(input: {
+  deviceId: string;
+  devicePubkey: string;
+}): Promise<PhysicalBindingChallenge> {
+  const response = await request(
+    `/api/v1/coordinator/virtual-ndani/${encodeURIComponent(input.deviceId)}/physical-binding/challenge`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ device_pubkey: input.devicePubkey }),
+    }
+  );
+  if (!response.ok) throw await toApiError(response);
+  const body = await response.json() as {
+    success: true;
+    challenge: PhysicalBindingChallenge;
+  };
+  return body.challenge;
+}
+
+export async function verifyPhysicalBinding(input: {
+  deviceId: string;
+  challengeId: string;
+  signature: string;
+}): Promise<PhysicalBindingResult> {
+  const response = await request(
+    `/api/v1/coordinator/virtual-ndani/${encodeURIComponent(input.deviceId)}/physical-binding/verify`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        challenge_id: input.challengeId,
+        signature: input.signature,
+      }),
+    }
+  );
+  if (!response.ok) throw await toApiError(response);
+  const body = await response.json() as {
+    success: true;
+    binding: PhysicalBindingResult;
+  };
+  return body.binding;
+}
+
+export async function markCoordinatorCycleMissed(input: {
+  deviceId: string;
+  cycleId: string;
+  reason: string;
+}): Promise<void> {
+  const response = await request(
+    `/api/v1/coordinator/virtual-ndani/${encodeURIComponent(input.deviceId)}/cycles/${encodeURIComponent(input.cycleId)}/missed`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ reason: input.reason }),
+    }
+  );
+  if (!response.ok) throw await toApiError(response);
+}
+
+export async function startVirtualNdaniCycle(
+  deviceId: string,
+  collectionMode: 'manual_guided' | 'manual_agent'
+): Promise<VirtualNdaniCycle> {
+  const response = await request(
+    `/api/v1/virtual-ndani/${encodeURIComponent(deviceId)}/cycles`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ collection_mode: collectionMode }),
+    }
+  );
+  if (!response.ok) throw await toApiError(response);
+  const body = await response.json() as {
+    success: true;
+    cycle: VirtualNdaniCycle;
+  };
+  return body.cycle;
+}
+
+export async function loadVirtualNdaniCycleReading(
+  deviceId: string,
+  cycleId: string
+): Promise<VirtualNdaniReading | null> {
+  const response = await request(
+    `/api/v1/virtual-ndani/${encodeURIComponent(deviceId)}/cycles/${encodeURIComponent(cycleId)}/reading`,
+    { method: 'GET' }
+  );
+  if (response.status === 404) return null;
+  if (!response.ok) throw await toApiError(response);
+  const body = await response.json() as {
+    success: true;
+    reading: VirtualNdaniReading;
+  };
+  return body.reading;
+}
+
+export async function saveVirtualNdaniGuidedReading(
+  deviceId: string,
+  cycleId: string,
+  draft: GuidedReadingDraft
+): Promise<VirtualNdaniReading> {
+  const response = await request(
+    `/api/v1/virtual-ndani/${encodeURIComponent(deviceId)}/cycles/${encodeURIComponent(cycleId)}/readings`,
+    {
+      method: 'POST',
+      body: JSON.stringify(draft),
+    }
+  );
+  if (!response.ok) throw await toApiError(response);
+  const body = await response.json() as {
+    success: true;
+    reading: VirtualNdaniReading;
+  };
+  return body.reading;
+}
+
+export async function confirmVirtualNdaniReading(
+  deviceId: string,
+  cycleId: string
+): Promise<VirtualNdaniReading> {
+  const response = await request(
+    `/api/v1/virtual-ndani/${encodeURIComponent(deviceId)}/cycles/${encodeURIComponent(cycleId)}/confirm`,
+    { method: 'POST', body: '{}' }
+  );
+  if (!response.ok) throw await toApiError(response);
+  const body = await response.json() as {
+    success: true;
+    reading: VirtualNdaniReading;
+  };
+  return body.reading;
+}
+
+async function request(path: string, init: RequestInit): Promise<Response> {
+  return fetch(`${configuredApiUrl}${path}`, {
+    ...init,
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...init.headers,
+    },
+  });
+}
+
+async function toApiError(response: Response): Promise<AgentApiError> {
+  let code = `request_failed_${response.status}`;
+  try {
+    const body = await response.json();
+    if (typeof body?.error === 'string') code = body.error;
+  } catch {
+    // Retain the status-based fallback.
+  }
+  return new AgentApiError(code, response.status);
+}

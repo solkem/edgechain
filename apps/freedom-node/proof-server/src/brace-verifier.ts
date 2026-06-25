@@ -194,11 +194,6 @@ export class BraceVerifier {
             return false;
         }
 
-        // Pressure: 300 to 1100 hPa
-        if (data.pressure < 300 || data.pressure > 1100) {
-            return false;
-        }
-
         // Soil moisture: 0% to 100%
         if (data.soilMoisture < 0 || data.soilMoisture > 100) {
             return false;

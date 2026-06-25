@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
+import { PILOT_AGENT_ENABLED } from "../agent/api";
 
 const MenuItem = ({ label, href, activeView }: { label: string; href: string; activeView: string }) => {
   return (
@@ -76,13 +77,26 @@ const Navbar = () => {
       label: "Predictions",
       href: "/predictions",
     },
+    ...(PILOT_AGENT_ENABLED ? [{
+      label: "Farm Assistant",
+      href: "/farm-assistant",
+    }] : []),
   ];
 
   useEffect(() => {
     setActiveView(pathname.pathname);
   }, [pathname]);
 
-  if(activeView === "/") {
+  const isPilotExperience = [
+    "/pilot-login",
+    "/virtual-ndani",
+    "/virtual-ndani/reading",
+    "/virtual-ndani/demo",
+    "/farm-assistant",
+    "/coordinator",
+  ].includes(pathname.pathname);
+
+  if(activeView === "/" || isPilotExperience) {
     return null;
   }
 

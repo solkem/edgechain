@@ -50,6 +50,7 @@ COPY --from=builder /app/packages/mars/dist /app/packages/mars/dist
 
 # Copy database schema files (SQL files are not compiled by TypeScript)
 COPY --from=builder /app/apps/freedom-node/src/database/schema.sql ./dist/database/schema.sql
+COPY --from=builder /app/apps/freedom-node/src/database/migrations ./dist/database/migrations
 
 # Copy frontend build
 COPY --from=builder /app/apps/web/dist /app/apps/web/dist

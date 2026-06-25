@@ -152,12 +152,14 @@ loraReceiver.on('packet', async (packet) => {
     });
 
     try {
-        // 1. Verify the packet signature
+        // 1. Validate packet structure, ranges, timestamp and commitment.
+        // P-256 ownership verification occurs in the bound-device ingestion
+        // adapter or, when implemented, the attestation proof path.
         const isValid = await braceVerifier.verifyPacket(packet);
 
         if (!isValid) {
-            logger.warn('Invalid packet signature, discarding');
-            broadcast('packet:invalid', { reason: 'signature' });
+            logger.warn('Invalid packet envelope, discarding');
+            broadcast('packet:invalid', { reason: 'envelope_validation' });
             return;
         }
 

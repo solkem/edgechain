@@ -8,6 +8,13 @@ import { TrainRoute } from "./routes/TrainRoute";
 import { PrivacyTrainRoute } from "./routes/PrivacyTrainRoute";
 import { AggregationRoute } from "./routes/AggregationRoute";
 import { PredictionsRoute } from "./routes/PredictionsRoute";
+import { PilotLoginRoute } from "./routes/PilotLoginRoute";
+import { FarmAssistantRoute } from "./routes/FarmAssistantRoute";
+import { VirtualNdaniRoute } from "./routes/VirtualNdaniRoute";
+import { VirtualNdaniReadingRoute } from "./routes/VirtualNdaniReadingRoute";
+import { CoordinatorRoute } from "./routes/CoordinatorRoute";
+import { PhysicalNdaniDemoRoute } from "./routes/PhysicalNdaniDemoRoute";
+import { AgentSessionProvider } from "./agent/AgentSessionProvider";
 import Navbar from "./components/Navbar";
 import "./app.css";
 import { Toaster } from "sonner";
@@ -16,22 +23,32 @@ import { Toaster } from "sonner";
 export default function EdgeChainApp() {
   return (
     <AppProvider>
-      <BrowserRouter>
-        <Navbar />
-        <Toaster position="top-right" />
-        <Routes>
-          {/* Main app routes */}
-          <Route path="/" element={<LoginRoute />} />
-          <Route path="/register" element={<RegisterRoute />} />
-          <Route path="/selection" element={<SelectionRoute />} />
-          <Route path="/sensor-node" element={<IoTRoute />} />
-          <Route path="/train" element={<TrainRoute />} />
-          <Route path="/train-privacy" element={<PrivacyTrainRoute />} />
-          <Route path="/aggregation" element={<AggregationRoute />} />
-          <Route path="/predictions" element={<PredictionsRoute />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
+      <AgentSessionProvider>
+        <BrowserRouter>
+          <Navbar />
+          <Toaster position="top-right" />
+          <Routes>
+            {/* Existing wallet-first application routes */}
+            <Route path="/" element={<LoginRoute />} />
+            <Route path="/register" element={<RegisterRoute />} />
+            <Route path="/selection" element={<SelectionRoute />} />
+            <Route path="/sensor-node" element={<IoTRoute />} />
+            <Route path="/train" element={<TrainRoute />} />
+            <Route path="/train-privacy" element={<PrivacyTrainRoute />} />
+            <Route path="/aggregation" element={<AggregationRoute />} />
+            <Route path="/predictions" element={<PredictionsRoute />} />
+
+            {/* Additive AI Farm Agent pilot routes */}
+            <Route path="/pilot-login" element={<PilotLoginRoute />} />
+            <Route path="/virtual-ndani" element={<VirtualNdaniRoute />} />
+            <Route path="/virtual-ndani/reading" element={<VirtualNdaniReadingRoute />} />
+            <Route path="/virtual-ndani/demo" element={<PhysicalNdaniDemoRoute />} />
+            <Route path="/farm-assistant" element={<FarmAssistantRoute />} />
+            <Route path="/coordinator" element={<CoordinatorRoute />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AgentSessionProvider>
     </AppProvider>
   );
 }

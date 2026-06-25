@@ -33,6 +33,8 @@ export async function initializeDatabase() {
 
   const schema = fs.readFileSync(SCHEMA_PATH, 'utf-8');
   await db.query(schema);
+  const { runDatabaseMigrations } = await import('./migrations');
+  await runDatabaseMigrations(db);
 
   console.log(`Database initialized: ${redactDatabaseUrl(databaseUrl)}`);
 }

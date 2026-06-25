@@ -55,6 +55,7 @@ private-docs/
 
 # Build artifacts and cache
 packages/ui/.vite/
+**/.vite/
 **/dist/
 .turbo/
 

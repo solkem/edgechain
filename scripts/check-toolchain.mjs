@@ -3,6 +3,7 @@
 import { spawnSync } from "node:child_process";
 
 const MIN_COMPACTC = "0.28.0";
+const MIN_NODE = "22.17.0";
 
 function compareSemver(a, b) {
   const pa = a.split(".").map(Number);
@@ -25,6 +26,15 @@ function fail(message) {
   console.error(`\n[toolchain-check] ${message}\n`);
   process.exit(1);
 }
+
+if (compareSemver(process.versions.node, MIN_NODE) < 0) {
+  fail(
+    `Detected Node.js ${process.versions.node}, but Node.js >= ${MIN_NODE} is required. `
+      + "Use the repository .nvmrc or .node-version."
+  );
+}
+
+console.log(`[toolchain-check] Node.js ${process.versions.node} satisfies minimum ${MIN_NODE}.`);
 
 const result = spawnSync("compactc", ["--version"], { encoding: "utf8" });
 
