@@ -85,9 +85,10 @@ export function Login({
             {PILOT_AGENT_ENABLED && (
               <button
                 onClick={() => navigate('/pilot-login')}
-                className="mb-3 block w-[280px] border-2 border-black bg-white px-6 py-4 text-base font-semibold text-black hover:bg-black hover:text-white"
+                className="mb-3 block w-[280px] border-2 border-black bg-[#f1d34f] px-6 py-4 text-base font-black text-black hover:bg-black hover:text-white"
               >
-                Farmer AI Access
+                Farmer / Ndani Kit Access
+                <span className="mt-1 block text-xs font-semibold">No wallet required</span>
               </button>
             )}
             <button

@@ -12,6 +12,7 @@ import type {
   VirtualNdaniDevice,
   VirtualNdaniReading,
 } from '../agent/types';
+import { PilotBrand } from '../agent/PilotBrand';
 
 type FieldKey = keyof Omit<GuidedReadingDraft, 'notes'>;
 
@@ -159,10 +160,11 @@ export function VirtualNdaniReadingScreen() {
   return (
     <ReadingShell>
       <header className="border-b-2 border-black pb-5">
+        <PilotBrand compact />
         <button
           type="button"
           onClick={() => navigate('/virtual-ndani')}
-          className="text-sm font-black uppercase tracking-wide underline"
+          className="mt-6 text-sm font-black uppercase tracking-wide underline"
         >
           Back to Virtual Ndani Kit
         </button>
@@ -350,7 +352,7 @@ function Confirmation({
 
 function ReadingShell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="min-h-screen bg-[#f4f1e8] px-4 py-10 text-[#171713] sm:px-6">
+    <main className="min-h-screen border-t-4 border-[#0000ff] bg-[#f4f1e8] px-4 py-10 text-[#171713] sm:px-6">
       <div className="mx-auto max-w-3xl">{children}</div>
     </main>
   );

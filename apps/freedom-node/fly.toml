@@ -14,6 +14,12 @@ primary_region = 'iad'
   PORT = '3001'
   IPFS_SERVICE_URL = 'https://edgechain-ipfs.fly.dev'
   CORS_ORIGINS = 'https://edgechain-midnight-ui.fly.dev'
+  AGENT_ENABLED = 'true'
+  VIRTUAL_NDANI_ENABLED = 'true'
+  VIRTUAL_NDANI_COORDINATOR_ENABLED = 'false'
+  VIRTUAL_NDANI_PHYSICAL_BINDING_ENABLED = 'false'
+  VIRTUAL_NDANI_PHYSICAL_INGESTION_ENABLED = 'false'
+  VIRTUAL_NDANI_PIPELINE_DEMO_ENABLED = 'false'
 
 [[mounts]]
   source = 'edgechain_data'

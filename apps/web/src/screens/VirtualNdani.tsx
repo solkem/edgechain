@@ -13,6 +13,7 @@ import type {
   VirtualNdaniEvent,
   PhysicalManualComparison,
 } from '../agent/types';
+import { PilotBrand } from '../agent/PilotBrand';
 
 export function VirtualNdani({
   session,
@@ -79,8 +80,9 @@ export function VirtualNdani({
       <div className="mx-auto max-w-6xl">
         <header className="grid gap-6 border-b-2 border-black pb-7 md:grid-cols-[1fr_auto] md:items-end">
           <div>
+            <PilotBrand compact />
             <p className="text-sm font-black uppercase tracking-[0.2em] text-[#27653a]">
-              My Virtual Ndani Kit
+              <span className="mt-6 block">My Virtual Ndani Kit</span>
             </p>
             <h1 className="mt-2 text-4xl font-black leading-none sm:text-6xl">
               {device.device_code}
