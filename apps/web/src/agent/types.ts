@@ -46,6 +46,29 @@ export interface CoordinatorFleetDevice {
   average_manual_minutes: number;
 }
 
+export interface CoordinatorFarmer {
+  farmer_id: string;
+  pilot_code: string;
+  display_name: string;
+  preferred_language: 'en' | 'sn' | 'sn-en';
+  status: 'active' | 'suspended' | 'withdrawn';
+  created_at: number;
+  farm_id: string | null;
+  site_id: string | null;
+  farm_display_name: string | null;
+  virtual_device_id: string | null;
+  device_code: string | null;
+  device_status: string | null;
+  last_used_at: number | null;
+  failed_attempts: number;
+  locked_until: number | null;
+  active_sessions: number;
+  gemini_input_tokens: number;
+  gemini_output_tokens: number;
+  gemini_estimated_cost_usd: number;
+  gemini_request_count: number;
+}
+
 export interface PilotOperationsMetrics {
   devices: number;
   total_cycles: number;

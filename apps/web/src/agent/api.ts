@@ -9,6 +9,7 @@ import type {
   GuidedReadingDraft,
   VirtualNdaniContribution,
   CoordinatorFleetDevice,
+  CoordinatorFarmer,
   CoordinatorReadingReview,
   PilotOperationsMetrics,
   PilotEvidenceReport,
@@ -205,6 +206,81 @@ export async function loadCoordinatorFleet(): Promise<CoordinatorFleetDevice[]> 
     devices: CoordinatorFleetDevice[];
   };
   return body.devices;
+}
+
+export async function loadCoordinatorFarmers(): Promise<CoordinatorFarmer[]> {
+  const response = await request('/api/v1/coordinator/farmers', { method: 'GET' });
+  if (!response.ok) throw await toApiError(response);
+  const body = await response.json() as {
+    success: true;
+    farmers: CoordinatorFarmer[];
+  };
+  return body.farmers;
+}
+
+export async function enrollCoordinatorFarmer(input: {
+  pilotCode: string;
+  displayName: string;
+  preferredLanguage: 'en' | 'sn' | 'sn-en';
+  pin: string;
+  siteId: string;
+  farmDisplayName: string;
+}): Promise<CoordinatorFarmer> {
+  const response = await request('/api/v1/coordinator/farmers', {
+    method: 'POST',
+    body: JSON.stringify({
+      pilot_code: input.pilotCode,
+      display_name: input.displayName,
+      preferred_language: input.preferredLanguage,
+      pin: input.pin,
+      site_id: input.siteId,
+      farm_display_name: input.farmDisplayName,
+    }),
+  });
+  if (!response.ok) throw await toApiError(response);
+  const body = await response.json() as {
+    success: true;
+    farmer: CoordinatorFarmer;
+  };
+  return body.farmer;
+}
+
+export async function updateCoordinatorFarmer(input: {
+  farmerId: string;
+  displayName: string;
+  preferredLanguage: 'en' | 'sn' | 'sn-en';
+  status: 'active' | 'suspended' | 'withdrawn';
+  farmDisplayName: string;
+}): Promise<CoordinatorFarmer> {
+  const response = await request(
+    `/api/v1/coordinator/farmers/${encodeURIComponent(input.farmerId)}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({
+        display_name: input.displayName,
+        preferred_language: input.preferredLanguage,
+        status: input.status,
+        farm_display_name: input.farmDisplayName,
+      }),
+    }
+  );
+  if (!response.ok) throw await toApiError(response);
+  const body = await response.json() as {
+    success: true;
+    farmer: CoordinatorFarmer;
+  };
+  return body.farmer;
+}
+
+export async function resetCoordinatorFarmerPin(
+  farmerId: string,
+  pin: string
+): Promise<void> {
+  const response = await request(
+    `/api/v1/coordinator/farmers/${encodeURIComponent(farmerId)}/reset-pin`,
+    { method: 'POST', body: JSON.stringify({ pin }) }
+  );
+  if (!response.ok) throw await toApiError(response);
 }
 
 export async function loadCoordinatorReviews(): Promise<CoordinatorReadingReview[]> {

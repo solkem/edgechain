@@ -2,6 +2,14 @@
     font-family: 'audiowide';
     src: url('/fonts/Audiowide-Regular.ttf');
 }
+
+.input {
+    width: 100%;
+    border: 2px solid #000;
+    background: #fff;
+    padding: 0.5rem 0.75rem;
+    color: #000;
+}
 @font-face {
     font-family: 'sansBartle';
     src: url('/fonts/BBHSansBartle-Regular.ttf');

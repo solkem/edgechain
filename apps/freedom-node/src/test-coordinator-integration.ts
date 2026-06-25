@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { authService } from './auth/authService';
 import { initializeDatabase, getDatabase } from './database';
 import { coordinatorService } from './virtual-ndani/coordinatorService';
+import { coordinatorAdministrationService } from './virtual-ndani/coordinatorAdministrationService';
 import { virtualNdaniService } from './virtual-ndani/service';
 import { requireCoordinator } from './auth/authMiddleware';
 import { FARMER_SESSION_COOKIE } from './auth/session';
@@ -18,6 +19,8 @@ async function run(): Promise<void> {
   let farmerId: string | undefined;
   let coordinatorId: string | undefined;
   let farmId: string | undefined;
+  let administeredFarmerId: string | undefined;
+  let administeredFarmId: string | undefined;
 
   try {
     const farmer = await authService.enroll({
@@ -49,6 +52,61 @@ async function run(): Promise<void> {
     assert.equal(
       await coordinatorMiddlewareStatus(coordinatorLogin.sessionToken),
       200
+    );
+
+    const administered = await coordinatorAdministrationService.enrollFarmer({
+      pilotCode: `ADMIN-${suffix}`,
+      displayName: 'Administered Farmer',
+      preferredLanguage: 'sn-en',
+      pin: '1357',
+      siteId: `site-${String((Number(siteId.slice(-3)) + 1) % 1000).padStart(3, '0')}`,
+      farmDisplayName: 'Administered Farm',
+      coordinatorId: coordinator.farmer_id,
+    });
+    administeredFarmerId = administered.farmer_id;
+    administeredFarmId = administered.farm_id;
+    assert.ok(administered.device_code?.startsWith('NDANI-ODZI-'));
+    assert.equal(administered.gemini_request_count, 0);
+    assert.equal((await authService.login(`ADMIN-${suffix}`, '1357')).farmer.farmer_id, administered.farmer_id);
+
+    const updatedFarmer = await coordinatorAdministrationService.updateFarmer({
+      farmerId: administered.farmer_id,
+      displayName: 'Updated Administered Farmer',
+      preferredLanguage: 'sn',
+      status: 'active',
+      farmDisplayName: 'Updated Administered Farm',
+      coordinatorId: coordinator.farmer_id,
+    });
+    assert.equal(updatedFarmer.display_name, 'Updated Administered Farmer');
+    assert.equal(updatedFarmer.preferred_language, 'sn');
+    assert.equal(updatedFarmer.farm_display_name, 'Updated Administered Farm');
+
+    await coordinatorAdministrationService.resetPin({
+      farmerId: administered.farmer_id,
+      pin: '2468',
+      coordinatorId: coordinator.farmer_id,
+    });
+    await assert.rejects(
+      authService.login(`ADMIN-${suffix}`, '1357'),
+      /invalid_credentials/
+    );
+    assert.equal(
+      (await authService.login(`ADMIN-${suffix}`, '2468')).farmer.farmer_id,
+      administered.farmer_id
+    );
+
+    const suspendedFarmer = await coordinatorAdministrationService.updateFarmer({
+      farmerId: administered.farmer_id,
+      displayName: 'Updated Administered Farmer',
+      preferredLanguage: 'sn',
+      status: 'suspended',
+      farmDisplayName: 'Updated Administered Farm',
+      coordinatorId: coordinator.farmer_id,
+    });
+    assert.equal(suspendedFarmer.status, 'suspended');
+    await assert.rejects(
+      authService.login(`ADMIN-${suffix}`, '2468'),
+      /invalid_credentials/
     );
 
     const devices = await virtualNdaniService.list(farmer.farmer_id);
@@ -176,6 +234,12 @@ async function run(): Promise<void> {
   } finally {
     if (farmerId) await db.query('DELETE FROM farmers WHERE farmer_id = $1', [farmerId]);
     if (farmId) await db.query('DELETE FROM farms WHERE farm_id = $1', [farmId]);
+    if (administeredFarmerId) {
+      await db.query('DELETE FROM farmers WHERE farmer_id = $1', [administeredFarmerId]);
+    }
+    if (administeredFarmId) {
+      await db.query('DELETE FROM farms WHERE farm_id = $1', [administeredFarmId]);
+    }
     if (coordinatorId) {
       await db.query('DELETE FROM farmers WHERE farmer_id = $1', [coordinatorId]);
     }
