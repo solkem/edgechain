@@ -25,7 +25,7 @@ This React application provides the farmer-facing interface for:
 
 ### Required software
 
-1. Node.js v22.17.0+ or v20.19+
+1. Node.js v22.17.0+ (the repository includes `.nvmrc` and `.node-version`)
 2. A compatible Midnight wallet
 
 Recommended wallet setup:

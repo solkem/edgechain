@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "start": "http-server --port 0 ./dist",
+    "prebuild": "node ../../scripts/check-node.mjs",
     "build": "node ./scripts/build.mjs",
     "test": "node ./scripts/test-inference.mjs",
     "test:inference": "node ./scripts/test-inference.mjs",

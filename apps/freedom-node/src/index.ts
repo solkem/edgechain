@@ -14,7 +14,15 @@ import { aggregationRouter } from './routes/aggregation';
 import { initializeIoTRoutes, iotRouter } from './routes/iot';
 import { manualObservationsRouter } from './routes/manualObservations';
 import { whatsappRouter } from './routes/whatsapp';
+import { authRouter } from './routes/auth';
+import { farmsRouter } from './routes/farms';
+import { agentRouter } from './routes/agent';
+import { virtualNdaniRouter } from './routes/virtualNdani';
+import { coordinatorRouter } from './routes/coordinator';
+import { physicalNdaniRouter } from './routes/physicalNdani';
 import { initializeDatabase, getDatabaseStats } from './database';
+import crypto from 'crypto';
+import { requireTrustedPilotOrigin } from './auth/originMiddleware';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -27,6 +35,11 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json({ limit: '50mb' })); // Large limit for model weights
+app.use((req, res, next) => {
+  const correlationId = req.header('x-correlation-id') || crypto.randomUUID();
+  res.setHeader('x-correlation-id', correlationId);
+  next();
+});
 
 // Serve frontend static files from the sibling web app build.
 const frontendPathCandidates = [
@@ -89,6 +102,22 @@ app.use('/api/fl', aggregationRouter);
 app.use('/api/sensor-node', iotRouter);
 app.use('/api/manual-observations', manualObservationsRouter);
 app.use('/api/whatsapp', whatsappRouter);
+app.use('/api/v1/physical-ndani', physicalNdaniRouter);
+if (process.env.AGENT_ENABLED === 'true') {
+  app.use('/api/v1', requireTrustedPilotOrigin);
+  app.use('/api/v1/auth', authRouter);
+  app.use('/api/v1/farms', farmsRouter);
+  app.use('/api/v1/agent', agentRouter);
+  if (process.env.VIRTUAL_NDANI_ENABLED !== 'false') {
+    app.use('/api/v1/virtual-ndani', virtualNdaniRouter);
+    if (process.env.VIRTUAL_NDANI_COORDINATOR_ENABLED !== 'false') {
+      app.use('/api/v1/coordinator', coordinatorRouter);
+      console.log('🧭 Virtual Ndani Kit coordinator routes enabled');
+    }
+    console.log('📡 Virtual Ndani Kit pilot routes enabled');
+  }
+  console.log('🌾 AI Farm Agent foundation routes enabled');
+}
 
 // SPA fallback - serve frontend for all other routes (MUST BE LAST)
 app.get('*', (_req, res) => {

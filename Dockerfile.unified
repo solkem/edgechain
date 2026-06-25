@@ -26,6 +26,7 @@ RUN npx tsc --project /app/packages/fl/tsconfig.json \
 
 # Copy server source files
 COPY apps/freedom-node/src ./src
+COPY apps/freedom-node/scripts ./scripts
 COPY apps/freedom-node/tsconfig.json ./
 
 # Build TypeScript
@@ -52,6 +53,7 @@ COPY --from=builder /app/packages/mars/dist /app/packages/mars/dist
 
 # Copy database schema files (SQL files are not compiled by TypeScript)
 COPY apps/freedom-node/src/database/schema.sql ./dist/database/schema.sql
+COPY apps/freedom-node/src/database/migrations ./dist/database/migrations
 
 # Copy frontend build
 COPY apps/web/dist /app/apps/web/dist

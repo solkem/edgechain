@@ -6,8 +6,18 @@
   "scripts": {
     "dev": "ts-node src/index.ts",
     "start": "node dist/index.js",
-    "build": "tsc",
-    "test": "ts-node src/test-mars-scoring.ts"
+    "prebuild": "node ../../scripts/check-node.mjs",
+    "build": "node scripts/build.mjs",
+    "test": "npm run test:mars && npm run test:agent && npm run test:virtual-ndani",
+    "test:mars": "ts-node src/test-mars-scoring.ts",
+    "test:agent": "ts-node src/test-agent-foundation.ts",
+    "test:agent:integration": "ts-node src/test-agent-integration.ts",
+    "test:virtual-ndani": "ts-node src/test-virtual-ndani-foundation.ts",
+    "test:virtual-ndani:integration": "ts-node src/test-virtual-ndani-integration.ts",
+    "test:coordinator:integration": "ts-node src/test-coordinator-integration.ts",
+    "test:operations:integration": "ts-node src/test-operations-integration.ts",
+    "test:physical-binding:integration": "ts-node src/test-physical-binding-integration.ts",
+    "test:demo-isolation:integration": "ts-node src/test-demo-isolation-integration.ts"
   },
   "keywords": [
     "federated-learning",

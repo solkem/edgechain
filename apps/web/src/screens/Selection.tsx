@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import type { Farmer } from '../types/app';
+import { PILOT_AGENT_ENABLED } from '../agent/api';
 
 export function Selection({ 
   farmer, 
@@ -71,12 +72,17 @@ export function Selection({
             <div className="w-14 h-14 bg-gray-100 rounded-lg mb-3 flex items-center justify-center">
               <span className="text-2xl">🌾</span>
             </div>
-            <h3 className="text-xl font-bold text-black mb-2">AI Predictions</h3>
-            <p className="text-gray-600 text-sm">Get SMS predictions & vote</p>
+            <h3 className="text-xl font-bold text-black mb-2">
+              {PILOT_AGENT_ENABLED ? 'AI Farm Assistant' : 'AI Predictions'}
+            </h3>
+            <p className="text-gray-600 text-sm">
+              {PILOT_AGENT_ENABLED
+                ? 'Report field conditions in Shona or English'
+                : 'Get SMS predictions & vote'}
+            </p>
           </button>
         </div>
       </div>
     </div>
   );
 }
-

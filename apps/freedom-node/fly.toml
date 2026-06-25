@@ -13,6 +13,7 @@ primary_region = 'iad'
   NODE_ENV = 'production'
   PORT = '3001'
   IPFS_SERVICE_URL = 'https://edgechain-ipfs.fly.dev'
+  CORS_ORIGINS = 'https://edgechain-midnight-ui.fly.dev'
 
 [[mounts]]
   source = 'edgechain_data'

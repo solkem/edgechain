@@ -27,9 +27,10 @@ export interface LoRaPacket {
     sensorData: {
         temperature: number;
         humidity: number;
-        pressure: number;
+        pressure: null;
         soilMoisture: number;
     };
+    nullifier: string;       // 32 bytes hex
     signature: string;       // 64 bytes hex (P-256)
     timestamp: number;
     rssi: number;
@@ -203,13 +204,17 @@ export class LoRaReceiver extends EventEmitter {
         const [, sourceAddr, length, hexData, rssi, snr] = match;
         const data = Buffer.from(hexData, 'hex');
 
-        // Expected packet structure (116 bytes):
+        // ESP32 Ndani DataPacket v1 structure (144 bytes):
         // - Commitment: 32 bytes
-        // - Sensor data: 16 bytes (4 x 4-byte floats)
+        // - Temperature, humidity, soil moisture: 12 bytes
+        // - Device timestamp: 4 bytes
+        // - Epoch nullifier: 32 bytes
         // - Signature: 64 bytes (P-256)
-        // - Timestamp: 4 bytes
+        //
+        // Pressure is read locally by the BME280 but is not transmitted by
+        // firmware DataPacket v1. It must remain unavailable downstream.
 
-        if (data.length < 116) {
+        if (data.length !== 144) {
             logger.warn(`Packet too short: ${data.length} bytes`);
             return null;
         }
@@ -219,17 +224,19 @@ export class LoRaReceiver extends EventEmitter {
         const sensorData = {
             temperature: data.readFloatLE(32),
             humidity: data.readFloatLE(36),
-            pressure: data.readFloatLE(40),
-            soilMoisture: data.readFloatLE(44)
+            pressure: null,
+            soilMoisture: data.readFloatLE(40)
         };
 
-        const signature = data.subarray(48, 112).toString('hex');
-        const timestamp = data.readUInt32LE(112);
+        const timestamp = data.readUInt32LE(44);
+        const nullifier = data.subarray(48, 80).toString('hex');
+        const signature = data.subarray(80, 144).toString('hex');
 
         return {
             sourceAddress: parseInt(sourceAddr),
             commitment,
             sensorData,
+            nullifier,
             signature,
             timestamp,
             rssi: parseInt(rssi),
