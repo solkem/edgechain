@@ -65,7 +65,7 @@ router.post('/enroll-coordinator', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const result = await authService.login(req.body.pilot_code, String(req.body.pin ?? ''));
-    setSessionCookie(res, result.sessionToken);
+    setSessionCookie(res, result.sessionToken, req);
     return res.json({
       success: true,
       farmer: publicFarmer(result.farmer),
@@ -83,7 +83,7 @@ router.post('/logout', requireFarmerSession, async (req: FarmerRequest, res) => 
   if (req.sessionTokenHash) {
     await authRepository.revokeSession(req.sessionTokenHash);
   }
-  clearSessionCookie(res);
+  clearSessionCookie(res, req);
   return res.json({ success: true });
 });
 

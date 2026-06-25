@@ -24,30 +24,42 @@ export function readSessionToken(req: Request): string | undefined {
   return cookies[FARMER_SESSION_COOKIE];
 }
 
-export function setSessionCookie(res: Response, token: string): void {
+export function setSessionCookie(res: Response, token: string, req?: Request): void {
   const secure = process.env.NODE_ENV === 'production';
   const attributes = [
     `${FARMER_SESSION_COOKIE}=${encodeURIComponent(token)}`,
     'Path=/',
     'HttpOnly',
-    `SameSite=${secure ? 'None' : 'Lax'}`,
+    `SameSite=${cookieSameSite(secure, req)}`,
     `Max-Age=${sessionLifetimeSeconds()}`,
   ];
   if (secure) attributes.push('Secure');
   res.setHeader('Set-Cookie', attributes.join('; '));
 }
 
-export function clearSessionCookie(res: Response): void {
+export function clearSessionCookie(res: Response, req?: Request): void {
   const secure = process.env.NODE_ENV === 'production';
   const attributes = [
     `${FARMER_SESSION_COOKIE}=`,
     'Path=/',
     'HttpOnly',
-    `SameSite=${secure ? 'None' : 'Lax'}`,
+    `SameSite=${cookieSameSite(secure, req)}`,
     'Max-Age=0',
   ];
   if (secure) attributes.push('Secure');
   res.setHeader('Set-Cookie', attributes.join('; '));
+}
+
+function cookieSameSite(secure: boolean, req?: Request): 'Lax' | 'None' {
+  if (!secure || !req) return 'Lax';
+  const origin = req.header('origin');
+  const host = req.header('host');
+  if (!origin || !host) return 'Lax';
+  try {
+    return new URL(origin).host === host ? 'Lax' : 'None';
+  } catch {
+    return 'Lax';
+  }
 }
 
 function parseCookieHeader(header?: string): Record<string, string> {
