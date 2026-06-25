@@ -8,9 +8,70 @@ import {
   coordinatorService,
 } from '../virtual-ndani/coordinatorService';
 import { PhysicalBindingError } from '../virtual-ndani/physicalBindingService';
+import {
+  CoordinatorAdministrationError,
+  coordinatorAdministrationService,
+} from '../virtual-ndani/coordinatorAdministrationService';
 
 const router = Router();
 router.use(requireCoordinator);
+
+router.get('/farmers', async (_req: FarmerRequest, res) => {
+  try {
+    return res.json({
+      success: true,
+      farmers: await coordinatorAdministrationService.listFarmers(),
+    });
+  } catch (error) {
+    return handleError(error, res);
+  }
+});
+
+router.post('/farmers', async (req: FarmerRequest, res) => {
+  try {
+    const farmer = await coordinatorAdministrationService.enrollFarmer({
+      pilotCode: req.body.pilot_code,
+      displayName: req.body.display_name,
+      preferredLanguage: req.body.preferred_language,
+      pin: req.body.pin,
+      siteId: req.body.site_id,
+      farmDisplayName: req.body.farm_display_name,
+      coordinatorId: req.farmer!.farmer_id,
+    });
+    return res.status(201).json({ success: true, farmer });
+  } catch (error) {
+    return handleError(error, res);
+  }
+});
+
+router.patch('/farmers/:farmerId', async (req: FarmerRequest, res) => {
+  try {
+    const farmer = await coordinatorAdministrationService.updateFarmer({
+      farmerId: req.params.farmerId,
+      displayName: req.body.display_name,
+      preferredLanguage: req.body.preferred_language,
+      status: req.body.status,
+      farmDisplayName: req.body.farm_display_name,
+      coordinatorId: req.farmer!.farmer_id,
+    });
+    return res.json({ success: true, farmer });
+  } catch (error) {
+    return handleError(error, res);
+  }
+});
+
+router.post('/farmers/:farmerId/reset-pin', async (req: FarmerRequest, res) => {
+  try {
+    const result = await coordinatorAdministrationService.resetPin({
+      farmerId: req.params.farmerId,
+      pin: req.body.pin,
+      coordinatorId: req.farmer!.farmer_id,
+    });
+    return res.json({ success: true, result });
+  } catch (error) {
+    return handleError(error, res);
+  }
+});
 
 router.get('/virtual-ndani', async (_req: FarmerRequest, res) => {
   try {
@@ -154,6 +215,9 @@ function handleError(error: unknown, res: any) {
     return res.status(error.status).json({ error: error.code });
   }
   if (error instanceof PhysicalBindingError) {
+    return res.status(error.status).json({ error: error.code });
+  }
+  if (error instanceof CoordinatorAdministrationError) {
     return res.status(error.status).json({ error: error.code });
   }
   console.error('Coordinator request failed:', error);

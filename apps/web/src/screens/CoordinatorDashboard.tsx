@@ -3,6 +3,7 @@ import {
   downloadCoordinatorEvidenceCsv,
   issuePhysicalBindingChallenge,
   loadCoordinatorEvidenceReport,
+  loadCoordinatorFarmers,
   loadCoordinatorFleet,
   loadCoordinatorMetrics,
   loadCoordinatorReviews,
@@ -14,12 +15,14 @@ import {
 } from '../agent/api';
 import type {
   CoordinatorFleetDevice,
+  CoordinatorFarmer,
   CoordinatorReadingReview,
   PilotOperationsMetrics,
   PilotEvidenceReport,
   PilotSession,
   PhysicalBindingChallenge,
 } from '../agent/types';
+import { FarmerAdministration } from './FarmerAdministration';
 
 export function CoordinatorDashboard({
   session,
@@ -29,6 +32,7 @@ export function CoordinatorDashboard({
   onLogout: () => Promise<void>;
 }) {
   const [devices, setDevices] = useState<CoordinatorFleetDevice[]>([]);
+  const [farmers, setFarmers] = useState<CoordinatorFarmer[]>([]);
   const [reviews, setReviews] = useState<CoordinatorReadingReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,13 +52,15 @@ export function CoordinatorDashboard({
   const refresh = useCallback(async () => {
     setError(null);
     await runCoordinatorOperations();
-    const [fleet, pending, operationalMetrics, evidenceReport] = await Promise.all([
+    const [fleet, pending, operationalMetrics, evidenceReport, enrolledFarmers] = await Promise.all([
       loadCoordinatorFleet(),
       loadCoordinatorReviews(),
       loadCoordinatorMetrics(),
       loadCoordinatorEvidenceReport(),
+      loadCoordinatorFarmers(),
     ]);
     setDevices(fleet);
+    setFarmers(enrolledFarmers);
     setReviews(pending);
     setMetrics(operationalMetrics);
     setEvidence(evidenceReport);
@@ -117,6 +123,8 @@ export function CoordinatorDashboard({
             value={devices.reduce((sum, device) => sum + device.contribution_count, 0)}
           />
         </section>
+
+        <FarmerAdministration farmers={farmers} onChanged={refresh} />
 
         {metrics && (
           <section className="mt-7 border-2 border-black bg-[#183c28] p-5 text-white sm:p-7">
