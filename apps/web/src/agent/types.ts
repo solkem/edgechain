@@ -69,6 +69,32 @@ export interface CoordinatorFarmer {
   gemini_request_count: number;
 }
 
+export interface FarmerAiProfile {
+  profile_id: string;
+  farmer_id: string;
+  farm_id: string | null;
+  preferred_language: 'en' | 'sn' | 'sn-en';
+  literacy_level: string | null;
+  technology_comfort: string | null;
+  primary_goal: string | null;
+  primary_pain_point: string | null;
+  secondary_pain_points: string[];
+  water_access: string | null;
+  irrigation_method: string | null;
+  budget_constraint: string | null;
+  labour_constraint: string | null;
+  main_crops: string[];
+  current_crop: string | null;
+  current_crop_stage: string | null;
+  soil_type: string | null;
+  farm_story_summary: string | null;
+  ai_manager_brief: string | null;
+  brief_version: number;
+  status: 'draft' | 'active' | 'needs_update' | 'archived';
+  created_at: number;
+  updated_at: number;
+}
+
 export interface PilotOperationsMetrics {
   devices: number;
   total_cycles: number;

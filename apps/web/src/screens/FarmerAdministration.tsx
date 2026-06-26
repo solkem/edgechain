@@ -1,11 +1,13 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import {
   deleteCoordinatorFarmer,
   enrollCoordinatorFarmer,
+  loadCoordinatorFarmerAiProfile,
   resetCoordinatorFarmerPin,
+  saveCoordinatorFarmerAiProfile,
   updateCoordinatorFarmer,
 } from '../agent/api';
-import type { CoordinatorFarmer } from '../agent/types';
+import type { CoordinatorFarmer, FarmerAiProfile } from '../agent/types';
 
 export function FarmerAdministration({
   farmers,
@@ -300,6 +302,8 @@ function FarmerCard({
             Save profile
           </button>
 
+          <AiManagerProfileEditor farmer={farmer} working={working} />
+
           <div className="mt-5 border-t border-gray-300 pt-4">
             <p className="text-sm font-black">Reset personal PIN</p>
             <div className="mt-2 flex gap-2">
@@ -348,6 +352,208 @@ function FarmerCard({
   );
 }
 
+function AiManagerProfileEditor({
+  farmer,
+  working,
+}: {
+  farmer: CoordinatorFarmer;
+  working: boolean;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [profile, setProfile] = useState<FarmerAiProfile | null>(null);
+  const [preferredLanguage, setPreferredLanguage] =
+    useState<'en' | 'sn' | 'sn-en'>(farmer.preferred_language);
+  const [literacyLevel, setLiteracyLevel] = useState('');
+  const [technologyComfort, setTechnologyComfort] = useState('');
+  const [primaryGoal, setPrimaryGoal] = useState('');
+  const [primaryPainPoint, setPrimaryPainPoint] = useState('');
+  const [secondaryPainPoints, setSecondaryPainPoints] = useState('');
+  const [waterAccess, setWaterAccess] = useState('');
+  const [irrigationMethod, setIrrigationMethod] = useState('');
+  const [budgetConstraint, setBudgetConstraint] = useState('');
+  const [labourConstraint, setLabourConstraint] = useState('');
+  const [mainCrops, setMainCrops] = useState('');
+  const [currentCrop, setCurrentCrop] = useState('');
+  const [currentCropStage, setCurrentCropStage] = useState('');
+  const [soilType, setSoilType] = useState('');
+  const [farmStorySummary, setFarmStorySummary] = useState('');
+  const [aiManagerBrief, setAiManagerBrief] = useState('');
+  const [profileStatus, setProfileStatus] =
+    useState<'draft' | 'active' | 'needs_update' | 'archived'>('active');
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    void loadCoordinatorFarmerAiProfile(farmer.farmer_id)
+      .then((loaded) => {
+        if (cancelled) return;
+        setProfile(loaded);
+        setPreferredLanguage(loaded?.preferred_language || farmer.preferred_language);
+        setLiteracyLevel(loaded?.literacy_level || '');
+        setTechnologyComfort(loaded?.technology_comfort || '');
+        setPrimaryGoal(loaded?.primary_goal || '');
+        setPrimaryPainPoint(loaded?.primary_pain_point || '');
+        setSecondaryPainPoints((loaded?.secondary_pain_points || []).join(', '));
+        setWaterAccess(loaded?.water_access || '');
+        setIrrigationMethod(loaded?.irrigation_method || '');
+        setBudgetConstraint(loaded?.budget_constraint || '');
+        setLabourConstraint(loaded?.labour_constraint || '');
+        setMainCrops((loaded?.main_crops || []).join(', '));
+        setCurrentCrop(loaded?.current_crop || '');
+        setCurrentCropStage(loaded?.current_crop_stage || '');
+        setSoilType(loaded?.soil_type || '');
+        setFarmStorySummary(loaded?.farm_story_summary || '');
+        setAiManagerBrief(loaded?.ai_manager_brief || '');
+        setProfileStatus(loaded?.status || 'active');
+      })
+      .catch((loadError) => setError(errorMessage(loadError)))
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [farmer.farmer_id, farmer.preferred_language]);
+
+  const save = async () => {
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const saved = await saveCoordinatorFarmerAiProfile({
+        farmerId: farmer.farmer_id,
+        preferredLanguage,
+        literacyLevel,
+        technologyComfort,
+        primaryGoal,
+        primaryPainPoint,
+        secondaryPainPoints: listFromText(secondaryPainPoints),
+        waterAccess,
+        irrigationMethod,
+        budgetConstraint,
+        labourConstraint,
+        mainCrops: listFromText(mainCrops),
+        currentCrop,
+        currentCropStage,
+        soilType,
+        farmStorySummary,
+        aiManagerBrief,
+        status: profileStatus,
+      });
+      setProfile(saved);
+      setAiManagerBrief(saved.ai_manager_brief || '');
+      setMessage('AI Farm Manager profile saved.');
+    } catch (saveError) {
+      setError(errorMessage(saveError));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="mt-5 border-t border-[#27653a]/30 pt-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-black text-[#27653a]">AI Farm Manager profile</p>
+          <p className="mt-1 text-xs text-gray-600">
+            Captures the farm story, pain points and constraints that will personalize this farmer’s AI agent.
+          </p>
+        </div>
+        <span className="border border-black bg-[#dff3d8] px-2 py-1 text-[10px] font-black uppercase">
+          {profile ? `brief v${profile.brief_version}` : 'not started'}
+        </span>
+      </div>
+
+      {message && <p className="mt-3 bg-[#dff3d8] p-2 text-sm font-bold">{message}</p>}
+      {error && <p className="mt-3 bg-red-50 p-2 text-sm font-bold text-red-800">{error}</p>}
+      {loading && <p className="mt-3 text-sm font-bold">Loading AI profile…</p>}
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <Field label="Current crop">
+          <input value={currentCrop} onChange={(event) => setCurrentCrop(event.target.value)} placeholder="Tomato" className="input" />
+        </Field>
+        <Field label="Crop stage">
+          <input value={currentCropStage} onChange={(event) => setCurrentCropStage(event.target.value)} placeholder="Flowering" className="input" />
+        </Field>
+        <Field label="Primary goal">
+          <input value={primaryGoal} onChange={(event) => setPrimaryGoal(event.target.value)} placeholder="Improve yield" className="input" />
+        </Field>
+        <Field label="Primary pain point">
+          <input value={primaryPainPoint} onChange={(event) => setPrimaryPainPoint(event.target.value)} placeholder="Water timing" className="input" />
+        </Field>
+        <Field label="Main crops">
+          <input value={mainCrops} onChange={(event) => setMainCrops(event.target.value)} placeholder="Tomato, maize" className="input" />
+        </Field>
+        <Field label="Other pain points">
+          <input value={secondaryPainPoints} onChange={(event) => setSecondaryPainPoints(event.target.value)} placeholder="Pest identification, record keeping" className="input" />
+        </Field>
+        <Field label="Water access">
+          <input value={waterAccess} onChange={(event) => setWaterAccess(event.target.value)} placeholder="Limited borehole irrigation" className="input" />
+        </Field>
+        <Field label="Irrigation method">
+          <input value={irrigationMethod} onChange={(event) => setIrrigationMethod(event.target.value)} placeholder="Bucket, drip, flood" className="input" />
+        </Field>
+        <Field label="Budget constraint">
+          <input value={budgetConstraint} onChange={(event) => setBudgetConstraint(event.target.value)} placeholder="Low input budget" className="input" />
+        </Field>
+        <Field label="Labour constraint">
+          <input value={labourConstraint} onChange={(event) => setLabourConstraint(event.target.value)} placeholder="Limited labour during weekdays" className="input" />
+        </Field>
+        <Field label="Soil type">
+          <input value={soilType} onChange={(event) => setSoilType(event.target.value)} placeholder="Unknown, sandy, clay..." className="input" />
+        </Field>
+        <Field label="AI language">
+          <select value={preferredLanguage} onChange={(event) => setPreferredLanguage(event.target.value as typeof preferredLanguage)} className="input">
+            <option value="sn-en">Shona + English</option>
+            <option value="sn">Shona</option>
+            <option value="en">English</option>
+          </select>
+        </Field>
+      </div>
+
+      <div className="mt-3 grid gap-3">
+        <Field label="Farm story summary">
+          <textarea
+            value={farmStorySummary}
+            onChange={(event) => setFarmStorySummary(event.target.value)}
+            placeholder="What has this farmer struggled with in recent seasons?"
+            className="input min-h-24"
+          />
+        </Field>
+        <Field label="AI Manager Brief">
+          <textarea
+            value={aiManagerBrief}
+            onChange={(event) => setAiManagerBrief(event.target.value)}
+            placeholder="Leave blank to auto-generate from the profile."
+            className="input min-h-24"
+          />
+        </Field>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <select value={profileStatus} onChange={(event) => setProfileStatus(event.target.value as typeof profileStatus)} className="input w-auto">
+          <option value="active">Active</option>
+          <option value="draft">Draft</option>
+          <option value="needs_update">Needs update</option>
+          <option value="archived">Archived</option>
+        </select>
+        <button
+          type="button"
+          disabled={working || saving || loading}
+          onClick={() => void save()}
+          className="bg-[#27653a] px-5 py-2 font-black text-white disabled:opacity-50"
+        >
+          {saving ? 'Saving AI profile…' : 'Save AI Farm Manager profile'}
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
@@ -364,6 +570,13 @@ function Fact({ label, value }: { label: string; value: string }) {
       <p className="mt-1 font-black">{value}</p>
     </div>
   );
+}
+
+function listFromText(value: string): string[] {
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 function languageLabel(language: CoordinatorFarmer['preferred_language']) {

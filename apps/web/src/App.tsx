@@ -15,6 +15,7 @@ import { VirtualNdaniReadingRoute } from "./routes/VirtualNdaniReadingRoute";
 import { CoordinatorRoute } from "./routes/CoordinatorRoute";
 import { PhysicalNdaniDemoRoute } from "./routes/PhysicalNdaniDemoRoute";
 import { AgentSessionProvider } from "./agent/AgentSessionProvider";
+import { isFarmerSite } from "./agent/siteMode";
 import Navbar from "./components/Navbar";
 import "./app.css";
 import { Toaster } from "sonner";
@@ -29,7 +30,7 @@ export default function EdgeChainApp() {
           <Toaster position="top-right" />
           <Routes>
             {/* Existing wallet-first application routes */}
-            <Route path="/" element={<LoginRoute />} />
+            <Route path="/" element={<HomeRoute />} />
             <Route path="/register" element={<RegisterRoute />} />
             <Route path="/selection" element={<SelectionRoute />} />
             <Route path="/sensor-node" element={<IoTRoute />} />
@@ -51,4 +52,8 @@ export default function EdgeChainApp() {
       </AgentSessionProvider>
     </AppProvider>
   );
+}
+
+function HomeRoute() {
+  return isFarmerSite() ? <Navigate to="/pilot-login" replace /> : <LoginRoute />;
 }
