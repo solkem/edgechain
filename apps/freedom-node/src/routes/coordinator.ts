@@ -73,6 +73,18 @@ router.post('/farmers/:farmerId/reset-pin', async (req: FarmerRequest, res) => {
   }
 });
 
+router.delete('/farmers/:farmerId', async (req: FarmerRequest, res) => {
+  try {
+    const result = await coordinatorAdministrationService.deleteFarmer({
+      farmerId: req.params.farmerId,
+      coordinatorId: req.farmer!.farmer_id,
+    });
+    return res.json({ success: true, result });
+  } catch (error) {
+    return handleError(error, res);
+  }
+});
+
 router.get('/virtual-ndani', async (_req: FarmerRequest, res) => {
   try {
     return res.json({ success: true, devices: await coordinatorService.fleet() });

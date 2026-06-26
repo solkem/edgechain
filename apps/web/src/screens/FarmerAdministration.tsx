@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import {
+  deleteCoordinatorFarmer,
   enrollCoordinatorFarmer,
   resetCoordinatorFarmerPin,
   updateCoordinatorFarmer,
@@ -104,6 +105,20 @@ export function FarmerAdministration({
                 setWorkingId(null);
               }
             }}
+            onDelete={async () => {
+              setWorkingId(farmer.farmer_id);
+              setError(null);
+              setMessage(null);
+              try {
+                await deleteCoordinatorFarmer(farmer.farmer_id);
+                setMessage(`${farmer.pilot_code} and their Ndani Kit were deleted.`);
+                await onChanged();
+              } catch (deleteError) {
+                setError(errorMessage(deleteError));
+              } finally {
+                setWorkingId(null);
+              }
+            }}
           />
         ))}
       </div>
@@ -204,6 +219,7 @@ function FarmerCard({
   working,
   onSave,
   onResetPin,
+  onDelete,
 }: {
   farmer: CoordinatorFarmer;
   working: boolean;
@@ -214,6 +230,7 @@ function FarmerCard({
     farmDisplayName: string;
   }) => Promise<void>;
   onResetPin: (pin: string) => Promise<void>;
+  onDelete: () => Promise<void>;
 }) {
   const [editing, setEditing] = useState(false);
   const [displayName, setDisplayName] = useState(farmer.display_name);
@@ -304,6 +321,26 @@ function FarmerCard({
               </button>
             </div>
             <p className="mt-2 text-xs text-gray-600">Resetting the PIN signs the farmer out on all devices.</p>
+          </div>
+
+          <div className="mt-5 border-t border-red-200 pt-4">
+            <p className="text-sm font-black text-red-800">Delete farmer</p>
+            <p className="mt-1 text-xs text-gray-600">
+              This removes the farmer profile, farm assignment, sessions and Virtual Ndani Kit records.
+            </p>
+            <button
+              type="button"
+              disabled={working}
+              onClick={() => {
+                const confirmed = window.confirm(
+                  `Delete ${farmer.pilot_code} and their Ndani Kit? This cannot be undone.`
+                );
+                if (confirmed) void onDelete();
+              }}
+              className="mt-3 border-2 border-red-800 bg-red-50 px-4 py-2 font-black text-red-800 disabled:opacity-40"
+            >
+              Delete farmer
+            </button>
           </div>
         </div>
       )}

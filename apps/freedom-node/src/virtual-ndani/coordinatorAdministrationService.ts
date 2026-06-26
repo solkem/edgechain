@@ -216,6 +216,42 @@ export const coordinatorAdministrationService = {
     return { farmer_id: input.farmerId, sessions_revoked: true };
   },
 
+  async deleteFarmer(input: {
+    farmerId: string;
+    coordinatorId: string;
+  }) {
+    const current = await this.findFarmer(input.farmerId);
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      await insertAudit(client, input.coordinatorId, 'farmer_deleted', input.farmerId, {
+        pilot_code: current.pilot_code,
+        farm_id: current.farm_id,
+        site_id: current.site_id,
+        virtual_device_id: current.virtual_device_id,
+        device_code: current.device_code,
+      });
+      if (current.farm_id) {
+        await client.query('DELETE FROM farms WHERE farm_id = $1', [current.farm_id]);
+      }
+      await client.query(
+        'DELETE FROM farmers WHERE farmer_id = $1 AND system_role = $2',
+        [input.farmerId, 'farmer']
+      );
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+    return {
+      farmer_id: input.farmerId,
+      farm_id: current.farm_id,
+      deleted: true,
+    };
+  },
+
   async findFarmer(farmerId: string) {
     if (!isUuid(farmerId)) {
       throw new CoordinatorAdministrationError('farmer_not_found', 404);

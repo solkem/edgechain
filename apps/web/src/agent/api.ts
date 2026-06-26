@@ -283,6 +283,14 @@ export async function resetCoordinatorFarmerPin(
   if (!response.ok) throw await toApiError(response);
 }
 
+export async function deleteCoordinatorFarmer(farmerId: string): Promise<void> {
+  const response = await request(
+    `/api/v1/coordinator/farmers/${encodeURIComponent(farmerId)}`,
+    { method: 'DELETE' }
+  );
+  if (!response.ok) throw await toApiError(response);
+}
+
 export async function loadCoordinatorReviews(): Promise<CoordinatorReadingReview[]> {
   const response = await request('/api/v1/coordinator/reading-reviews', {
     method: 'GET',
