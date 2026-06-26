@@ -22,6 +22,9 @@ export function FarmAssistantRoute() {
       />
     );
   }
+  if (agent.session.farmer.system_role === 'coordinator') {
+    return <Navigate to="/coordinator" replace />;
+  }
 
   return (
     <FarmAssistant

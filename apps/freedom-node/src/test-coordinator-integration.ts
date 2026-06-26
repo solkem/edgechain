@@ -109,6 +109,36 @@ async function run(): Promise<void> {
       /invalid_credentials/
     );
 
+    await coordinatorAdministrationService.deleteFarmer({
+      farmerId: administered.farmer_id,
+      coordinatorId: coordinator.farmer_id,
+    });
+    await assert.rejects(
+      authService.login(`ADMIN-${suffix}`, '2468'),
+      /invalid_credentials/
+    );
+    const deletedAdministeredFarmer = await db.query(
+      'SELECT COUNT(*)::int AS count FROM farmers WHERE farmer_id = $1',
+      [administered.farmer_id]
+    );
+    assert.equal(Number(deletedAdministeredFarmer.rows[0].count), 0);
+    const deletedAdministeredFarm = await db.query(
+      'SELECT COUNT(*)::int AS count FROM farms WHERE farm_id = $1',
+      [administered.farm_id]
+    );
+    assert.equal(Number(deletedAdministeredFarm.rows[0].count), 0);
+    const deletedAdministeredDevice = await db.query(
+      'SELECT COUNT(*)::int AS count FROM virtual_ndani_devices WHERE virtual_device_id = $1',
+      [administered.virtual_device_id]
+    );
+    assert.equal(Number(deletedAdministeredDevice.rows[0].count), 0);
+    await assert.rejects(
+      coordinatorAdministrationService.findFarmer(administered.farmer_id),
+      /farmer_not_found/
+    );
+    administeredFarmerId = undefined;
+    administeredFarmId = undefined;
+
     const devices = await virtualNdaniService.list(farmer.farmer_id);
     const device = devices[0];
     farmId = device.farm_id;

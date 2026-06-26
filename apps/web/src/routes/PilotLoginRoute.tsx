@@ -1,10 +1,7 @@
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAgentSession } from '../agent/agentSessionContext';
 import { PilotLogin } from '../screens/PilotLogin';
-import {
-  VIRTUAL_NDANI_COORDINATOR_ENABLED,
-  VIRTUAL_NDANI_ENABLED,
-} from '../agent/api';
+import { pilotDestination } from '../agent/pilotNavigation';
 
 export function PilotLoginRoute() {
   const agent = useAgentSession();
@@ -18,26 +15,19 @@ export function PilotLoginRoute() {
     return <PilotLoading label="Checking your EdgeChain access…" />;
   }
   if (agent.session) {
-    const destination = typeof location.state?.from === 'string'
-      ? location.state.from
-      : agent.session.farmer.system_role === 'coordinator'
-        && VIRTUAL_NDANI_COORDINATOR_ENABLED
-        ? '/coordinator'
-        : VIRTUAL_NDANI_ENABLED ? '/virtual-ndani' : '/farm-assistant';
-    return <Navigate to={destination} replace />;
+    return (
+      <Navigate
+        to={pilotDestination(agent.session, location.state?.from)}
+        replace
+      />
+    );
   }
 
   return (
     <PilotLogin
       onSubmit={async (pilotCode, pin) => {
         const session = await agent.login(pilotCode, pin);
-        navigate(
-          session?.farmer.system_role === 'coordinator'
-            && VIRTUAL_NDANI_COORDINATOR_ENABLED
-            ? '/coordinator'
-            : VIRTUAL_NDANI_ENABLED ? '/virtual-ndani' : '/farm-assistant',
-          { replace: true }
-        );
+        if (session) navigate(pilotDestination(session), { replace: true });
       }}
       onWalletAccess={() => navigate('/')}
     />

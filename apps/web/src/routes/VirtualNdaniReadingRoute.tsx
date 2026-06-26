@@ -13,5 +13,8 @@ export function VirtualNdaniReadingRoute() {
   if (!agent.session) {
     return <Navigate to="/pilot-login" state={{ from: location.pathname }} replace />;
   }
+  if (agent.session.farmer.system_role === 'coordinator') {
+    return <Navigate to="/coordinator" replace />;
+  }
   return <VirtualNdaniReadingScreen />;
 }
