@@ -395,7 +395,7 @@ VITE_VIRTUAL_NDANI_ENABLED=true
 VITE_VIRTUAL_NDANI_COORDINATOR_ENABLED=true
 VITE_VIRTUAL_NDANI_PHYSICAL_BINDING_ENABLED=false
 VITE_VIRTUAL_NDANI_PIPELINE_DEMO_ENABLED=false
-VITE_FUNDER_SITE_HOSTS=localhost,127.0.0.1
+VITE_WALLET_SITE_HOSTS=localhost,127.0.0.1
 VITE_FARMER_SITE_HOSTS=odzi.localhost,farmers.localhost,pilot.localhost
 ```
 
@@ -543,7 +543,7 @@ TX power:           20
 | `VITE_VIRTUAL_NDANI_COORDINATOR_ENABLED` | enables coordinator UI |
 | `VITE_VIRTUAL_NDANI_PHYSICAL_BINDING_ENABLED` | enables future physical binding UI |
 | `VITE_VIRTUAL_NDANI_PIPELINE_DEMO_ENABLED` | enables optional pipeline demo UI |
-| `VITE_FUNDER_SITE_HOSTS` | comma-separated hostnames that should show the wallet-first home |
+| `VITE_WALLET_SITE_HOSTS` | comma-separated hostnames that should show the wallet-first home |
 | `VITE_FARMER_SITE_HOSTS` | comma-separated hostnames that should route `/` to `/pilot-login` |
 | `VITE_CONTRACT_ADDRESS` | Midnight contract address for wallet-first flows |
 | `VITE_MIDNIGHT_INDEXER_URL`, `VITE_MIDNIGHT_INDEXER_WS`, `VITE_MIDNIGHT_NODE_URL` | Midnight testnet endpoints |
@@ -572,7 +572,7 @@ When adding custom farmer/real domains, update:
 
 - Fly certificates and DNS outside the repository,
 - backend `CORS_ORIGINS`,
-- GitHub Actions repository variables `VITE_FUNDER_SITE_HOSTS` and `VITE_FARMER_SITE_HOSTS` if exact host matching is desired.
+- GitHub Actions repository variables `VITE_WALLET_SITE_HOSTS` and `VITE_FARMER_SITE_HOSTS` if exact host matching is desired.
 
 For Fly, create or attach Postgres before deploying:
 

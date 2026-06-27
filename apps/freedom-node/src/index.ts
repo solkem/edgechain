@@ -17,6 +17,7 @@ import { whatsappRouter } from './routes/whatsapp';
 import { authRouter } from './routes/auth';
 import { farmsRouter } from './routes/farms';
 import { agentRouter } from './routes/agent';
+import { aiFarmManagerRouter } from './routes/aiFarmManager';
 import { virtualNdaniRouter } from './routes/virtualNdani';
 import { coordinatorRouter } from './routes/coordinator';
 import { physicalNdaniRouter } from './routes/physicalNdani';
@@ -108,6 +109,7 @@ if (process.env.AGENT_ENABLED === 'true') {
   app.use('/api/v1/auth', authRouter);
   app.use('/api/v1/farms', farmsRouter);
   app.use('/api/v1/agent', agentRouter);
+  app.use('/api/v1/ai-farm-manager', aiFarmManagerRouter);
   if (process.env.VIRTUAL_NDANI_ENABLED !== 'false') {
     app.use('/api/v1/virtual-ndani', virtualNdaniRouter);
     if (process.env.VIRTUAL_NDANI_COORDINATOR_ENABLED !== 'false') {

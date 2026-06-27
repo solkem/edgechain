@@ -1,12 +1,12 @@
-export type EdgeChainSiteMode = 'farmer' | 'funder';
+export type EdgeChainSiteMode = 'farmer' | 'wallet';
 
 const configuredFarmerHosts = hostList(import.meta.env.VITE_FARMER_SITE_HOSTS);
-const configuredFunderHosts = hostList(import.meta.env.VITE_FUNDER_SITE_HOSTS);
+const configuredWalletHosts = hostList(import.meta.env.VITE_WALLET_SITE_HOSTS);
 
 export function siteMode(hostname = window.location.hostname): EdgeChainSiteMode {
   const normalized = hostname.toLowerCase();
   if (matchesHost(normalized, configuredFarmerHosts)) return 'farmer';
-  if (matchesHost(normalized, configuredFunderHosts)) return 'funder';
+  if (matchesHost(normalized, configuredWalletHosts)) return 'wallet';
   if (
     normalized.startsWith('farmer.')
     || normalized.startsWith('farmers.')
@@ -15,7 +15,7 @@ export function siteMode(hostname = window.location.hostname): EdgeChainSiteMode
   ) {
     return 'farmer';
   }
-  return 'funder';
+  return 'wallet';
 }
 
 export function isFarmerSite(hostname?: string): boolean {

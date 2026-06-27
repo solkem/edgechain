@@ -95,6 +95,46 @@ export interface FarmerAiProfile {
   updated_at: number;
 }
 
+export interface WeeklyFarmCheckin {
+  checkin_id: string;
+  farmer_id: string;
+  farm_id: string | null;
+  virtual_device_id: string | null;
+  week_start: number;
+  crop: string | null;
+  crop_stage: string | null;
+  soil_condition: 'very_dry' | 'dry' | 'moist' | 'wet' | 'waterlogged' | null;
+  plant_condition: 'good' | 'fair' | 'poor' | null;
+  pest_disease_signs: 'none' | 'some' | 'severe' | null;
+  rain_condition: 'no_recent_rain' | 'light_recent_rain' | 'heavy_recent_rain' | null;
+  irrigation_done: 'yes' | 'no' | 'not_needed' | null;
+  farmer_biggest_worry: string | null;
+  labour_or_input_constraint: string | null;
+  followed_previous_advice: boolean | null;
+  observed_change: string | null;
+  manual_notes: string | null;
+  risk_level: 'low' | 'medium' | 'high' | null;
+  created_by: 'farmer' | 'coordinator' | 'system';
+  created_at: number;
+  updated_at: number;
+}
+
+export interface WeeklyFarmCheckinDraft {
+  farm_id: string;
+  crop: string;
+  crop_stage: string;
+  soil_condition: NonNullable<WeeklyFarmCheckin['soil_condition']>;
+  plant_condition: NonNullable<WeeklyFarmCheckin['plant_condition']>;
+  pest_disease_signs: NonNullable<WeeklyFarmCheckin['pest_disease_signs']>;
+  rain_condition: NonNullable<WeeklyFarmCheckin['rain_condition']>;
+  irrigation_done: NonNullable<WeeklyFarmCheckin['irrigation_done']>;
+  farmer_biggest_worry: string;
+  labour_or_input_constraint: string;
+  followed_previous_advice: boolean | null;
+  observed_change: string;
+  manual_notes: string;
+}
+
 export interface PilotOperationsMetrics {
   devices: number;
   total_cycles: number;
