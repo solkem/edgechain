@@ -6,9 +6,19 @@ import {
   FarmManagerRiskLevel,
   WeeklyFarmCheckin,
 } from './domain';
+import {
+  FarmManagerContextPack,
+  contextSourceCounts,
+  farmManagerContextPackService,
+} from './contextPackService';
 import { aiFarmManagerRepository } from './repository';
+import { weeklyPlanGateway } from './weeklyPlanGateway';
+import { WEEKLY_PLAN_PROMPT_FAMILY, WEEKLY_PLAN_PROMPT_VERSION } from './weeklyPlanPrompt';
+import {
+  WeeklyPlanValidationError,
+  validateWeeklyPlanOutput,
+} from './weeklyPlanValidation';
 
-const PROMPT_FAMILY = 'weekly_farm_manager_plan';
 const PROMPT_VERSION = 'deterministic-pilot-v1';
 
 export const aiFarmManagerWeeklyPlanService = {
@@ -17,22 +27,94 @@ export const aiFarmManagerWeeklyPlanService = {
   },
 
   async createFromCheckin(checkin: WeeklyFarmCheckin): Promise<AiFarmPlan> {
-    const [profile, memories, previousPlans] = await Promise.all([
-      aiFarmManagerRepository.getActiveProfile({
+    const pack = await farmManagerContextPackService.buildWeeklyPlanPack(checkin);
+    const modelResult = await weeklyPlanGateway.generate(pack);
+    if (modelResult.status === 'success' && modelResult.output) {
+      try {
+        const validated = validateWeeklyPlanOutput(modelResult.output, pack);
+        await aiFarmManagerRepository.recordPromptInvocation({
+          farmerId: checkin.farmer_id,
+          farmId: checkin.farm_id,
+          promptFamily: modelResult.promptFamily,
+          promptVersion: modelResult.promptVersion,
+          modelProvider: modelResult.provider,
+          modelName: modelResult.model,
+          inputTokenCount: modelResult.inputTokens,
+          outputTokenCount: modelResult.outputTokens,
+          estimatedCostUsd: modelResult.estimatedCostUsd,
+          latencyMs: modelResult.latencyMs,
+          status: 'success',
+          contextSourceCounts: contextSourceCounts(pack),
+          safetyFlags: validated.safetyFlags,
+        });
+        return aiFarmManagerRepository.createPlan({
+          farmerId: checkin.farmer_id,
+          farmId: checkin.farm_id,
+          checkinId: checkin.checkin_id,
+          promptFamily: modelResult.promptFamily,
+          promptVersion: modelResult.promptVersion,
+          modelProvider: modelResult.provider,
+          modelName: modelResult.model,
+          riskLevel: validated.riskLevel,
+          confidence: validated.confidence,
+          summary: validated.summary,
+          mainIssue: validated.mainIssue,
+          recommendedActions: validated.recommendedActions,
+          simpleExplanation: validated.simpleExplanation,
+          shonaSummary: validated.shonaSummary,
+          followUpQuestion: validated.followUpQuestion,
+          missingInformation: validated.missingInformation,
+          evidenceUsed: validated.evidenceUsed,
+          safetyFlags: validated.safetyFlags,
+          coordinatorReviewRequired: validated.coordinatorReviewRequired,
+          rawModelOutput: validated.rawOutput,
+          validationStatus: 'valid',
+        });
+      } catch (error) {
+        await aiFarmManagerRepository.recordPromptInvocation({
+          farmerId: checkin.farmer_id,
+          farmId: checkin.farm_id,
+          promptFamily: modelResult.promptFamily,
+          promptVersion: modelResult.promptVersion,
+          modelProvider: modelResult.provider,
+          modelName: modelResult.model,
+          inputTokenCount: modelResult.inputTokens,
+          outputTokenCount: modelResult.outputTokens,
+          estimatedCostUsd: modelResult.estimatedCostUsd,
+          latencyMs: modelResult.latencyMs,
+          status: 'validation_failed',
+          errorCode: error instanceof WeeklyPlanValidationError
+            ? error.code
+            : 'weekly_plan_validation_failed',
+          contextSourceCounts: contextSourceCounts(pack),
+        });
+      }
+    } else {
+      await aiFarmManagerRepository.recordPromptInvocation({
         farmerId: checkin.farmer_id,
-        farmId: checkin.farm_id ?? undefined,
-      }),
-      aiFarmManagerRepository.listContextMemories({
-        farmerId: checkin.farmer_id,
-        farmId: checkin.farm_id ?? undefined,
-        limit: 6,
-      }),
-      aiFarmManagerRepository.listPlans({
-        farmerId: checkin.farmer_id,
-        farmId: checkin.farm_id ?? undefined,
-        limit: 2,
-      }),
-    ]);
+        farmId: checkin.farm_id,
+        promptFamily: WEEKLY_PLAN_PROMPT_FAMILY,
+        promptVersion: WEEKLY_PLAN_PROMPT_VERSION,
+        modelProvider: modelResult.provider,
+        modelName: modelResult.model,
+        estimatedCostUsd: modelResult.estimatedCostUsd,
+        latencyMs: modelResult.latencyMs,
+        status: modelResult.status === 'error' ? 'error' : 'fallback',
+        errorCode: modelResult.errorCode,
+        contextSourceCounts: contextSourceCounts(pack),
+      });
+    }
+    return createDeterministicPlan(checkin, pack);
+  },
+};
+
+function createDeterministicPlan(
+  checkin: WeeklyFarmCheckin,
+  pack: FarmManagerContextPack
+): Promise<AiFarmPlan> {
+    const profile = pack.ai_profile ?? undefined;
+    const memories = pack.important_memories;
+    const previousPlans = pack.recent_plans;
     const riskLevel = checkin.risk_level ?? 'medium';
     const mainIssue = determineMainIssue(checkin, profile);
     const actions = buildRecommendedActions(checkin, profile);
@@ -43,7 +125,7 @@ export const aiFarmManagerWeeklyPlanService = {
       farmerId: checkin.farmer_id,
       farmId: checkin.farm_id,
       checkinId: checkin.checkin_id,
-      promptFamily: PROMPT_FAMILY,
+      promptFamily: WEEKLY_PLAN_PROMPT_FAMILY,
       promptVersion: PROMPT_VERSION,
       modelProvider: 'edgechain',
       modelName: 'deterministic-weekly-plan-pilot',
@@ -79,11 +161,11 @@ export const aiFarmManagerWeeklyPlanService = {
       rawModelOutput: {
         generator: 'deterministic',
         note: 'Pilot-safe plan generated without external LLM call.',
+        context_pack_version: pack.context_pack_version,
       },
       validationStatus: 'valid',
     });
-  },
-};
+}
 
 function determineMainIssue(
   checkin: WeeklyFarmCheckin,
