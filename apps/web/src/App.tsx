@@ -10,6 +10,7 @@ import { AggregationRoute } from "./routes/AggregationRoute";
 import { PredictionsRoute } from "./routes/PredictionsRoute";
 import { PilotLoginRoute } from "./routes/PilotLoginRoute";
 import { FarmAssistantRoute } from "./routes/FarmAssistantRoute";
+import { FarmCheckInRoute } from "./routes/FarmCheckInRoute";
 import { VirtualNdaniRoute } from "./routes/VirtualNdaniRoute";
 import { VirtualNdaniReadingRoute } from "./routes/VirtualNdaniReadingRoute";
 import { CoordinatorRoute } from "./routes/CoordinatorRoute";
@@ -44,6 +45,7 @@ export default function EdgeChainApp() {
             <Route path="/virtual-ndani" element={<VirtualNdaniRoute />} />
             <Route path="/virtual-ndani/reading" element={<VirtualNdaniReadingRoute />} />
             <Route path="/virtual-ndani/demo" element={<PhysicalNdaniDemoRoute />} />
+            <Route path="/farm-check-in" element={<FarmCheckInRoute />} />
             <Route path="/farm-assistant" element={<FarmAssistantRoute />} />
             <Route path="/coordinator" element={<CoordinatorRoute />} />
             <Route path="*" element={<Navigate to="/" replace />} />

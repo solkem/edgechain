@@ -155,6 +155,13 @@ export function VirtualNdani({
               </button>
               <button
                 type="button"
+                onClick={() => navigate('/farm-check-in')}
+                className="border-2 border-[#f1d34f] px-5 py-4 text-left font-black text-[#f1d34f] hover:bg-[#f1d34f] hover:text-black"
+              >
+                Weekly farm check-in
+              </button>
+              <button
+                type="button"
                 disabled={starting}
                 onClick={async () => {
                   setStarting(true);
