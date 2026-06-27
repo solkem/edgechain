@@ -8,6 +8,10 @@ import {
   FarmManagerChatError,
   farmManagerChatService,
 } from '../ai-farm-manager/chatService';
+import {
+  FarmerTimelineReportError,
+  farmerTimelineReportService,
+} from '../ai-farm-manager/timelineReportService';
 import { aiFarmManagerWeeklyPlanService } from '../ai-farm-manager/weeklyPlanService';
 
 const router = Router();
@@ -74,11 +78,38 @@ router.post('/chat', async (req: FarmerRequest, res) => {
   }
 });
 
+router.get('/timeline', async (req: FarmerRequest, res) => {
+  try {
+    const events = await farmerTimelineReportService.timeline({
+      farmerId: req.farmer!.farmer_id,
+      farmId: req.query.farm_id,
+    });
+    return res.json({ success: true, events });
+  } catch (error) {
+    return handleError(error, res);
+  }
+});
+
+router.get('/report', async (req: FarmerRequest, res) => {
+  try {
+    const report = await farmerTimelineReportService.report({
+      farmerId: req.farmer!.farmer_id,
+      farmId: req.query.farm_id,
+    });
+    return res.json({ success: true, report });
+  } catch (error) {
+    return handleError(error, res);
+  }
+});
+
 function handleError(error: unknown, res: any) {
   if (error instanceof AiFarmManagerCheckinError) {
     return res.status(error.status).json({ error: error.code });
   }
   if (error instanceof FarmManagerChatError) {
+    return res.status(error.status).json({ error: error.code });
+  }
+  if (error instanceof FarmerTimelineReportError) {
     return res.status(error.status).json({ error: error.code });
   }
   return res.status(500).json({ error: 'ai_farm_manager_request_failed' });

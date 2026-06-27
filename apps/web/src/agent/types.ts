@@ -177,6 +177,55 @@ export interface AiFarmPlan {
   created_at: number;
 }
 
+export interface FarmerTimelineEvent {
+  event_id: string;
+  event_type: 'profile' | 'checkin' | 'plan' | 'outcome' | 'ndani_kit';
+  occurred_at: number;
+  title: string;
+  summary: string;
+  risk_level: 'low' | 'medium' | 'high' | null;
+  source_id: string;
+}
+
+export interface FarmerAiReport {
+  report_version: 'farmer-ai-report-v1';
+  generated_at: number;
+  farmer_id: string;
+  farm: {
+    farm_id: string;
+    name: string;
+    site_id: string;
+  };
+  profile: {
+    current_crop: string | null;
+    current_crop_stage: string | null;
+    main_crops: string[];
+    primary_goal: string | null;
+    primary_pain_point: string | null;
+    water_access: string | null;
+    irrigation_method: string | null;
+    soil_type: string | null;
+    ai_manager_brief: string | null;
+  } | null;
+  summary: {
+    checkins: number;
+    plans: number;
+    outcomes: number;
+    high_risk_weeks: number;
+    latest_risk_level: 'low' | 'medium' | 'high' | null;
+    coordinator_reviews_recommended: number;
+    virtual_ndani_devices: number;
+  };
+  crop_journey: string[];
+  weekly_observation_summary: string[];
+  advice_summary: string[];
+  follow_up_questions: string[];
+  lessons_learned: string[];
+  next_season_recommendations: string[];
+  physical_ndani_kit_readiness: string;
+  privacy_and_control_statement: string;
+}
+
 export interface PilotOperationsMetrics {
   devices: number;
   total_cycles: number;

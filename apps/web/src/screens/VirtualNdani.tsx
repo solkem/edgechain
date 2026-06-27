@@ -162,6 +162,13 @@ export function VirtualNdani({
               </button>
               <button
                 type="button"
+                onClick={() => navigate('/farm-timeline')}
+                className="border-2 border-white px-5 py-4 text-left font-black text-white hover:bg-white hover:text-black"
+              >
+                Farm timeline and report
+              </button>
+              <button
+                type="button"
                 disabled={starting}
                 onClick={async () => {
                   setStarting(true);
