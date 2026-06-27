@@ -12,6 +12,7 @@ import type {
   CoordinatorFarmer,
   CoordinatorReadingReview,
   FarmerAiProfile,
+  AiFarmPlan,
   WeeklyFarmCheckin,
   WeeklyFarmCheckinDraft,
   PilotOperationsMetrics,
@@ -374,9 +375,21 @@ export async function loadWeeklyFarmCheckins(): Promise<WeeklyFarmCheckin[]> {
   return body.checkins;
 }
 
+export async function loadAiFarmPlans(): Promise<AiFarmPlan[]> {
+  const response = await request('/api/v1/ai-farm-manager/plans', {
+    method: 'GET',
+  });
+  if (!response.ok) throw await toApiError(response);
+  const body = await response.json() as {
+    success: true;
+    plans: AiFarmPlan[];
+  };
+  return body.plans;
+}
+
 export async function saveWeeklyFarmCheckin(
   draft: WeeklyFarmCheckinDraft
-): Promise<WeeklyFarmCheckin> {
+): Promise<{ checkin: WeeklyFarmCheckin; plan: AiFarmPlan }> {
   const response = await request('/api/v1/ai-farm-manager/checkins', {
     method: 'POST',
     body: JSON.stringify(draft),
@@ -385,8 +398,9 @@ export async function saveWeeklyFarmCheckin(
   const body = await response.json() as {
     success: true;
     checkin: WeeklyFarmCheckin;
+    plan: AiFarmPlan;
   };
-  return body.checkin;
+  return { checkin: body.checkin, plan: body.plan };
 }
 
 export async function loadCoordinatorReviews(): Promise<CoordinatorReadingReview[]> {

@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  loadAiFarmPlans,
   loadWeeklyFarmCheckins,
   saveWeeklyFarmCheckin,
 } from '../agent/api';
 import { PilotBrand } from '../agent/PilotBrand';
 import type {
   PilotSession,
+  AiFarmPlan,
   WeeklyFarmCheckin,
   WeeklyFarmCheckinDraft,
 } from '../agent/types';
@@ -63,6 +65,8 @@ export function FarmCheckIn({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<WeeklyFarmCheckin | null>(null);
+  const [plan, setPlan] = useState<AiFarmPlan | null>(null);
+  const [plans, setPlans] = useState<AiFarmPlan[]>([]);
   const [draft, setDraft] = useState<WeeklyFarmCheckinDraft>({
     farm_id: session.farms[0]?.farm_id || '',
     crop: '',
@@ -86,12 +90,17 @@ export function FarmCheckIn({
 
   useEffect(() => {
     let active = true;
-    void loadWeeklyFarmCheckins()
-      .then((checkins) => {
-        if (active) setHistory(checkins);
+    void Promise.all([
+      loadWeeklyFarmCheckins(),
+      loadAiFarmPlans(),
+    ])
+      .then(([checkins, farmPlans]) => {
+        if (!active) return;
+        setHistory(checkins);
+        setPlans(farmPlans);
       })
       .catch(() => {
-        if (active) setError('EdgeChain could not load previous check-ins.');
+        if (active) setError('EdgeChain could not load previous check-ins and plans.');
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -111,15 +120,19 @@ export function FarmCheckIn({
     setSaving(true);
     setError(null);
     setSaved(null);
+    setPlan(null);
     try {
-      const checkin = await saveWeeklyFarmCheckin({
+      const result = await saveWeeklyFarmCheckin({
         ...draft,
         farm_id: farmId,
       });
+      const { checkin, plan: weeklyPlan } = result;
       setSaved(checkin);
+      setPlan(weeklyPlan);
       setHistory((current) => [checkin, ...current].slice(0, 8));
+      setPlans((current) => [weeklyPlan, ...current].slice(0, 8));
     } catch {
-      setError('This weekly check-in could not be saved. Please try again.');
+      setError('This weekly check-in and plan could not be saved. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -184,17 +197,48 @@ export function FarmCheckIn({
             {error}
           </p>
         )}
-        {saved && (
+        {saved && plan && (
           <section className="mt-6 border-2 border-black bg-[#dff3d8] p-5 shadow-[6px_6px_0_#000]">
             <p className="text-sm font-black uppercase tracking-[0.18em] text-[#27653a]">
-              Check-in saved
+              Your weekly farm plan
             </p>
             <h2 className="mt-2 text-2xl font-black">
-              This week is marked as {riskLabel(saved.risk_level)} risk.
+              {plan.summary}
             </h2>
-            <p className="mt-2 text-gray-700">
-              Next phase will use this record to generate a simple weekly farm plan.
+            <p className="mt-2 font-bold text-[#27653a]">
+              Risk: {riskLabel(plan.risk_level)} · Confidence: {plan.confidence}
+              {plan.coordinator_review_required ? ' · Coordinator review recommended' : ''}
             </p>
+            {plan.simple_explanation && (
+              <p className="mt-3 text-gray-700">{plan.simple_explanation}</p>
+            )}
+            {plan.shona_summary && (
+              <p className="mt-3 border-l-4 border-[#27653a] bg-white p-3 font-bold">
+                {plan.shona_summary}
+              </p>
+            )}
+            <ol className="mt-5 grid gap-3 md:grid-cols-2">
+              {plan.recommended_actions.map((action) => (
+                <li key={`${plan.plan_id}-${action.priority}`} className="border border-black bg-white p-4">
+                  <p className="text-xs font-black uppercase text-gray-500">
+                    Action {action.priority} · {action.timeframe}
+                  </p>
+                  <h3 className="mt-1 font-black">{action.title}</h3>
+                  <p className="mt-2 text-sm">{action.action}</p>
+                  <p className="mt-2 text-xs text-gray-600">{action.reason}</p>
+                  {action.shona_phrase && (
+                    <p className="mt-2 text-sm font-bold text-[#27653a]">
+                      {action.shona_phrase}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ol>
+            {plan.follow_up_question && (
+              <p className="mt-4 border-2 border-black bg-[#f1d34f] p-3 font-black">
+                Follow-up: {plan.follow_up_question}
+              </p>
+            )}
           </section>
         )}
 
@@ -336,6 +380,30 @@ export function FarmCheckIn({
                       <p className="font-black">{formatWeek(checkin.week_start)}</p>
                       <p className="mt-1 text-sm text-gray-600">
                         {checkin.crop || 'Crop not named'} · {pretty(checkin.soil_condition)} soil · {riskLabel(checkin.risk_level)} risk
+                      </p>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </section>
+
+            <section className="border-2 border-black bg-white p-6">
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-gray-500">
+                Recent AI plans
+              </p>
+              {loading ? (
+                <p className="mt-4 font-bold">Loading…</p>
+              ) : plans.length === 0 ? (
+                <p className="mt-4 text-gray-600">
+                  No weekly plans yet.
+                </p>
+              ) : (
+                <ol className="mt-4 space-y-3">
+                  {plans.slice(0, 3).map((farmPlan) => (
+                    <li key={farmPlan.plan_id} className="border border-black p-3">
+                      <p className="font-black">{farmPlan.main_issue || 'Weekly plan'}</p>
+                      <p className="mt-1 text-sm text-gray-600">
+                        {riskLabel(farmPlan.risk_level)} risk · {farmPlan.recommended_actions.length} actions
                       </p>
                     </li>
                   ))}
