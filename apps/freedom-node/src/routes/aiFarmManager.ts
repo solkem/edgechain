@@ -4,6 +4,7 @@ import {
   AiFarmManagerCheckinError,
   aiFarmManagerCheckinService,
 } from '../ai-farm-manager/checkinService';
+import { aiFarmManagerWeeklyPlanService } from '../ai-farm-manager/weeklyPlanService';
 
 const router = Router();
 router.use(requireFarmerSession);
@@ -37,7 +38,19 @@ router.post('/checkins', async (req: FarmerRequest, res) => {
       observedChange: req.body.observed_change,
       manualNotes: req.body.manual_notes,
     });
-    return res.status(201).json({ success: true, checkin });
+    const plan = await aiFarmManagerWeeklyPlanService.createFromCheckin(checkin);
+    return res.status(201).json({ success: true, checkin, plan });
+  } catch (error) {
+    return handleError(error, res);
+  }
+});
+
+router.get('/plans', async (req: FarmerRequest, res) => {
+  try {
+    const plans = await aiFarmManagerWeeklyPlanService.listForFarmer(
+      req.farmer!.farmer_id
+    );
+    return res.json({ success: true, plans });
   } catch (error) {
     return handleError(error, res);
   }

@@ -135,6 +135,48 @@ export interface WeeklyFarmCheckinDraft {
   manual_notes: string;
 }
 
+export interface FarmManagerRecommendedAction {
+  priority: number;
+  title: string;
+  action: string;
+  reason: string;
+  timeframe: string;
+  cost_level: 'none' | 'low' | 'medium' | 'high';
+  difficulty: 'easy' | 'moderate' | 'difficult';
+  shona_phrase?: string;
+}
+
+export interface AiFarmPlan {
+  plan_id: string;
+  farmer_id: string;
+  farm_id: string | null;
+  checkin_id: string | null;
+  conversation_id: string | null;
+  prompt_family: string;
+  prompt_version: string;
+  model_provider: string;
+  model_name: string;
+  risk_level: 'low' | 'medium' | 'high';
+  confidence: 'low' | 'medium' | 'high';
+  summary: string;
+  main_issue: string | null;
+  recommended_actions: FarmManagerRecommendedAction[];
+  simple_explanation: string | null;
+  shona_summary: string | null;
+  follow_up_question: string | null;
+  missing_information: string[];
+  evidence_used: Array<{
+    type: 'profile' | 'memory' | 'checkin' | 'ndani_reading' | 'previous_plan' | 'playbook';
+    id: string;
+    summary: string;
+  }>;
+  safety_flags: string[];
+  coordinator_review_required: boolean;
+  raw_model_output: Record<string, unknown> | null;
+  validation_status: 'valid' | 'repaired' | 'fallback' | 'rejected';
+  created_at: number;
+}
+
 export interface PilotOperationsMetrics {
   devices: number;
   total_cycles: number;
