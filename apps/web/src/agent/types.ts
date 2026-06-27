@@ -282,6 +282,29 @@ export interface AgentMessageResponse {
   };
 }
 
+export interface FarmManagerChatReply {
+  answer: string;
+  shona_summary: string | null;
+  recommended_next_step: string | null;
+  missing_information: string[];
+  evidence_used: Array<{
+    type: 'profile' | 'memory' | 'checkin' | 'ndani_reading' | 'previous_plan' | 'playbook';
+    id: string;
+    summary: string;
+  }>;
+  confidence: 'low' | 'medium' | 'high';
+  coordinator_review_required: boolean;
+  safety_flags: string[];
+  provider: string;
+  model: string;
+  validation_status: 'valid' | 'fallback';
+}
+
+export interface FarmManagerChatResponse {
+  success: true;
+  reply: FarmManagerChatReply;
+}
+
 export interface AgentConversationResponse {
   success: true;
   conversation: AgentMessageResponse['conversation'];

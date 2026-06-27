@@ -1,6 +1,7 @@
 import type {
   AgentMessageResponse,
   AgentConversationResponse,
+  FarmManagerChatResponse,
   PilotSession,
   VirtualNdaniDevice,
   VirtualNdaniEvent,
@@ -89,6 +90,21 @@ export async function sendAgentMessage(input: {
   });
   if (!response.ok) throw await toApiError(response);
   return response.json() as Promise<AgentMessageResponse>;
+}
+
+export async function sendFarmManagerChatMessage(input: {
+  farmId: string;
+  text: string;
+}): Promise<FarmManagerChatResponse> {
+  const response = await request('/api/v1/ai-farm-manager/chat', {
+    method: 'POST',
+    body: JSON.stringify({
+      farm_id: input.farmId,
+      text: input.text,
+    }),
+  });
+  if (!response.ok) throw await toApiError(response);
+  return response.json() as Promise<FarmManagerChatResponse>;
 }
 
 export async function loadLatestAgentConversation(
