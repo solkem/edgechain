@@ -14,7 +14,7 @@ EdgeChain is built on the Midnight Network.
 [![SDG 10](https://img.shields.io/badge/SDG-10%20Reduced%20Inequalities-DD1367)](https://sdgs.un.org/goals/goal10)
 [![SDG 17](https://img.shields.io/badge/SDG-17%20Partnerships-19486A)](https://sdgs.un.org/goals/goal17)
 
-**Live demo:** [edgechain-midnight-ui.fly.dev](https://edgechain-midnight-ui.fly.dev)  
+**Live app:** [edgechain-midnight.fly.dev](https://edgechain-midnight.fly.dev)
 **Project platform:** [DisruptiveIoT.org](https://disruptiveiot.org)  
 **Contact:** [Solomon Kembo](https://linkedin.com/in/solomonkembo)
 
@@ -62,6 +62,17 @@ Devices can prove contribution quality, threshold conditions, or eligibility wit
 Reward eligibility, replay resistance, and private coordination can happen on-chain without forcing a coordinator to custody farmer identities.
 
 The strongest "why Midnight" moment is the reward-eligibility flow: EdgeChain needs to verify contribution quality, prevent double claims, and support private settlement without revealing which device belongs to which farmer. That specific combination makes Midnight a structural requirement, not a branding choice.
+
+### Two product experiences
+
+The current application intentionally supports two audiences from one codebase:
+
+| Experience | Entry point | Purpose |
+|------------|-------------|---------|
+| **Funder / technical EdgeChain** | `/` on funder-oriented domains | Wallet-first Midnight, privacy, federated learning, proof, and reward-eligibility story. |
+| **Farmer pilot** | `/pilot-login` or `/` on farmer-oriented domains | Farmer number + PIN access to the AI Farm Manager, Virtual Ndani Kit, manual readings, and coordinator support without requiring wallet literacy on day one. |
+
+This is a staged adoption strategy, not a split vision. Farmers can receive immediate value through a low-friction pilot while EdgeChain continues toward farmer-controlled data, hardware identity, AI memory, privacy-preserving proofs, and federated model participation.
 
 ---
 
@@ -128,7 +139,11 @@ Reward values in the lab are abstract accounting units for simulation and fairne
 
 ## Prototype Boundaries
 
-EdgeChain currently demonstrates the full privacy-preserving FL workflow end to end, but several components are intentionally prototype-grade. Local model training runs in the browser with TensorFlow.js, demo datasets are used when live sensor-node data is unavailable, and some infrastructure paths use simulated ZK proofs, mock IPFS CIDs, local browser storage, and simulation-mode contract calls. These choices keep the prototype runnable while preserving the intended architecture.
+EdgeChain currently demonstrates the privacy-preserving FL/Midnight direction and the Odzi farmer pilot path, but several components are intentionally prototype-grade. Local model training runs in the browser with TensorFlow.js, demo datasets are used when live sensor-node data is unavailable, and some infrastructure paths use simulated ZK proofs, mock IPFS CIDs, local browser storage, and simulation-mode contract calls. These choices keep the prototype runnable while preserving the intended architecture.
+
+The current Odzi pilot implementation is also deliberately human-assisted. Most pilot farmers do not yet have physical Ndani Kit hardware, so the app provides a **Virtual Ndani Kit** that records human-entered observations, labels them correctly as manual observations, and shows how future physical hardware will automate more readings. Manual pilot observations must never be described as physical sensor measurements.
+
+The AI Farm Manager work is being built in phases. The repository now includes the data foundation for farmer AI profiles, structured memories, weekly check-ins, AI plans, recommendation outcomes, and prompt invocation telemetry. Coordinator onboarding for farmer AI profiles is in progress so that each farmer can receive a personalized farm-manager experience instead of a generic chatbot.
 
 IPFS is used as an artifact layer for model, proof, and audit data; it should not be treated as privacy or permanence by itself. Sensitive artifacts must be encrypted before upload, and production durability requires pinning, replicated storage providers, lifecycle rules, and potentially Filecoin-style storage deals.
 
@@ -178,19 +193,41 @@ The circuit attests *"I know a valid P-256 signature from a registered device"* 
 
 ## Pilot Phasing
 
-The Odzi pilot is split into two phases by **what Midnight is structurally required for**, not by implementation milestone.
+The Odzi pilot now has two complementary goals:
 
-### Phase A - Off-chain field recording (no Midnight dependency)
+1. **Funder evidence:** show why EdgeChain’s long-term privacy, wallet, Midnight, hardware, and federated-learning architecture matters.
+2. **Farmer buy-in:** show each pilot farmer that an AI Farm Manager can remember their farm, organize observations, advise practically, and follow up without forcing wallet usage on day one.
 
-Phase A delivers immediate farmer value and funder-grade documentation without requiring any Midnight transaction. Cohort topology:
+### Phase A - Farmer-first AI + Virtual Ndani Kit pilot
 
-- **1 hardware site:** full sensor node (ESP32-S3 + ATECC608B + LoRa) feeding a Freedom Node
-- **6 WhatsApp manual-observation sites:** structured weekly/monthly forms distributed by an on-ground coordinator in Odzi
-- **7 farmers total** — 5 horticulture (weekly observations), 2 tobacco (monthly off-season reflections)
+Phase A delivers immediate farmer value and funder-grade documentation without requiring any Midnight transaction from pilot farmers. It is designed for a 20-farmer Odzi cohort using:
 
-### Phase B - First load-bearing Midnight transaction
+- farmer number + PIN login,
+- one coordinator/admin account,
+- one shared Gemini account at provider level with farmer context isolated in EdgeChain,
+- one EdgeChain profile and farm profile per farmer,
+- one Virtual Ndani Kit per farmer/farm,
+- manual field observations entered by farmers or a coordinator,
+- coordinator review for risky or uncertain readings,
+- AI Farm Manager profile onboarding,
+- weekly check-ins and farm-manager plans as the next implementation phase.
 
-Phase B introduces Midnight at the precise point where its guarantees become structurally irreplaceable: an anonymous contribution proof that simultaneously verifies data quality, prevents double-claiming, and supports private reward eligibility **without revealing device-to-farmer linkage**. That specific combination is what makes Midnight a structural requirement, not a branding choice.
+The Phase A promise is:
+
+```text
+Today:
+Farmers enter observations manually. EdgeChain remembers, organizes, advises, and follows up.
+
+Next:
+Ndani Kit hardware automates more readings.
+
+Future:
+Farmers build private, farmer-controlled intelligence records. In production, EdgeChain should let farmers control access to their data, Ndani Kit hardware identity, AI agent memory, and participation in federated learning or research.
+```
+
+### Phase B - Physical Ndani Kit and first load-bearing Midnight transaction
+
+Phase B introduces physical Ndani Kit hardware and Midnight at the precise point where its guarantees become structurally irreplaceable: an anonymous contribution proof that simultaneously verifies data quality, prevents double-claiming, and supports private reward eligibility **without revealing device-to-farmer linkage**. That specific combination is what makes Midnight a structural requirement, not a branding choice.
 
 ### Current implementation footprint
 
@@ -203,6 +240,12 @@ Demonstrable today:
 - IPFS integration in [`apps/ipfs-service`](apps/ipfs-service)
 - Compact contracts and deployment artifacts in [`packages/contract`](packages/contract)
 - Python research lab in [`research/python-lab`](research/python-lab) for synthetic FL, MARS scoring, adversarial scenarios, and oversight evaluation
+- AI Farm Agent and Farm Assistant foundation
+- Virtual Ndani Kit manual-observation workflow
+- coordinator dashboard for fleet, farmer administration, review, evidence CSV, and operations metrics
+- farmer creation, update, PIN reset, deletion, and AI Farm Manager profile onboarding
+- AI Farm Manager data foundation: profiles, memories, weekly check-ins, AI plans, outcomes, and prompt invocation telemetry
+- domain/site-mode foundation for separate funder and farmer experiences
 - Two contracts deployed on Midnight testnet02
 - Live demo services on Fly.io
 - Freedom Node validated end-to-end in Maryland (Ubuntu Server 24.04 LTS + Docker + `midnightntwrk/proof-server:7.0.0`)
@@ -210,6 +253,9 @@ Demonstrable today:
 
 In progress before Phase B:
 
+- weekly AI Farm Manager check-ins and generated farm plans
+- memory-based Farm Assistant responses using structured Farm Manager Context Packs
+- farmer timeline and pilot/funder reports
 - end-to-end ZK proof generation and submission across all live flows
 - full anonymous device registration and reward-eligibility path
 - reduction of simulated contract paths in the UI/backend
@@ -235,6 +281,7 @@ edgechain/
 |- apps/
 |  |- web/              React frontend
 |  |- freedom-node/     Unified backend and Freedom Node services
+|  |  |- src/ai-farm-manager/  AI Farm Manager profile/memory/check-in foundation
 |  |  |- proof-server/  In-repo proof/device orchestration service
 |  |- ipfs-service/     Storacha/IPFS microservice
 |- packages/
@@ -263,9 +310,17 @@ Current Midnight testnet02 deployment artifacts recorded in [`packages/contract/
 
 | Service | URL |
 |---------|-----|
-| Demo UI | [edgechain-midnight-ui.fly.dev](https://edgechain-midnight-ui.fly.dev) |
-| Unified Backend | [edgechain-midnight.fly.dev](https://edgechain-midnight.fly.dev) |
+| Unified app and backend | [edgechain-midnight.fly.dev](https://edgechain-midnight.fly.dev) |
 | IPFS Service | [edgechain-ipfs.fly.dev](https://edgechain-ipfs.fly.dev) |
+
+The unified Fly app serves both the React frontend and backend API. Code-level site mode support is in place for separate custom domains:
+
+| Domain type | Behavior |
+|-------------|----------|
+| Funder / technical domain | `/` remains wallet-first and highlights privacy, Midnight, federated learning, and proof infrastructure. |
+| Farmer / pilot domain | `/` redirects to `/pilot-login` for farmer number + PIN access without wallet friction. |
+
+Custom domains still require Fly certificate and DNS configuration outside the repository.
 
 ---
 
@@ -278,6 +333,7 @@ Current Midnight testnet02 deployment artifacts recorded in [`packages/contract/
 - Python 3.12+ and [`uv`](https://docs.astral.sh/uv/) for the research lab
 - npm for standalone service folders such as `apps/ipfs-service` and `apps/freedom-node/proof-server`
 - PlatformIO for firmware work
+- CompactC >= 0.28.0 only when running root-level commands that build/check Compact contracts
 - Optional hardware for full integration testing
 
 ### Setup
@@ -296,20 +352,24 @@ docker run --name edgechain-postgres \
   -d postgres:16
 export DATABASE_URL=postgresql://edgechain:edgechain@localhost:5432/edgechain
 
-# Build contract/api/cli workspaces
+# Build contract/api/cli workspaces. Root build/dev commands run the
+# CompactC toolchain check.
 yarn build:node
 
 # Build the UI workspace
 yarn build:ui
 
-# Start package dev tasks
+# Start all package dev tasks. Requires CompactC on PATH because the root
+# predev check validates the full Midnight toolchain.
 yarn dev
 
-# Or run services individually
-cd apps/freedom-node && npm install && npm run dev
+# Or run pilot/web services individually without CompactC
+npm run dev --workspace @edgechain/freedom-node
+npm run dev --workspace @edgechain/web
+
+# Optional standalone services
 cd apps/freedom-node/proof-server && npm install && npm run dev
 cd apps/ipfs-service && npm install && npm run dev
-yarn workspace @edgechain/web dev
 ```
 
 `apps/freedom-node` initializes its PostgreSQL schema from
@@ -322,6 +382,40 @@ Health checks:
 ```bash
 curl http://localhost:3001/health
 curl http://localhost:3002/health
+```
+
+### Local farmer pilot testing
+
+For local pilot testing, the web app needs pilot feature flags at startup. `apps/web/.env.local` can contain:
+
+```bash
+VITE_API_URL=http://localhost:3001
+VITE_AGENT_ENABLED=true
+VITE_VIRTUAL_NDANI_ENABLED=true
+VITE_VIRTUAL_NDANI_COORDINATOR_ENABLED=true
+VITE_VIRTUAL_NDANI_PHYSICAL_BINDING_ENABLED=false
+VITE_VIRTUAL_NDANI_PIPELINE_DEMO_ENABLED=false
+VITE_FUNDER_SITE_HOSTS=localhost,127.0.0.1
+VITE_FARMER_SITE_HOSTS=odzi.localhost,farmers.localhost,pilot.localhost
+```
+
+Restart the Vite dev server after changing `VITE_*` values.
+
+Useful local URLs:
+
+| URL | Purpose |
+|-----|---------|
+| `http://localhost:8080/` | funder / wallet-first home |
+| `http://localhost:8080/pilot-login` | farmer / coordinator PIN login |
+| `http://localhost:8080/coordinator` | coordinator dashboard after admin login |
+| `http://localhost:8080/virtual-ndani` | farmer Virtual Ndani Kit after farmer login |
+
+Pilot integration tests that touch PostgreSQL require `DATABASE_URL`, for example:
+
+```bash
+npm run test:ai-farm-manager:integration --workspace @edgechain/freedom-node
+npm run test:coordinator:integration --workspace @edgechain/freedom-node
+npm run test:virtual-ndani:integration --workspace @edgechain/freedom-node
 ```
 
 Wallet note:
@@ -347,6 +441,8 @@ uv run python -m edgechain_lab.experiments.llm_oversight
 The lab uses synthetic data only. Generated `data/`, `evals/`, and `reports/` artifacts are ignored by git and can be regenerated locally.
 
 ### Key Commands
+
+Root `yarn dev`, `yarn build`, `yarn test`, and `yarn lint` run repository-level toolchain checks. Use workspace commands when you only need the farmer pilot/web/backend path.
 
 ```bash
 yarn build:node
@@ -421,10 +517,36 @@ TX power:           20
 | `DATABASE_URL` | PostgreSQL connection string used by the backend |
 | `DATABASE_SSL` | Set to `true` only when the Postgres provider requires SSL |
 | `PORT` | backend port |
-| `CORS_ORIGINS` | allowed origins |
+| `CORS_ORIGINS` | comma-separated allowed frontend origins; include any custom funder/farmer domains |
 | `DEMO_MODE` | mock fallback behavior |
 | `IPFS_SERVICE_URL` | URL for the Storacha/IPFS service |
 | `STORACHA_EMAIL` | IPFS auth |
+| `AGENT_ENABLED` | enables AI Farm Agent backend routes |
+| `VIRTUAL_NDANI_ENABLED` | enables Virtual Ndani Kit backend routes |
+| `VIRTUAL_NDANI_COORDINATOR_ENABLED` | enables coordinator routes |
+| `VIRTUAL_NDANI_PHYSICAL_BINDING_ENABLED` | enables future physical Kit binding flow |
+| `VIRTUAL_NDANI_PHYSICAL_INGESTION_ENABLED` | enables future physical Kit ingestion |
+| `VIRTUAL_NDANI_PIPELINE_DEMO_ENABLED` | enables optional pipeline demonstration features |
+| `FARMER_SESSION_SECONDS` | farmer/coordinator session lifetime |
+| `GEMINI_API_KEY` | server-side Gemini key; never expose through `VITE_*` |
+| `GEMINI_TEXT_MODEL` | Gemini model used by server-side AI features |
+| `GEMINI_TIMEOUT_MS` | server-side Gemini timeout |
+| `GEMINI_INPUT_USD_PER_MILLION` / `GEMINI_OUTPUT_USD_PER_MILLION` | cost telemetry estimates |
+
+### Frontend (`apps/web/`)
+
+| Variable | Notes |
+|----------|-------|
+| `VITE_API_URL` | API origin. Empty in production means same-origin API calls, which supports multiple custom domains on one Fly app. |
+| `VITE_AGENT_ENABLED` | enables pilot routes in the frontend |
+| `VITE_VIRTUAL_NDANI_ENABLED` | enables Virtual Ndani Kit UI |
+| `VITE_VIRTUAL_NDANI_COORDINATOR_ENABLED` | enables coordinator UI |
+| `VITE_VIRTUAL_NDANI_PHYSICAL_BINDING_ENABLED` | enables future physical binding UI |
+| `VITE_VIRTUAL_NDANI_PIPELINE_DEMO_ENABLED` | enables optional pipeline demo UI |
+| `VITE_FUNDER_SITE_HOSTS` | comma-separated hostnames that should show the wallet/funder-first home |
+| `VITE_FARMER_SITE_HOSTS` | comma-separated hostnames that should route `/` to `/pilot-login` |
+| `VITE_CONTRACT_ADDRESS` | Midnight contract address for wallet-first flows |
+| `VITE_MIDNIGHT_INDEXER_URL`, `VITE_MIDNIGHT_INDEXER_WS`, `VITE_MIDNIGHT_NODE_URL` | Midnight testnet endpoints |
 
 ### Current Fly Backend Settings
 
@@ -438,11 +560,19 @@ TX power:           20
 | Health check | `GET /api/db-stats` |
 | Required secret | `DATABASE_URL` |
 | IPFS service | `https://edgechain-ipfs.fly.dev` |
+| Pilot backend flags | `AGENT_ENABLED=true`, `VIRTUAL_NDANI_ENABLED=true`, `VIRTUAL_NDANI_COORDINATOR_ENABLED=true` |
+| Production frontend API mode | same-origin API calls from the unified app build |
 | Legacy mount | `edgechain_data` at `/app/data`; retained only while the existing Fly machine still has the old volume attached |
 
 The backend stores operational data in PostgreSQL. The Fly volume is not used
 for database persistence; it can be removed later after the old attached volume
 is destroyed from Fly.
+
+When adding custom farmer/funder domains, update:
+
+- Fly certificates and DNS outside the repository,
+- backend `CORS_ORIGINS`,
+- GitHub Actions repository variables `VITE_FUNDER_SITE_HOSTS` and `VITE_FARMER_SITE_HOSTS` if exact host matching is desired.
 
 For Fly, create or attach Postgres before deploying:
 
@@ -482,7 +612,7 @@ passwords to the repository.
 | **Solomon Hopewell Kembo** | Architecture, strategy, integration | Bethesda, Maryland, US |
 | **Shankar Rao Mata** | Blockchain / Compact contracts | India |
 | **Lokesh Yadav** | Frontend / React UI | India |
-| Odzi Coordinator | Farmer relationships, WhatsApp form distribution | Odzi, Manicaland |
+| Odzi Coordinator | Farmer relationships, pilot onboarding, weekly check-ins, and coordinator review | Odzi, Manicaland |
 
 Solomon Kembo is the originating researcher behind EdgeChain's privacy architecture and has been building IoT systems for emerging-market contexts since 2016.
 
@@ -494,7 +624,7 @@ These are targets, not promises. Field validation starts in the next implementat
 
 | Horizon | Goal |
 |---------|------|
-| Pilot | Small scale armers in Odzi, Manicaland (Hardware + WhatsApp observation sites) |
+| Pilot | 20-farmer Odzi pilot with farmer PIN access, AI Farm Manager onboarding, Virtual Ndani Kit observations, and coordinator review |
 | Year 1 | 50-100 enrolled farmers and one B2B pilot |
 | Year 2 | 500+ farmers and a parametric-risk pilot |
 | Year 3 | path toward economic self-sustainability |
@@ -517,6 +647,7 @@ The design principle is simple: day-one value should not require blockchain lite
 | File | Contents |
 |------|----------|
 | [`docs/README.md`](docs/README.md) | project documentation entry point |
+| [`docs/ai-farm-manager-personalization-spec.md`](docs/ai-farm-manager-personalization-spec.md) | AI Farm Manager personalization, prompt architecture, safety, evaluation, and phased implementation spec |
 | [`docs/user_stories.html`](docs/user_stories.html) | product user stories |
 | [`research/python-lab/README.md`](research/python-lab/README.md) | Python research lab overview, commands, and experiment framing |
 | [`apps/freedom-node/proof-server/README.md`](apps/freedom-node/proof-server/README.md) | proof-server operations |
