@@ -63,14 +63,14 @@ jobs:
           VITE_MIDNIGHT_INDEXER_WS: wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws
           VITE_MIDNIGHT_NODE_URL: https://rpc.testnet-02.midnight.network
           # Empty means same-origin API calls. This lets the same Fly app serve
-          # both funder and farmer custom domains without cross-domain cookies.
+          # both wallet-first and farmer custom domains without cross-domain cookies.
           VITE_API_URL: ''
           VITE_AGENT_ENABLED: 'true'
           VITE_VIRTUAL_NDANI_ENABLED: 'true'
           VITE_VIRTUAL_NDANI_COORDINATOR_ENABLED: 'true'
           VITE_VIRTUAL_NDANI_PHYSICAL_BINDING_ENABLED: 'false'
           VITE_VIRTUAL_NDANI_PIPELINE_DEMO_ENABLED: 'false'
-          VITE_FUNDER_SITE_HOSTS: ${{ vars.VITE_FUNDER_SITE_HOSTS }}
+          VITE_WALLET_SITE_HOSTS: ${{ vars.VITE_WALLET_SITE_HOSTS }}
           VITE_FARMER_SITE_HOSTS: ${{ vars.VITE_FARMER_SITE_HOSTS }}
 
       - name: Setup Fly CLI

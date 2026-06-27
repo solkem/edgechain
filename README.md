@@ -69,7 +69,7 @@ The current application intentionally supports two audiences from one codebase:
 
 | Experience | Entry point | Purpose |
 |------------|-------------|---------|
-| **Funder / technical EdgeChain** | `/` on funder-oriented domains | Wallet-first Midnight, privacy, federated learning, proof, and reward-eligibility story. |
+| **Technical EdgeChain** | `/` on wallet-first domains | Wallet-first Midnight, privacy, federated learning, proof, and reward-eligibility story. |
 | **Farmer pilot** | `/pilot-login` or `/` on farmer-oriented domains | Farmer number + PIN access to the AI Farm Manager, Virtual Ndani Kit, manual readings, and coordinator support without requiring wallet literacy on day one. |
 
 This is a staged adoption strategy, not a split vision. Farmers can receive immediate value through a low-friction pilot while EdgeChain continues toward farmer-controlled data, hardware identity, AI memory, privacy-preserving proofs, and federated model participation.
@@ -195,12 +195,12 @@ The circuit attests *"I know a valid P-256 signature from a registered device"* 
 
 The Odzi pilot now has two complementary goals:
 
-1. **Funder evidence:** show why EdgeChain’s long-term privacy, wallet, Midnight, hardware, and federated-learning architecture matters.
+1. **Technical evidence:** show why EdgeChain’s long-term privacy, wallet, Midnight, hardware, and federated-learning architecture matters.
 2. **Farmer buy-in:** show each pilot farmer that an AI Farm Manager can remember their farm, organize observations, advise practically, and follow up without forcing wallet usage on day one.
 
 ### Phase A - Farmer-first AI + Virtual Ndani Kit pilot
 
-Phase A delivers immediate farmer value and funder-grade documentation without requiring any Midnight transaction from pilot farmers. It is designed for a 20-farmer Odzi cohort using:
+Phase A delivers immediate farmer value and stakeholder-grade documentation without requiring any Midnight transaction from pilot farmers. It is designed for a 20-farmer Odzi cohort using:
 
 - farmer number + PIN login,
 - one coordinator/admin account,
@@ -245,7 +245,7 @@ Demonstrable today:
 - coordinator dashboard for fleet, farmer administration, review, evidence CSV, and operations metrics
 - farmer creation, update, PIN reset, deletion, and AI Farm Manager profile onboarding
 - AI Farm Manager data foundation: profiles, memories, weekly check-ins, AI plans, outcomes, and prompt invocation telemetry
-- domain/site-mode foundation for separate funder and farmer experiences
+- domain/site-mode foundation for separate wallet-first and farmer experiences
 - Two contracts deployed on Midnight testnet02
 - Live demo services on Fly.io
 - Freedom Node validated end-to-end in Maryland (Ubuntu Server 24.04 LTS + Docker + `midnightntwrk/proof-server:7.0.0`)
@@ -255,7 +255,7 @@ In progress before Phase B:
 
 - weekly AI Farm Manager check-ins and generated farm plans
 - memory-based Farm Assistant responses using structured Farm Manager Context Packs
-- farmer timeline and pilot/funder reports
+- farmer timeline and pilot/evidence reports
 - end-to-end ZK proof generation and submission across all live flows
 - full anonymous device registration and reward-eligibility path
 - reduction of simulated contract paths in the UI/backend
@@ -317,7 +317,7 @@ The unified Fly app serves both the React frontend and backend API. Code-level s
 
 | Domain type | Behavior |
 |-------------|----------|
-| Funder / technical domain | `/` remains wallet-first and highlights privacy, Midnight, federated learning, and proof infrastructure. |
+| Wallet-first / technical domain | `/` remains wallet-first and highlights privacy, Midnight, federated learning, and proof infrastructure. |
 | Farmer / pilot domain | `/` redirects to `/pilot-login` for farmer number + PIN access without wallet friction. |
 
 Custom domains still require Fly certificate and DNS configuration outside the repository.
@@ -395,7 +395,7 @@ VITE_VIRTUAL_NDANI_ENABLED=true
 VITE_VIRTUAL_NDANI_COORDINATOR_ENABLED=true
 VITE_VIRTUAL_NDANI_PHYSICAL_BINDING_ENABLED=false
 VITE_VIRTUAL_NDANI_PIPELINE_DEMO_ENABLED=false
-VITE_FUNDER_SITE_HOSTS=localhost,127.0.0.1
+VITE_WALLET_SITE_HOSTS=localhost,127.0.0.1
 VITE_FARMER_SITE_HOSTS=odzi.localhost,farmers.localhost,pilot.localhost
 ```
 
@@ -405,7 +405,7 @@ Useful local URLs:
 
 | URL | Purpose |
 |-----|---------|
-| `http://localhost:8080/` | funder / wallet-first home |
+| `http://localhost:8080/` | wallet-first home |
 | `http://localhost:8080/pilot-login` | farmer / coordinator PIN login |
 | `http://localhost:8080/coordinator` | coordinator dashboard after admin login |
 | `http://localhost:8080/virtual-ndani` | farmer Virtual Ndani Kit after farmer login |
@@ -517,7 +517,7 @@ TX power:           20
 | `DATABASE_URL` | PostgreSQL connection string used by the backend |
 | `DATABASE_SSL` | Set to `true` only when the Postgres provider requires SSL |
 | `PORT` | backend port |
-| `CORS_ORIGINS` | comma-separated allowed frontend origins; include any custom funder/farmer domains |
+| `CORS_ORIGINS` | comma-separated allowed frontend origins; include any custom wallet-first/farmer domains |
 | `DEMO_MODE` | mock fallback behavior |
 | `IPFS_SERVICE_URL` | URL for the Storacha/IPFS service |
 | `STORACHA_EMAIL` | IPFS auth |
@@ -543,7 +543,7 @@ TX power:           20
 | `VITE_VIRTUAL_NDANI_COORDINATOR_ENABLED` | enables coordinator UI |
 | `VITE_VIRTUAL_NDANI_PHYSICAL_BINDING_ENABLED` | enables future physical binding UI |
 | `VITE_VIRTUAL_NDANI_PIPELINE_DEMO_ENABLED` | enables optional pipeline demo UI |
-| `VITE_FUNDER_SITE_HOSTS` | comma-separated hostnames that should show the wallet/funder-first home |
+| `VITE_WALLET_SITE_HOSTS` | comma-separated hostnames that should show the wallet-first home |
 | `VITE_FARMER_SITE_HOSTS` | comma-separated hostnames that should route `/` to `/pilot-login` |
 | `VITE_CONTRACT_ADDRESS` | Midnight contract address for wallet-first flows |
 | `VITE_MIDNIGHT_INDEXER_URL`, `VITE_MIDNIGHT_INDEXER_WS`, `VITE_MIDNIGHT_NODE_URL` | Midnight testnet endpoints |
@@ -568,11 +568,11 @@ The backend stores operational data in PostgreSQL. The Fly volume is not used
 for database persistence; it can be removed later after the old attached volume
 is destroyed from Fly.
 
-When adding custom farmer/funder domains, update:
+When adding custom farmer/wallet-first domains, update:
 
 - Fly certificates and DNS outside the repository,
 - backend `CORS_ORIGINS`,
-- GitHub Actions repository variables `VITE_FUNDER_SITE_HOSTS` and `VITE_FARMER_SITE_HOSTS` if exact host matching is desired.
+- GitHub Actions repository variables `VITE_WALLET_SITE_HOSTS` and `VITE_FARMER_SITE_HOSTS` if exact host matching is desired.
 
 For Fly, create or attach Postgres before deploying:
 
