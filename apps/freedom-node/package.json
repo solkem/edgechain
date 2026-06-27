@@ -11,6 +11,7 @@
     "test": "npm run test:mars && npm run test:agent && npm run test:virtual-ndani",
     "test:mars": "ts-node src/test-mars-scoring.ts",
     "test:agent": "ts-node src/test-agent-foundation.ts",
+    "test:ai-farm-manager:evals": "ts-node src/test-ai-farm-manager-evals.ts",
     "test:agent:integration": "ts-node src/test-agent-integration.ts",
     "test:ai-farm-manager:integration": "ts-node src/test-ai-farm-manager-foundation.ts",
     "test:virtual-ndani": "ts-node src/test-virtual-ndani-foundation.ts",

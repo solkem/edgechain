@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   downloadCoordinatorEvidenceCsv,
   issuePhysicalBindingChallenge,
+  loadAiFarmManagerMonitoring,
   loadCoordinatorEvidenceReport,
   loadCoordinatorFarmers,
   loadCoordinatorFleet,
@@ -17,6 +18,7 @@ import type {
   CoordinatorFleetDevice,
   CoordinatorFarmer,
   CoordinatorReadingReview,
+  AiFarmManagerMonitoringReport,
   PilotOperationsMetrics,
   PilotEvidenceReport,
   PilotSession,
@@ -41,6 +43,8 @@ export function CoordinatorDashboard({
   const [missedReasons, setMissedReasons] = useState<Record<string, string>>({});
   const [metrics, setMetrics] = useState<PilotOperationsMetrics | null>(null);
   const [evidence, setEvidence] = useState<PilotEvidenceReport | null>(null);
+  const [aiMonitoring, setAiMonitoring] =
+    useState<AiFarmManagerMonitoringReport | null>(null);
   const [downloadingEvidence, setDownloadingEvidence] = useState(false);
   const [bindingDeviceId, setBindingDeviceId] = useState('');
   const [bindingPubkey, setBindingPubkey] = useState('');
@@ -52,18 +56,27 @@ export function CoordinatorDashboard({
   const refresh = useCallback(async () => {
     setError(null);
     await runCoordinatorOperations();
-    const [fleet, pending, operationalMetrics, evidenceReport, enrolledFarmers] = await Promise.all([
+    const [
+      fleet,
+      pending,
+      operationalMetrics,
+      evidenceReport,
+      enrolledFarmers,
+      aiMonitoringReport,
+    ] = await Promise.all([
       loadCoordinatorFleet(),
       loadCoordinatorReviews(),
       loadCoordinatorMetrics(),
       loadCoordinatorEvidenceReport(),
       loadCoordinatorFarmers(),
+      loadAiFarmManagerMonitoring(),
     ]);
     setDevices(fleet);
     setFarmers(enrolledFarmers);
     setReviews(pending);
     setMetrics(operationalMetrics);
     setEvidence(evidenceReport);
+    setAiMonitoring(aiMonitoringReport);
     setReviewStartedAt((current) => {
       const next = { ...current };
       const now = Date.now();
@@ -153,6 +166,85 @@ export function CoordinatorDashboard({
               Physical projections use the configured 30-minute interval. They are estimates,
               not readings that occurred during the pilot.
             </p>
+          </section>
+        )}
+
+        {aiMonitoring && (
+          <section className="mt-7 border-2 border-black bg-white p-5 shadow-[6px_6px_0_#000] sm:p-7">
+            <p className="text-sm font-black uppercase tracking-[0.18em] text-[#27653a]">
+              AI Farm Manager monitoring
+            </p>
+            <h2 className="mt-1 text-3xl font-black">Cost, safety and prompt health</h2>
+            <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <EvidenceFact
+                label="AI profiles completed"
+                value={String(aiMonitoring.summary.ai_profiles_completed)}
+              />
+              <EvidenceFact
+                label="Weekly check-ins"
+                value={String(aiMonitoring.summary.weekly_checkins_completed)}
+              />
+              <EvidenceFact
+                label="AI plans generated"
+                value={String(aiMonitoring.summary.ai_plans_generated)}
+              />
+              <EvidenceFact
+                label="Prompt cost"
+                value={`$${aiMonitoring.summary.total_estimated_cost_usd.toFixed(4)}`}
+                note={`$${aiMonitoring.summary.average_cost_per_farmer_usd.toFixed(4)} avg/farmer`}
+              />
+            </div>
+            <div className="mt-5 grid gap-4 md:grid-cols-3">
+              <MonitorCard
+                label="Fallback rate"
+                value={`${Math.round(aiMonitoring.summary.fallback_rate * 100)}%`}
+                alert={aiMonitoring.summary.fallback_rate > 0.25}
+              />
+              <MonitorCard
+                label="Validation failure rate"
+                value={`${Math.round(aiMonitoring.summary.validation_failure_rate * 100)}%`}
+                alert={aiMonitoring.summary.validation_failure_rate > 0.05}
+              />
+              <MonitorCard
+                label="Coordinator reviews required"
+                value={String(aiMonitoring.summary.coordinator_reviews_required)}
+                alert={aiMonitoring.summary.coordinator_reviews_required > 0}
+              />
+            </div>
+            <div className="mt-6 grid gap-5 lg:grid-cols-2">
+              <div>
+                <h3 className="font-black">Prompt families</h3>
+                {aiMonitoring.prompt_families.length === 0 ? (
+                  <p className="mt-2 text-sm text-gray-600">No prompt invocations recorded yet.</p>
+                ) : (
+                  <ol className="mt-3 space-y-2">
+                    {aiMonitoring.prompt_families.map((family) => (
+                      <li key={`${family.prompt_family}-${family.prompt_version}`} className="border border-black p-3 text-sm">
+                        <p className="font-black">{family.prompt_family} · {family.prompt_version}</p>
+                        <p className="mt-1 text-gray-600">
+                          {family.invocations} calls · {family.success} success · {family.fallback} fallback · ${family.estimated_cost_usd.toFixed(4)}
+                        </p>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </div>
+              <div>
+                <h3 className="font-black">Common pain points</h3>
+                {aiMonitoring.common_pain_points.length === 0 ? (
+                  <p className="mt-2 text-sm text-gray-600">No pain points captured yet.</p>
+                ) : (
+                  <ol className="mt-3 space-y-2">
+                    {aiMonitoring.common_pain_points.map((painPoint) => (
+                      <li key={painPoint.pain_point} className="border border-black p-3 text-sm">
+                        <span className="font-black">{painPoint.pain_point}</span>
+                        <span className="ml-2 text-gray-600">({painPoint.farmers} farmers)</span>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </div>
+            </div>
           </section>
         )}
 
@@ -669,6 +761,23 @@ function EvidenceFact({
       <p className="text-xs font-black uppercase tracking-wide text-white/65">{label}</p>
       <p className="mt-2 text-2xl font-black">{value}</p>
       {note && <p className="mt-2 text-xs text-white/70">{note}</p>}
+    </article>
+  );
+}
+
+function MonitorCard({
+  label,
+  value,
+  alert = false,
+}: {
+  label: string;
+  value: string;
+  alert?: boolean;
+}) {
+  return (
+    <article className={`border-2 border-black p-4 ${alert ? 'bg-[#f1d34f]' : 'bg-[#f4f1e8]'}`}>
+      <p className="text-xs font-black uppercase tracking-wide text-gray-600">{label}</p>
+      <p className="mt-2 text-3xl font-black">{value}</p>
     </article>
   );
 }
