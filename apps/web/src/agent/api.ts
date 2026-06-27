@@ -20,6 +20,7 @@ import type {
   WeeklyFarmCheckinDraft,
   PilotOperationsMetrics,
   PilotEvidenceReport,
+  AiFarmManagerMonitoringReport,
   PhysicalBindingChallenge,
   PhysicalBindingResult,
   PhysicalManualComparison,
@@ -511,6 +512,18 @@ export async function loadCoordinatorEvidenceReport(): Promise<PilotEvidenceRepo
   const body = await response.json() as {
     success: true;
     report: PilotEvidenceReport;
+  };
+  return body.report;
+}
+
+export async function loadAiFarmManagerMonitoring(): Promise<AiFarmManagerMonitoringReport> {
+  const response = await request('/api/v1/coordinator/ai-farm-manager/monitoring', {
+    method: 'GET',
+  });
+  if (!response.ok) throw await toApiError(response);
+  const body = await response.json() as {
+    success: true;
+    report: AiFarmManagerMonitoringReport;
   };
   return body.report;
 }

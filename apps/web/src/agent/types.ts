@@ -292,6 +292,46 @@ export interface PilotEvidenceReport {
   };
 }
 
+export interface AiFarmManagerMonitoringReport {
+  report_version: 'ai-farm-manager-monitoring-v1';
+  generated_at: number;
+  summary: {
+    ai_profiles_completed: number;
+    weekly_checkins_completed: number;
+    ai_plans_generated: number;
+    coordinator_reviews_required: number;
+    recommendations_followed: number;
+    prompt_invocations: number;
+    total_estimated_cost_usd: number;
+    average_cost_per_farmer_usd: number;
+    fallback_rate: number;
+    validation_failure_rate: number;
+  };
+  prompt_families: Array<{
+    prompt_family: string;
+    prompt_version: string;
+    invocations: number;
+    success: number;
+    fallback: number;
+    validation_failed: number;
+    errors: number;
+    estimated_cost_usd: number;
+  }>;
+  common_pain_points: Array<{
+    pain_point: string;
+    farmers: number;
+  }>;
+  recent_failures: Array<{
+    prompt_family: string;
+    prompt_version: string;
+    model_provider: string;
+    model_name: string;
+    status: string;
+    error_code: string | null;
+    created_at: number;
+  }>;
+}
+
 export interface CoordinatorReadingReview extends VirtualNdaniReading {
   device_code: string;
   site_id: string;

@@ -16,6 +16,7 @@ import {
   AiFarmManagerProfileError,
   coordinatorAiProfileService,
 } from '../ai-farm-manager/coordinatorProfileService';
+import { aiFarmManagerMonitoringService } from '../ai-farm-manager/monitoringService';
 
 const router = Router();
 router.use(requireCoordinator);
@@ -178,6 +179,17 @@ router.get('/metrics', async (_req: FarmerRequest, res) => {
     return res.json({
       success: true,
       metrics: await coordinatorService.metrics(),
+    });
+  } catch (error) {
+    return handleError(error, res);
+  }
+});
+
+router.get('/ai-farm-manager/monitoring', async (_req: FarmerRequest, res) => {
+  try {
+    return res.json({
+      success: true,
+      report: await aiFarmManagerMonitoringService.report(),
     });
   } catch (error) {
     return handleError(error, res);
