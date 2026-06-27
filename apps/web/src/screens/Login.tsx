@@ -3,6 +3,16 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { PILOT_AGENT_ENABLED } from "../agent/api";
+import { isFarmerSite } from "../agent/siteMode";
+
+interface LoginContractContext {
+  isDeployed: boolean;
+  deployContract: () => Promise<void>;
+}
+
+interface LoginWalletContext {
+  isConnected: boolean;
+}
 
 export function Login({
   onConnect,
@@ -18,13 +28,14 @@ export function Login({
   isConnecting?: boolean;
   isWalletInstalled?: boolean;
   error?: string | null;
-  contractContext: any;
-  walletContext: any;
+  contractContext: LoginContractContext;
+  walletContext: LoginWalletContext;
   isDeploying: boolean;
   setIsDeploying: (deploying: boolean) => void;
 }) {
   const [deployError, setDeployError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const farmerSite = isFarmerSite();
 
   const connectAndMaybeDeploy = async () => {
     setDeployError(null);
@@ -43,9 +54,9 @@ export function Login({
         await contractContext.deployContract();
         console.log("✅ Contract deployed successfully!");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Connect/deploy failed:", err);
-      setDeployError(err?.message || "Failed to connect wallet or deploy contract");
+      setDeployError(errorMessage(err) || "Failed to connect wallet or deploy contract");
     } finally {
       setIsDeploying(false);
     }
@@ -82,7 +93,7 @@ export function Login({
           <Hero />
 
           <div className="text-xl font-[orbitron] font-bold text-end  absolute bottom-6 right-6 z-20">
-            {PILOT_AGENT_ENABLED && (
+            {PILOT_AGENT_ENABLED && !farmerSite && (
               <button
                 onClick={() => navigate('/pilot-login')}
                 className="mb-3 block w-[280px] border-2 border-black bg-[#f1d34f] px-6 py-4 text-base font-black text-black hover:bg-black hover:text-white"
@@ -146,4 +157,8 @@ export function Login({
       </div>
     </>
   );
+}
+
+function errorMessage(error: unknown): string | null {
+  return error instanceof Error ? error.message : null;
 }

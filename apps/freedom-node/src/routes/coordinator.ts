@@ -12,6 +12,10 @@ import {
   CoordinatorAdministrationError,
   coordinatorAdministrationService,
 } from '../virtual-ndani/coordinatorAdministrationService';
+import {
+  AiFarmManagerProfileError,
+  coordinatorAiProfileService,
+} from '../ai-farm-manager/coordinatorProfileService';
 
 const router = Router();
 router.use(requireCoordinator);
@@ -55,6 +59,45 @@ router.patch('/farmers/:farmerId', async (req: FarmerRequest, res) => {
       coordinatorId: req.farmer!.farmer_id,
     });
     return res.json({ success: true, farmer });
+  } catch (error) {
+    return handleError(error, res);
+  }
+});
+
+router.get('/farmers/:farmerId/ai-profile', async (req: FarmerRequest, res) => {
+  try {
+    return res.json({
+      success: true,
+      profile: await coordinatorAiProfileService.getProfile(req.params.farmerId),
+    });
+  } catch (error) {
+    return handleError(error, res);
+  }
+});
+
+router.patch('/farmers/:farmerId/ai-profile', async (req: FarmerRequest, res) => {
+  try {
+    const profile = await coordinatorAiProfileService.saveProfile({
+      farmerId: req.params.farmerId,
+      preferredLanguage: req.body.preferred_language,
+      literacyLevel: req.body.literacy_level,
+      technologyComfort: req.body.technology_comfort,
+      primaryGoal: req.body.primary_goal,
+      primaryPainPoint: req.body.primary_pain_point,
+      secondaryPainPoints: req.body.secondary_pain_points,
+      waterAccess: req.body.water_access,
+      irrigationMethod: req.body.irrigation_method,
+      budgetConstraint: req.body.budget_constraint,
+      labourConstraint: req.body.labour_constraint,
+      mainCrops: req.body.main_crops,
+      currentCrop: req.body.current_crop,
+      currentCropStage: req.body.current_crop_stage,
+      soilType: req.body.soil_type,
+      farmStorySummary: req.body.farm_story_summary,
+      aiManagerBrief: req.body.ai_manager_brief,
+      status: req.body.status,
+    });
+    return res.json({ success: true, profile });
   } catch (error) {
     return handleError(error, res);
   }
@@ -230,6 +273,9 @@ function handleError(error: unknown, res: any) {
     return res.status(error.status).json({ error: error.code });
   }
   if (error instanceof CoordinatorAdministrationError) {
+    return res.status(error.status).json({ error: error.code });
+  }
+  if (error instanceof AiFarmManagerProfileError) {
     return res.status(error.status).json({ error: error.code });
   }
   console.error('Coordinator request failed:', error);

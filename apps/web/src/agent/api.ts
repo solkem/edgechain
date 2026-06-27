@@ -11,6 +11,7 @@ import type {
   CoordinatorFleetDevice,
   CoordinatorFarmer,
   CoordinatorReadingReview,
+  FarmerAiProfile,
   PilotOperationsMetrics,
   PilotEvidenceReport,
   PhysicalBindingChallenge,
@@ -289,6 +290,74 @@ export async function deleteCoordinatorFarmer(farmerId: string): Promise<void> {
     { method: 'DELETE' }
   );
   if (!response.ok) throw await toApiError(response);
+}
+
+export async function loadCoordinatorFarmerAiProfile(
+  farmerId: string
+): Promise<FarmerAiProfile | null> {
+  const response = await request(
+    `/api/v1/coordinator/farmers/${encodeURIComponent(farmerId)}/ai-profile`,
+    { method: 'GET' }
+  );
+  if (!response.ok) throw await toApiError(response);
+  const body = await response.json() as {
+    success: true;
+    profile: FarmerAiProfile | null;
+  };
+  return body.profile;
+}
+
+export async function saveCoordinatorFarmerAiProfile(input: {
+  farmerId: string;
+  preferredLanguage: 'en' | 'sn' | 'sn-en';
+  literacyLevel: string;
+  technologyComfort: string;
+  primaryGoal: string;
+  primaryPainPoint: string;
+  secondaryPainPoints: string[];
+  waterAccess: string;
+  irrigationMethod: string;
+  budgetConstraint: string;
+  labourConstraint: string;
+  mainCrops: string[];
+  currentCrop: string;
+  currentCropStage: string;
+  soilType: string;
+  farmStorySummary: string;
+  aiManagerBrief: string;
+  status: 'draft' | 'active' | 'needs_update' | 'archived';
+}): Promise<FarmerAiProfile> {
+  const response = await request(
+    `/api/v1/coordinator/farmers/${encodeURIComponent(input.farmerId)}/ai-profile`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({
+        preferred_language: input.preferredLanguage,
+        literacy_level: input.literacyLevel,
+        technology_comfort: input.technologyComfort,
+        primary_goal: input.primaryGoal,
+        primary_pain_point: input.primaryPainPoint,
+        secondary_pain_points: input.secondaryPainPoints,
+        water_access: input.waterAccess,
+        irrigation_method: input.irrigationMethod,
+        budget_constraint: input.budgetConstraint,
+        labour_constraint: input.labourConstraint,
+        main_crops: input.mainCrops,
+        current_crop: input.currentCrop,
+        current_crop_stage: input.currentCropStage,
+        soil_type: input.soilType,
+        farm_story_summary: input.farmStorySummary,
+        ai_manager_brief: input.aiManagerBrief,
+        status: input.status,
+      }),
+    }
+  );
+  if (!response.ok) throw await toApiError(response);
+  const body = await response.json() as {
+    success: true;
+    profile: FarmerAiProfile;
+  };
+  return body.profile;
 }
 
 export async function loadCoordinatorReviews(): Promise<CoordinatorReadingReview[]> {
