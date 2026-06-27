@@ -532,6 +532,9 @@ TX power:           20
 | `GEMINI_TEXT_MODEL` | Gemini model used by server-side AI features |
 | `GEMINI_TIMEOUT_MS` | server-side Gemini timeout |
 | `GEMINI_INPUT_USD_PER_MILLION` / `GEMINI_OUTPUT_USD_PER_MILLION` | cost telemetry estimates |
+| `AI_FARM_MANAGER_LLM_ENABLED` | set to `true` to let weekly AI Farm Manager plans call Gemini; otherwise deterministic fallback plans are used |
+| `AI_FARM_MANAGER_TEMPERATURE` / `AI_FARM_MANAGER_TOP_P` | optional Gemini sampling controls for weekly farm plans |
+| `AI_FARM_MANAGER_MAX_OUTPUT_TOKENS` | optional weekly farm plan output cap; defaults to 1200 |
 
 ### Frontend (`apps/web/`)
 
