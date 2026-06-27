@@ -4,6 +4,10 @@ import {
   AiFarmManagerCheckinError,
   aiFarmManagerCheckinService,
 } from '../ai-farm-manager/checkinService';
+import {
+  FarmManagerChatError,
+  farmManagerChatService,
+} from '../ai-farm-manager/chatService';
 import { aiFarmManagerWeeklyPlanService } from '../ai-farm-manager/weeklyPlanService';
 
 const router = Router();
@@ -56,8 +60,25 @@ router.get('/plans', async (req: FarmerRequest, res) => {
   }
 });
 
+router.post('/chat', async (req: FarmerRequest, res) => {
+  try {
+    const reply = await farmManagerChatService.reply({
+      farmerId: req.farmer!.farmer_id,
+      farmId: String(req.body.farm_id ?? ''),
+      text: String(req.body.text ?? ''),
+      preferredLanguage: req.farmer!.preferred_language,
+    });
+    return res.status(201).json({ success: true, reply });
+  } catch (error) {
+    return handleError(error, res);
+  }
+});
+
 function handleError(error: unknown, res: any) {
   if (error instanceof AiFarmManagerCheckinError) {
+    return res.status(error.status).json({ error: error.code });
+  }
+  if (error instanceof FarmManagerChatError) {
     return res.status(error.status).json({ error: error.code });
   }
   return res.status(500).json({ error: 'ai_farm_manager_request_failed' });

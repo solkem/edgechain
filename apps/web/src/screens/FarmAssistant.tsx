@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   AgentApiError,
   loadLatestAgentConversation,
-  sendAgentMessage,
+  sendFarmManagerChatMessage,
 } from '../agent/api';
 import type {
   AgentChatMessage,
@@ -23,12 +23,11 @@ export function FarmAssistant({
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [submittedDeviceCode, setSubmittedDeviceCode] = useState<string | null>(null);
   const [messages, setMessages] = useState<AgentChatMessage[]>([
     {
       id: 'welcome',
       sender: 'agent',
-      text: `Mauya, ${session.farmer.display_name}. Tell me what you noticed on your farm today. You may use Shona or English.`,
+      text: `Mauya, ${session.farmer.display_name}. Ask me about your farm plan, crop, water, pests, or what to do next. I will use your EdgeChain farm memory.`,
       createdAt: new Date(),
     },
   ]);
@@ -78,20 +77,26 @@ export function FarmAssistant({
     setError(null);
 
     try {
-      const result = await sendAgentMessage({
+      const result = await sendFarmManagerChatMessage({
         farmId,
         text,
-        externalMessageId: clientMessageId,
       });
+      const reply = [
+        result.reply.answer,
+        result.reply.shona_summary ? `\nShona: ${result.reply.shona_summary}` : '',
+        result.reply.recommended_next_step
+          ? `\nNext step: ${result.reply.recommended_next_step}`
+          : '',
+        result.reply.coordinator_review_required
+          ? '\nCoordinator review recommended before taking risky or costly action.'
+          : '',
+      ].filter(Boolean).join('\n');
       setMessages((current) => [...current, {
         id: `${clientMessageId}-reply`,
         sender: 'agent',
-        text: result.reply,
+        text: reply,
         createdAt: new Date(),
       }]);
-      if (result.virtual_ndani) {
-        setSubmittedDeviceCode(result.virtual_ndani.device_code);
-      }
     } catch (sendError) {
       setError(
         sendError instanceof AgentApiError
@@ -130,7 +135,7 @@ export function FarmAssistant({
           <div>
             <PilotBrand compact />
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-700">
-              <span className="mt-4 block">Virtual Ndani Kit Farm Assistant</span>
+              <span className="mt-4 block">AI Farm Manager</span>
             </p>
             <h1 className="mt-1 text-3xl font-black">{session.farmer.display_name}</h1>
             <p className="text-sm text-gray-600">
@@ -168,22 +173,8 @@ export function FarmAssistant({
 
         <section className="overflow-hidden border-2 border-black bg-white">
           <div className="border-b-2 border-black bg-blue-700 px-5 py-3 text-sm font-bold text-white">
-            You observe · the assistant structures · Virtual Ndani Kit records
+            Your profile · weekly check-ins · AI plans · farm memory
           </div>
-          {submittedDeviceCode && (
-            <div className="border-b-2 border-black bg-[#dff3d8] px-5 py-4">
-              <p className="font-black">
-                Reading added to {submittedDeviceCode}
-              </p>
-              <button
-                type="button"
-                onClick={() => navigate('/virtual-ndani')}
-                className="mt-2 font-black text-[#183c28] underline"
-              >
-                View the reading on Virtual Ndani Kit
-              </button>
-            </div>
-          )}
           <div
             className="h-[52vh] min-h-[360px] space-y-4 overflow-y-auto bg-[#fbfbf7] p-4 md:p-6"
             aria-live="polite"
@@ -228,7 +219,7 @@ export function FarmAssistant({
                 onChange={(event) => setInput(event.target.value)}
                 rows={2}
                 maxLength={2000}
-                placeholder="What did you notice on the farm?"
+                placeholder="Ask about your farm plan, crop, water, pests, or next step..."
                 className="min-h-16 flex-1 resize-none border-2 border-black px-4 py-3 text-lg"
               />
               <button
@@ -240,7 +231,7 @@ export function FarmAssistant({
               </button>
             </div>
             <p className="mt-2 text-xs text-gray-500">
-              Do not send wallet passwords, recovery phrases, or personal secrets.
+              Do not send wallet passwords, recovery phrases, or personal secrets. Use the Weekly Farm Check-in screen for structured weekly records.
             </p>
           </form>
         </section>
