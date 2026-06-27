@@ -69,7 +69,7 @@ The current application intentionally supports two audiences from one codebase:
 
 | Experience | Entry point | Purpose |
 |------------|-------------|---------|
-| **Technical EdgeChain** | `/` on wallet-first domains | Wallet-first Midnight, privacy, federated learning, proof, and reward-eligibility story. |
+| **Real / technical EdgeChain** | `/` on real domains | Wallet-first Midnight, privacy, federated learning, proof, and reward-eligibility story. |
 | **Farmer pilot** | `/pilot-login` or `/` on farmer-oriented domains | Farmer number + PIN access to the AI Farm Manager, Virtual Ndani Kit, manual readings, and coordinator support without requiring wallet literacy on day one. |
 
 This is a staged adoption strategy, not a split vision. Farmers can receive immediate value through a low-friction pilot while EdgeChain continues toward farmer-controlled data, hardware identity, AI memory, privacy-preserving proofs, and federated model participation.
@@ -195,12 +195,12 @@ The circuit attests *"I know a valid P-256 signature from a registered device"* 
 
 The Odzi pilot now has two complementary goals:
 
-1. **Technical evidence:** show why EdgeChain’s long-term privacy, wallet, Midnight, hardware, and federated-learning architecture matters.
-2. **Farmer buy-in:** show each pilot farmer that an AI Farm Manager can remember their farm, organize observations, advise practically, and follow up without forcing wallet usage on day one.
+1. **Demonstrate Full Privacy and FL Features:** show why EdgeChain’s long-term privacy, wallet, Midnight, hardware, and federated-learning architecture matters.
+2. **Farmer Pilot:** show each pilot farmer that an AI Farm Manager can remember their farm, organize observations, advise practically, and follow up without forcing wallet usage on day one.
 
 ### Phase A - Farmer-first AI + Virtual Ndani Kit pilot
 
-Phase A delivers immediate farmer value and stakeholder-grade documentation without requiring any Midnight transaction from pilot farmers. It is designed for a 20-farmer Odzi cohort using:
+Phase A delivers immediate farmer value and documentation without requiring any Midnight transaction from pilot farmers. It is designed for a 20-farmer Odzi cohort using:
 
 - farmer number + PIN login,
 - one coordinator/admin account,
@@ -245,7 +245,7 @@ Demonstrable today:
 - coordinator dashboard for fleet, farmer administration, review, evidence CSV, and operations metrics
 - farmer creation, update, PIN reset, deletion, and AI Farm Manager profile onboarding
 - AI Farm Manager data foundation: profiles, memories, weekly check-ins, AI plans, outcomes, and prompt invocation telemetry
-- domain/site-mode foundation for separate wallet-first and farmer experiences
+- domain/site-mode foundation for separate full features and farmer experiences
 - Two contracts deployed on Midnight testnet02
 - Live demo services on Fly.io
 - Freedom Node validated end-to-end in Maryland (Ubuntu Server 24.04 LTS + Docker + `midnightntwrk/proof-server:7.0.0`)
@@ -255,7 +255,7 @@ In progress before Phase B:
 
 - weekly AI Farm Manager check-ins and generated farm plans
 - memory-based Farm Assistant responses using structured Farm Manager Context Packs
-- farmer timeline and pilot/evidence reports
+- farmer timeline and pilot reports
 - end-to-end ZK proof generation and submission across all live flows
 - full anonymous device registration and reward-eligibility path
 - reduction of simulated contract paths in the UI/backend
@@ -317,7 +317,7 @@ The unified Fly app serves both the React frontend and backend API. Code-level s
 
 | Domain type | Behavior |
 |-------------|----------|
-| Wallet-first / technical domain | `/` remains wallet-first and highlights privacy, Midnight, federated learning, and proof infrastructure. |
+| Real / technical domain | `/` remains wallet-first and highlights privacy, Midnight, federated learning, and proof infrastructure. |
 | Farmer / pilot domain | `/` redirects to `/pilot-login` for farmer number + PIN access without wallet friction. |
 
 Custom domains still require Fly certificate and DNS configuration outside the repository.
@@ -517,7 +517,7 @@ TX power:           20
 | `DATABASE_URL` | PostgreSQL connection string used by the backend |
 | `DATABASE_SSL` | Set to `true` only when the Postgres provider requires SSL |
 | `PORT` | backend port |
-| `CORS_ORIGINS` | comma-separated allowed frontend origins; include any custom wallet-first/farmer domains |
+| `CORS_ORIGINS` | comma-separated allowed frontend origins; include any custom real/pilot domains |
 | `DEMO_MODE` | mock fallback behavior |
 | `IPFS_SERVICE_URL` | URL for the Storacha/IPFS service |
 | `STORACHA_EMAIL` | IPFS auth |
@@ -568,7 +568,7 @@ The backend stores operational data in PostgreSQL. The Fly volume is not used
 for database persistence; it can be removed later after the old attached volume
 is destroyed from Fly.
 
-When adding custom farmer/wallet-first domains, update:
+When adding custom farmer/real domains, update:
 
 - Fly certificates and DNS outside the repository,
 - backend `CORS_ORIGINS`,

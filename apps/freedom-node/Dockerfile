@@ -1,5 +1,5 @@
 # Build stage
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -22,6 +22,7 @@ RUN npx tsc --project /app/packages/fl/tsconfig.json \
 
 # Copy server source files
 COPY apps/freedom-node/ ./
+COPY scripts/check-node.mjs /app/scripts/check-node.mjs
 
 # Copy frontend build from monorepo
 COPY apps/web/dist /app/apps/web/dist
@@ -30,7 +31,7 @@ COPY apps/web/dist /app/apps/web/dist
 RUN npm run build
 
 # Production stage
-FROM node:20-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
