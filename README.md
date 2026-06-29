@@ -69,7 +69,7 @@ The current application intentionally supports two audiences from one codebase:
 
 | Experience | Entry point | Purpose |
 |------------|-------------|---------|
-| **Real / technical EdgeChain** | `/` on real domains | Wallet-first Midnight, privacy, federated learning, proof, and reward-eligibility story. |
+| **EdgeChain MVP** | `/` on real domains | Wallet-first Midnight, privacy, federated learning, proof, and reward-eligibility story. |
 | **Farmer pilot** | `/pilot-login` or `/` on farmer-oriented domains | Farmer number + PIN access to the AI Farm Manager, Virtual Ndani Kit, manual readings, and coordinator support without requiring wallet literacy on day one. |
 
 This is a staged adoption strategy, not a split vision. Farmers can receive immediate value through a low-friction pilot while EdgeChain continues toward farmer-controlled data, hardware identity, AI memory, privacy-preserving proofs, and federated model participation.
