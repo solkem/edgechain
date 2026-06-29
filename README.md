@@ -50,7 +50,7 @@ Buyer receives: proof of quality
 Buyer cannot see: which farm, which farmer, or the raw sensor value
 ```
 
-That capability becomes meaningful when combined with two more properties:
+That capability becomes is achieved through these privacy-preserving technologies:
 
 1. **Federated learning**
 Local models train on-device. Raw farm data never has to leave the farm.
