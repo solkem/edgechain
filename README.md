@@ -63,6 +63,18 @@ Reward eligibility, replay resistance, and private coordination can happen on-ch
 
 The strongest "why Midnight" moment is the reward-eligibility flow: EdgeChain needs to verify contribution quality, prevent double claims, and support private settlement without revealing which device belongs to which farmer. That specific combination makes Midnight a structural requirement, not a branding choice.
 
+### How to read this repository
+
+EdgeChain is not a single chatbot demo. The repository combines a privacy protocol prototype, a reproducible AI oversight lab, and an applied farmer pilot:
+
+| Area | What it demonstrates | What it is not |
+|------|----------------------|----------------|
+| **Core protocol / infrastructure** | Midnight contracts, MARS contribution scoring, firmware scaffolding, Freedom Node services, IPFS artifact paths, and the privacy-preserving reward-eligibility direction. | A fully production-hardened, end-to-end deployed farmer payment network. |
+| **AI Oversight Lab** | Synthetic experiments for adversarial federated learning, MARS scoring behavior, and privacy-safe LLM oversight of ambiguous failures. | A system trained on real pilot farmer data. |
+| **Applied farmer pilot** | AI Farm Manager, Virtual Ndani Kit manual observations, coordinator administration, timelines, reports, monitoring, and a low-friction farmer PIN login. | A replacement for the long-term wallet, hardware identity, and farmer-owned data architecture. |
+
+For the shortest status-oriented review, start with [`CODEBASE_STATUS.md`](CODEBASE_STATUS.md).
+
 ### Two product experiences
 
 The current application intentionally supports two audiences from one codebase:
@@ -119,7 +131,7 @@ The core problem definition predates Midnight's public developer tooling. Midnig
 
 ## Python Research Lab
 
-EdgeChain includes a Python research lab for testing contribution scoring, adversarial federated learning behavior, and oversight under privacy constraints.
+EdgeChain includes a Python AI Oversight Lab for testing contribution scoring, adversarial federated learning behavior, and oversight under privacy constraints.
 
 The lab uses synthetic data only. It does not expose farmer identities, private keys, wallet data, real GPS coordinates, raw pilot readings, or production secrets.
 
@@ -130,6 +142,8 @@ It currently includes:
 - adversarial FL attack scenarios
 - baseline aggregation comparison
 - LLM oversight dry-run evaluation
+
+The lab is the fellowship/research-facing oversight layer. It is separate from the applied AI Farm Manager pilot: the pilot helps farmers manage observations and decisions, while the lab evaluates how EdgeChain can detect unsafe contribution behavior when raw data is intentionally hidden.
 
 See [`research/python-lab`](research/python-lab) for the implementation, tests, and experiment entry points.
 
@@ -143,7 +157,7 @@ EdgeChain currently demonstrates the privacy-preserving FL/Midnight direction an
 
 The current Odzi pilot implementation is also deliberately human-assisted. Most pilot farmers do not yet have physical Ndani Kit hardware, so the app provides a **Virtual Ndani Kit** that records human-entered observations, labels them correctly as manual observations, and shows how future physical hardware will automate more readings. Manual pilot observations must never be described as physical sensor measurements.
 
-The AI Farm Manager work is being built in phases. The repository now includes the data foundation for farmer AI profiles, structured memories, weekly check-ins, AI plans, recommendation outcomes, and prompt invocation telemetry. Coordinator onboarding for farmer AI profiles is in progress so that each farmer can receive a personalized farm-manager experience instead of a generic chatbot.
+The AI Farm Manager is an applied pilot layer, not the whole EdgeChain architecture. It now includes farmer AI profiles, structured memories, weekly check-ins, generated plans, recommendation outcomes, prompt invocation telemetry, timeline/report views, monitoring, and coordinator onboarding. Its job is to make the farmer pilot useful now while the protocol, hardware, and decentralized data-control layers continue toward production maturity.
 
 IPFS is used as an artifact layer for model, proof, and audit data; it should not be treated as privacy or permanence by itself. Sensitive artifacts must be encrypted before upload, and production durability requires pinning, replicated storage providers, lifecycle rules, and potentially Filecoin-style storage deals.
 
@@ -244,7 +258,7 @@ Demonstrable today:
 - Virtual Ndani Kit manual-observation workflow
 - coordinator dashboard for fleet, farmer administration, review, evidence CSV, and operations metrics
 - farmer creation, update, PIN reset, deletion, and AI Farm Manager profile onboarding
-- AI Farm Manager data foundation: profiles, memories, weekly check-ins, AI plans, outcomes, and prompt invocation telemetry
+- AI Farm Manager profiles, structured memories, weekly check-ins, generated plans, outcomes, prompt invocation telemetry, chat context packs, timeline, reports, monitoring, and evals
 - domain/site-mode foundation for separate full features and farmer experiences
 - Two contracts deployed on Midnight testnet02
 - Live demo services on Fly.io
@@ -253,9 +267,6 @@ Demonstrable today:
 
 In progress before Phase B:
 
-- weekly AI Farm Manager check-ins and generated farm plans
-- memory-based Farm Assistant responses using structured Farm Manager Context Packs
-- farmer timeline and pilot reports
 - end-to-end ZK proof generation and submission across all live flows
 - full anonymous device registration and reward-eligibility path
 - reduction of simulated contract paths in the UI/backend
@@ -281,7 +292,7 @@ edgechain/
 |- apps/
 |  |- web/              React frontend
 |  |- freedom-node/     Unified backend and Freedom Node services
-|  |  |- src/ai-farm-manager/  AI Farm Manager profile/memory/check-in foundation
+|  |  |- src/ai-farm-manager/  AI Farm Manager profiles, memory, plans, chat, timeline, reports, monitoring, and evals
 |  |  |- proof-server/  In-repo proof/device orchestration service
 |  |- ipfs-service/     Storacha/IPFS microservice
 |- packages/
