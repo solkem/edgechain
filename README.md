@@ -627,7 +627,7 @@ passwords to the repository.
 | **Solomon Hopewell Kembo** | Architecture, strategy, integration | Bethesda, Maryland, US |
 | **Shankar Rao Mata** | Blockchain / Compact contracts | India |
 | **Lokesh Yadav** | Frontend / React UI | India |
-| **Charity Chirowamhangu** | AI Security |  |
+| **Charity Chirowamhangu** | AI Security | Maryland, US |
 | Odzi Coordinator | Farmer relationships, pilot onboarding, weekly check-ins, and coordinator review | Odzi, Manicaland |
 
 Solomon Kembo is the originating researcher behind EdgeChain's privacy architecture and has been building IoT systems for emerging-market contexts since 2016.
