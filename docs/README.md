@@ -1,1 +1,7 @@
-TODO: Only for structure. Here should be information that refer to the documentation, it can be images, texts, files or folders, feel free to structure the folders as you like.
+# EdgeChain Documentation
+
+This folder contains public context and handoff material for EdgeChain.
+
+## Context Documents
+
+- [Virtual Ndani Kit + AI Farm Manager Pilot Pivot Context](VIRTUAL_NDANI_AI_FARM_MANAGER_PILOT_PIVOT_CONTEXT.md)

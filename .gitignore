@@ -50,6 +50,7 @@ compile-output.log
 !README.md
 !**/README.md
 !ARCHITECTURE.md
+!docs/VIRTUAL_NDANI_AI_FARM_MANAGER_PILOT_PIVOT_CONTEXT.md
 **/*.pdf
 private-docs/
 
