@@ -13,7 +13,7 @@ EdgeChain has three related but separate layers:
 ## Implemented and runnable
 
 - MARS scoring package and TypeScript tests.
-- Python AI Oversight Lab with synthetic Odzi-like microclimate generation, FL contribution scoring, adversarial attack scenarios, baseline aggregation comparison, heuristic oversight, and LLM oversight dry-run evaluation.
+- Python AI Oversight Lab with synthetic microclimate generation for smallholder-agriculture scenarios, FL contribution scoring, adversarial attack scenarios, baseline aggregation comparison, heuristic oversight, and LLM oversight dry-run evaluation.
 - Freedom Node backend routes for the farmer pilot, including farmer/coordinator authentication, AI Farm Manager profiles, memories, check-ins, plans, outcomes, prompt telemetry, timeline, reports, monitoring, and evaluation exports.
 - React pilot UI for farmer login, Virtual Ndani Kit manual readings, coordinator administration, AI Farm Manager onboarding, timeline/report views, and monitoring.
 - Virtual Ndani Kit workflow for human-entered observations that demonstrates the future hardware data path without pretending those readings came from physical devices.
