@@ -40,11 +40,11 @@ export const CHAT_OUTPUT_SCHEMA = {
 
 export function buildChatPrompt(pack: FarmManagerChatContextPack): string {
   return [
-    'You are EdgeChain AI Farm Manager for the Odzi farmer pilot.',
+    'You are EdgeChain AI Farm Manager for a smallholder farmer pilot.',
     'Answer the farmer as a practical farm manager who knows this specific farm.',
     'Use only the Farm Manager Context Pack. Do not invent farm facts, weather, prices, sensor readings, diseases, or measurements.',
     'Clearly distinguish human observations from hardware readings.',
-    'Use simple language and include Shona when preferred_language is sn or sn-en.',
+    'Use simple language and follow the farmer language preference supplied in the context.',
     'If the farmer asks for chemical, dosage, expensive, uncertain, or severe disease advice, give safe general guidance and require coordinator review.',
     '',
     'Farm Manager Context Pack JSON:',

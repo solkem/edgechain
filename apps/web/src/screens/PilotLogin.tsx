@@ -33,7 +33,7 @@ export function PilotLogin({
         <section className="flex flex-col justify-center">
           <PilotBrand />
           <p className="mb-4 text-sm font-bold uppercase tracking-[0.22em] text-blue-700">
-            <span className="mt-8 block">EdgeChain Odzi Pilot</span>
+            <span className="mt-8 block">EdgeChain Farmer Pilot</span>
           </p>
           <h1 className="max-w-2xl text-5xl font-black leading-[0.98] text-black md:text-7xl">
             Meet your farm’s Virtual Ndani Kit.
@@ -44,7 +44,7 @@ export function PilotLogin({
           </p>
           <div className="mt-8 border-l-4 border-blue-700 pl-5 text-gray-700">
             You do not need a wallet to use Virtual Ndani Kit. The Farm Assistant
-            supports you in Shona or English, and wallet learning remains optional.
+            can support multiple languages, and wallet learning remains optional.
           </div>
         </section>
 
@@ -71,7 +71,7 @@ export function PilotLogin({
                 data-lpignore="true"
                 value={pilotCode}
                 onChange={(event) => setPilotCode(event.target.value.toUpperCase())}
-                placeholder="ODZI-001"
+                placeholder="FARM-001"
                 className="w-full border-2 border-black px-4 py-4 text-xl font-semibold uppercase"
                 required
               />
