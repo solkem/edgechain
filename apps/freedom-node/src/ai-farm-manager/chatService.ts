@@ -64,6 +64,7 @@ export const farmManagerChatService = {
     farmId: string;
     text: string;
     preferredLanguage?: string;
+    replyLanguage?: 'en' | 'sn';
   }): Promise<FarmManagerChatReply> {
     const text = String(input.text ?? '').trim();
     if (!text || text.length > 2_000) {
@@ -74,7 +75,8 @@ export const farmManagerChatService = {
       farmerId: input.farmerId,
       farm,
       text,
-      preferredLanguage: input.preferredLanguage,
+      preferredLanguage: input.replyLanguage ?? input.preferredLanguage,
+      useRequestedLanguage: Boolean(input.replyLanguage),
     });
     const modelResult = await chatGateway.generate(pack);
     if (modelResult.status === 'success' && modelResult.output) {
@@ -146,6 +148,7 @@ async function buildChatContextPack(input: {
   farm: FarmerFarm;
   text: string;
   preferredLanguage?: string;
+  useRequestedLanguage: boolean;
 }): Promise<FarmManagerChatContextPack> {
   const [profile, recentCheckins, memories, recentPlans] = await Promise.all([
     aiFarmManagerRepository.getActiveProfile({
@@ -172,7 +175,8 @@ async function buildChatContextPack(input: {
     context_pack_version: 'farm-manager-chat-context-v1',
     farmer: {
       farmer_id: input.farmerId,
-      preferred_language: profile?.preferred_language ?? input.preferredLanguage ?? 'sn-en',
+      preferred_language: (input.useRequestedLanguage ? input.preferredLanguage : profile?.preferred_language)
+        ?? input.preferredLanguage ?? 'sn-en',
     },
     farm: {
       farm_id: input.farm.farm_id,
@@ -207,6 +211,22 @@ function deterministicReply(pack: FarmManagerChatContextPack): FarmManagerChatRe
       : 'Best next step: record a weekly check-in, then inspect soil moisture, plant colour, and pest signs before spending money.',
   ].join('\n\n');
   const safetyFlags = safetyFlagsFor(pack.farmer_question);
+  const shona = pack.farmer.preferred_language === 'sn';
+  if (shona) {
+    return {
+      answer: 'Mubatsiri wemibvunzo haasi kushanda izvozvi. Edzai zvakare pashure. Munganyora zvamaona mumunda pane peji rekuongorora munda kwevhiki.',
+      shona_summary: null,
+      recommended_next_step: null,
+      missing_information: [],
+      evidence_used: [],
+      confidence: 'low',
+      coordinator_review_required: safetyFlags.length > 0,
+      safety_flags: safetyFlags,
+      provider: 'edgechain',
+      model: 'deterministic-chat-pilot',
+      validation_status: 'fallback',
+    };
+  }
   return {
     answer,
     shona_summary: `Tarisa ${crop}. Tanga nezvinhu zviri nyore uye nyora zvachinja.`,

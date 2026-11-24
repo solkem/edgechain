@@ -99,12 +99,14 @@ export async function sendAgentMessage(input: {
 export async function sendFarmManagerChatMessage(input: {
   farmId: string;
   text: string;
+  replyLanguage?: 'en' | 'sn';
 }): Promise<FarmManagerChatResponse> {
   const response = await request('/api/v1/ai-farm-manager/chat', {
     method: 'POST',
     body: JSON.stringify({
       farm_id: input.farmId,
       text: input.text,
+      reply_language: input.replyLanguage,
     }),
   });
   if (!response.ok) throw await toApiError(response);

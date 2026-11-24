@@ -1,7 +1,7 @@
 import type { FarmManagerChatContextPack } from './chatService';
 
 export const CHAT_PROMPT_FAMILY = 'farm_manager_memory_chat';
-export const CHAT_PROMPT_VERSION = '1.0.0';
+export const CHAT_PROMPT_VERSION = '1.1.0';
 
 export const CHAT_OUTPUT_SCHEMA = {
   type: 'object',
@@ -44,7 +44,9 @@ export function buildChatPrompt(pack: FarmManagerChatContextPack): string {
     'Answer the farmer as a practical farm manager who knows this specific farm.',
     'Use only the Farm Manager Context Pack. Do not invent farm facts, weather, prices, sensor readings, diseases, or measurements.',
     'Clearly distinguish human observations from hardware readings.',
-    'Use simple language and follow the farmer language preference supplied in the context.',
+    'Use the farmer language preference for all farmer-facing text.',
+    'For sn, write the full answer, recommended next step, and follow-up questions in natural, simple Zimbabwean Shona. Omit shona_summary because the full answer is already in Shona.',
+    'For sn-en, reply in the language of the question and add a short Shona summary only when answering in English.',
     'If the farmer asks for chemical, dosage, expensive, uncertain, or severe disease advice, give safe general guidance and require coordinator review.',
     '',
     'Farm Manager Context Pack JSON:',

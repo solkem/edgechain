@@ -69,11 +69,16 @@ router.get('/plans', async (req: FarmerRequest, res) => {
 
 router.post('/chat', async (req: FarmerRequest, res) => {
   try {
+    const replyLanguage = req.body.reply_language;
+    if (replyLanguage !== undefined && replyLanguage !== 'en' && replyLanguage !== 'sn') {
+      return res.status(400).json({ error: 'invalid_reply_language' });
+    }
     const reply = await farmManagerChatService.reply({
       farmerId: req.farmer!.farmer_id,
       farmId: String(req.body.farm_id ?? ''),
       text: String(req.body.text ?? ''),
       preferredLanguage: req.farmer!.preferred_language,
+      replyLanguage,
     });
     return res.status(201).json({ success: true, reply });
   } catch (error) {

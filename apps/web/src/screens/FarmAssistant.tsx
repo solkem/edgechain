@@ -21,6 +21,10 @@ export function FarmAssistant({
 }) {
   const navigate = useNavigate();
   const [farmId, setFarmId] = useState(session.farms[0]?.farm_id || '');
+  const [replyLanguage, setReplyLanguage] = useState<'en' | 'sn' | ''>(
+    session.farmer.preferred_language === 'sn' ? 'sn' : ''
+  );
+  const shona = replyLanguage === 'sn';
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,15 +85,18 @@ export function FarmAssistant({
       const result = await sendFarmManagerChatMessage({
         farmId,
         text,
+        replyLanguage: replyLanguage || undefined,
       });
       const reply = [
         result.reply.answer,
-        result.reply.shona_summary ? `\nShona: ${result.reply.shona_summary}` : '',
+        !shona && result.reply.shona_summary ? `\nShona: ${result.reply.shona_summary}` : '',
         result.reply.recommended_next_step
-          ? `\nNext step: ${result.reply.recommended_next_step}`
+          ? `\n${shona ? 'Danho rinotevera' : 'Next step'}: ${result.reply.recommended_next_step}`
           : '',
         result.reply.coordinator_review_required
-          ? '\nCoordinator review recommended before taking risky or costly action.'
+          ? shona
+            ? '\nBvunzai murongi musati maita chinhu chine ngozi kana chinodhura.'
+            : '\nCoordinator review recommended before taking risky or costly action.'
           : '',
       ].filter(Boolean).join('\n');
       setMessages((current) => [...current, {
@@ -171,7 +178,7 @@ export function FarmAssistant({
             </button>
           </div>
         </header>
-        {farmId && <FarmForecastCard key={farmId} farmId={farmId} />}
+        {farmId && <FarmForecastCard key={farmId} farmId={farmId} shona={shona} />}
 
         <section className="overflow-hidden border-2 border-black bg-white">
           <div className="border-b-2 border-black bg-blue-700 px-5 py-3 text-sm font-bold text-white">
@@ -204,7 +211,7 @@ export function FarmAssistant({
             ))}
             {sending && (
               <p className="text-sm font-semibold text-blue-700">
-                EdgeChain is recording your message…
+                {shona ? 'EdgeChain iri kugadzira mhinduro…' : 'EdgeChain is preparing a reply…'}
               </p>
             )}
           </div>
@@ -215,13 +222,27 @@ export function FarmAssistant({
                 {error}
               </p>
             )}
+            <label className="mb-3 flex items-center gap-3 text-sm font-bold">
+              {shona ? 'Mutauro wemhinduro' : 'Reply language'}
+              <select
+                value={replyLanguage}
+                disabled={sending}
+                onChange={(event) => setReplyLanguage(event.target.value as 'en' | 'sn' | '')}
+                className="border-2 border-black bg-white px-2 py-1"
+              >
+                <option value="">Farm preference</option>
+                <option value="sn">ChiShona</option>
+                <option value="en">English</option>
+              </select>
+            </label>
             <div className="flex flex-col gap-3 md:flex-row">
               <textarea
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
                 rows={2}
                 maxLength={2000}
-                placeholder="Ask about your farm plan, crop, water, pests, or next step..."
+                placeholder={shona ? 'Semuyenzaniso, ndotarisa chii mumunda nhasi?' : 'Ask about your farm, crops, or what to do next…'}
+                aria-label={shona ? 'Mubvunzo wenyu' : 'Your farm question'}
                 className="min-h-16 flex-1 resize-none border-2 border-black px-4 py-3 text-lg"
               />
               <button
@@ -229,7 +250,7 @@ export function FarmAssistant({
                 disabled={!input.trim() || sending}
                 className="bg-blue-700 px-8 py-4 text-lg font-black text-white hover:bg-blue-800 disabled:opacity-40"
               >
-                Send
+                {shona ? 'Tumira' : 'Send'}
               </button>
             </div>
             <p className="mt-2 text-xs text-gray-500">

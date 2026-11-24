@@ -22,7 +22,8 @@ export const chatGateway = {
   async generate(pack: FarmManagerChatContextPack): Promise<ChatModelResult> {
     const started = Date.now();
     const apiKey = process.env.GEMINI_API_KEY;
-    const enabled = process.env.AI_FARM_MANAGER_LLM_ENABLED === 'true';
+    const enabled = (process.env.AI_FARM_MANAGER_CHAT_LLM_ENABLED
+      ?? process.env.AI_FARM_MANAGER_LLM_ENABLED) === 'true';
     const model = process.env.GEMINI_TEXT_MODEL || DEFAULT_MODEL;
     if (!enabled || !apiKey) {
       return fallbackResult(started, model, enabled ? 'missing_api_key' : 'llm_disabled');
@@ -31,7 +32,9 @@ export const chatGateway = {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
+      const endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/'
+        + encodeURIComponent(model) + ':generateContent';
+      const response = await fetch(endpoint, {
         method: 'POST',
         signal: controller.signal,
         headers: {
@@ -39,18 +42,13 @@ export const chatGateway = {
           'x-goog-api-key': apiKey,
         },
         body: JSON.stringify({
-          model,
-          input: buildChatPrompt(pack),
-          temperature: Number(process.env.AI_FARM_MANAGER_TEMPERATURE || 0.25),
-          top_p: Number(process.env.AI_FARM_MANAGER_TOP_P || 0.8),
-          max_output_tokens: positiveInteger(
-            process.env.AI_FARM_MANAGER_CHAT_MAX_OUTPUT_TOKENS,
-            800
-          ),
-          response_format: {
-            type: 'text',
-            mime_type: 'application/json',
-            schema: CHAT_OUTPUT_SCHEMA,
+          contents: [{ role: 'user', parts: [{ text: buildChatPrompt(pack) }] }],
+          generationConfig: {
+            temperature: Number(process.env.AI_FARM_MANAGER_TEMPERATURE || 0.25),
+            topP: Number(process.env.AI_FARM_MANAGER_TOP_P || 0.8),
+            maxOutputTokens: positiveInteger(process.env.AI_FARM_MANAGER_CHAT_MAX_OUTPUT_TOKENS, 800),
+            responseMimeType: 'application/json',
+            responseJsonSchema: CHAT_OUTPUT_SCHEMA,
           },
         }),
       });
@@ -102,8 +100,16 @@ function fallbackResult(started: number, model: string, errorCode: string): Chat
 }
 
 function extractOutputText(body: Record<string, unknown>): string {
-  if (typeof body.output_text === 'string') return body.output_text;
-  if (typeof body.outputText === 'string') return body.outputText;
+  const candidate: unknown = Array.isArray(body.candidates) ? body.candidates[0] : undefined;
+  const content = isRecord(candidate) && candidate.content;
+  if (isRecord(content) && Array.isArray(content.parts)) {
+    const text = content.parts
+      .filter(isRecord)
+      .filter(part => !part.thought && typeof part.text === 'string')
+      .map(part => part.text)
+      .join('');
+    if (text) return text;
+  }
   throw new Error('gemini_missing_output_text');
 }
 
@@ -111,10 +117,10 @@ function extractUsage(body: Record<string, unknown>): {
   inputTokens?: number;
   outputTokens?: number;
 } {
-  const usage = isRecord(body.usage) ? body.usage : {};
+  const usage = isRecord(body.usageMetadata) ? body.usageMetadata : {};
   return {
-    inputTokens: numberValue(usage.input_tokens ?? usage.inputTokenCount),
-    outputTokens: numberValue(usage.output_tokens ?? usage.outputTokenCount),
+    inputTokens: numberValue(usage.promptTokenCount),
+    outputTokens: numberValue(usage.candidatesTokenCount),
   };
 }
 
