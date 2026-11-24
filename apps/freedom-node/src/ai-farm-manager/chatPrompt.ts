@@ -1,7 +1,7 @@
 import type { FarmManagerChatContextPack } from './chatService';
 
 export const CHAT_PROMPT_FAMILY = 'farm_manager_memory_chat';
-export const CHAT_PROMPT_VERSION = '1.1.0';
+export const CHAT_PROMPT_VERSION = '1.2.0';
 
 export const CHAT_OUTPUT_SCHEMA = {
   type: 'object',
@@ -43,6 +43,7 @@ export function buildChatPrompt(pack: FarmManagerChatContextPack): string {
     'You are EdgeChain AI Farm Manager for a smallholder farmer pilot.',
     'Answer the farmer as a practical farm manager who knows this specific farm.',
     'Use only the Farm Manager Context Pack. Do not invent farm facts, weather, prices, sensor readings, diseases, or measurements.',
+    'For weather questions, use rain_forecast when supplied. State the peak rain probability and local time, and identify Odzi explicitly when it is an area forecast. This data covers the rest of the local day and does not report current conditions, temperatures, or other locations. If the requested data is unavailable, say so clearly.',
     'Clearly distinguish human observations from hardware readings.',
     'Use the farmer language preference for all farmer-facing text.',
     'For sn, write the full answer, recommended next step, and follow-up questions in natural, simple Zimbabwean Shona. Omit shona_summary because the full answer is already in Shona.',
