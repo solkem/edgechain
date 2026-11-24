@@ -10,7 +10,7 @@ const localHour = new Intl.DateTimeFormat('en-ZW', {
 });
 const buttonStyle = 'border border-black bg-white px-3 py-2 text-sm font-bold disabled:opacity-50';
 
-export function FarmForecastCard({ farmId }: { farmId: string }) {
+export function FarmForecastCard({ farmId, shona = false }: { farmId: string; shona?: boolean }) {
   const [briefing, setBriefing] = useState<FarmForecastBriefing | null>(null);
   const [pendingLocation, setPendingLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -23,18 +23,19 @@ export function FarmForecastCard({ farmId }: { farmId: string }) {
     const controller = new AbortController();
     setLoading(true);
     setBriefing(null);
+    setError('');
     void loadFarmForecast(farmId, controller.signal)
       .then((forecast) => {
         if (!controller.signal.aborted) setBriefing(forecast);
       })
       .catch(() => {
-        if (!controller.signal.aborted) setError('Weather is unavailable right now.');
+        if (!controller.signal.aborted) setError(shona ? 'Zvakafanotaurwa nezvemamiriro ekunze hazviwanikwi izvozvi.' : 'Weather is unavailable right now.');
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [farmId, revision]);
+  }, [farmId, revision, shona]);
 
   function findLocation() {
     setError('');
@@ -96,15 +97,19 @@ export function FarmForecastCard({ farmId }: { farmId: string }) {
   return (
     <section className="my-5 border-2 border-black bg-[#eff7ed] p-5" aria-label="Today’s weather">
       <h2 className="text-xl font-black">
-        {briefing?.location === 'farm' ? 'Today on your farm' : 'Odzi area forecast'}
+        {briefing?.location === 'farm'
+          ? (shona ? 'Mamiriro ekunze pamunda wenyu nhasi' : 'Today on your farm')
+          : (shona ? 'Mamiriro ekunze kuOdzi nhasi' : 'Odzi area forecast')}
       </h2>
       <div role="status">
-        {loading && <p className="mt-2">Checking today’s weather…</p>}
+        {loading && <p className="mt-2">{shona ? 'Tiri kutarisa mamiriro ekunze anhasi…' : 'Checking today’s weather…'}</p>}
         {briefing && (
           <>
             <p className="mt-2 text-lg font-bold">
               {briefing.probability === 0
-                ? 'Rain looks unlikely for the rest of today.'
+                ? (shona ? 'Mvura ingangosanaya nhasi.' : 'Rain looks unlikely for the rest of today.')
+                : shona
+                  ? `Mukana mukuru wekunaya kwemvura nhasi i${briefing.probability}% nenguva dza${clock.format(briefing.peak_time * 1000)}.`
                 : `Highest rain chance from now: ${briefing.probability}% around ${clock.format(briefing.peak_time * 1000)}.`}
             </p>
             <p className="mt-1 text-sm text-gray-600">
