@@ -26,7 +26,7 @@ export function FarmAssistant({
   );
   const shona = replyLanguage === 'sn';
   const [input, setInput] = useState('');
-  const [lastQuestion, setLastQuestion] = useState<{ farmId: string; text: string } | null>(null);
+  const [recentChat, setRecentChat] = useState<NonNullable<Parameters<typeof sendFarmManagerChatMessage>[0]['recentChat']>>([]);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<AgentChatMessage[]>([
@@ -87,9 +87,9 @@ export function FarmAssistant({
         farmId,
         text,
         replyLanguage: replyLanguage || undefined,
-        previousQuestion: lastQuestion?.farmId === farmId ? lastQuestion.text : undefined,
+        recentChat,
       });
-      setLastQuestion({ farmId, text });
+
       const reply = [
         result.reply.answer,
         !shona && result.reply.shona_summary ? `\nShona: ${result.reply.shona_summary}` : '',
@@ -102,6 +102,9 @@ export function FarmAssistant({
             : '\nCoordinator review recommended before taking risky or costly action.'
           : '',
       ].filter(Boolean).join('\n');
+      setRecentChat(current => [...current, { role: 'farmer' as const, text }, {
+        role: 'assistant' as const, text: result.reply.answer,
+      }].slice(-8));
       setMessages((current) => [...current, {
         id: `${clientMessageId}-reply`,
         sender: 'agent',
@@ -163,7 +166,12 @@ export function FarmAssistant({
             {session.farms.length > 1 && (
               <select
                 value={farmId}
-                onChange={(event) => setFarmId(event.target.value)}
+                disabled={sending}
+                onChange={(event) => {
+                  setRecentChat([]);
+                  setMessages([]);
+                  setFarmId(event.target.value);
+                }}
                 className="border-2 border-black bg-white px-3 py-2 font-semibold"
               >
                 {session.farms.map((farm) => (

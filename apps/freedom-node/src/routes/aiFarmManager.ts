@@ -79,6 +79,7 @@ router.post('/chat', async (req: FarmerRequest, res) => {
       text: String(req.body.text ?? ''),
       preferredLanguage: req.farmer!.preferred_language,
       replyLanguage,
+      recentChat: req.body.recent_chat,
       previousQuestion: typeof req.body.previous_question === 'string'
         ? req.body.previous_question.slice(0, 2_000) : undefined,
     });

@@ -100,7 +100,7 @@ export async function sendFarmManagerChatMessage(input: {
   farmId: string;
   text: string;
   replyLanguage?: 'en' | 'sn';
-  previousQuestion?: string;
+  recentChat?: { role: 'farmer' | 'assistant'; text: string }[];
 }): Promise<FarmManagerChatResponse> {
   const response = await request('/api/v1/ai-farm-manager/chat', {
     method: 'POST',
@@ -108,7 +108,7 @@ export async function sendFarmManagerChatMessage(input: {
       farm_id: input.farmId,
       text: input.text,
       reply_language: input.replyLanguage,
-      previous_question: input.previousQuestion,
+      recent_chat: input.recentChat,
     }),
   });
   if (!response.ok) throw await toApiError(response);
