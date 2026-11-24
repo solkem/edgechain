@@ -10,6 +10,7 @@ import type {
   PilotSession,
 } from '../agent/types';
 import { PilotBrand } from '../agent/PilotBrand';
+import { FarmForecastCard } from '../components/FarmForecastCard';
 
 export function FarmAssistant({
   session,
@@ -170,6 +171,7 @@ export function FarmAssistant({
             </button>
           </div>
         </header>
+        {farmId && <FarmForecastCard key={farmId} farmId={farmId} />}
 
         <section className="overflow-hidden border-2 border-black bg-white">
           <div className="border-b-2 border-black bg-blue-700 px-5 py-3 text-sm font-bold text-white">

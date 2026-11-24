@@ -653,3 +653,11 @@ export interface PhysicalBindingResult {
   physical_channels_enabled: string[];
   historical_manual_readings_preserved: true;
 }
+
+export interface FarmForecastBriefing {
+  briefing_id: string;
+  location: 'farm' | 'odzi';
+  checked_at: string;
+  peak_time: number;
+  probability: number;
+}
