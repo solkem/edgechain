@@ -74,6 +74,7 @@ export const farmManagerChatService = {
     text: string;
     preferredLanguage?: string;
     replyLanguage?: 'en' | 'sn';
+    previousQuestion?: string;
   }): Promise<FarmManagerChatReply> {
     const text = String(input.text ?? '').trim();
     if (!text || text.length > 2_000) {
@@ -87,10 +88,11 @@ export const farmManagerChatService = {
       preferredLanguage: input.replyLanguage ?? input.preferredLanguage,
       useRequestedLanguage: Boolean(input.replyLanguage),
     });
-    // Give common rain questions a direct answer even if the model is unavailable.
-    const question = text.toLowerCase().replace(/[?.!]+$/u, '').trim();
-    const isSimpleRainQuestion = /^(?:nhasi (?:kunonaya|kuchanaya|mvura ichanaya) here|(?:kuchanaya|kunonaya|mvura ichanaya) here nhasi|will it rain today|is it going to rain today)$/u.test(question);
-    if (isSimpleRainQuestion || /\b(?:weather|forecast|rain|kunaya|kunonaya|kuchanaya|ichanaya|mamiriro ekunze)\b/u.test(question)) {
+    const question = normalizeWeatherQuestion(text);
+    const previous = normalizeWeatherQuestion(input.previousQuestion ?? '');
+    const weatherFollowUp = /^(?:nguva(?:i| dzipi)|at what time|what time|when|ko (?:mangwana|nhasi|masikati|manheru)|what about (?:tomorrow|this afternoon|tonight))$/u.test(question);
+    const useForecastReply = isRainQuestion(question) || (weatherFollowUp && isRainQuestion(previous));
+    if (useForecastReply || /\b(?:weather|forecast|rain|kunaya|kunonaya|kuchanaya|ichanaya|mamiriro ekunze)\b/u.test(question)) {
       const forecast = await loadFarmForecast(input.farmerId, farm.farm_id);
       pack.rain_forecast = forecast && {
         source: 'Open-Meteo',
@@ -103,7 +105,11 @@ export const farmManagerChatService = {
         peak_probability_percent: forecast.probability,
       };
     }
-    if (isSimpleRainQuestion) return rainReply(pack, !/^(?:will|is) /u.test(question));
+    if (useForecastReply) {
+      const questionInShona = /\b(?:nhasi|mangwana|kunonaya|kuchanaya|kunaya|ichanaya|nguvai|nguva|mamiriro|masikati|manheru)\b/u.test(question);
+      const laterDay = /\b(?:mangwana|tomorrow|next week|svondo rinouya)\b/u.test(question);
+      return rainReply(pack, questionInShona, laterDay);
+    }
 
     const modelResult = await chatGateway.generate(pack);
     if (modelResult.status === 'success' && modelResult.output) {
@@ -218,21 +224,38 @@ async function buildChatContextPack(input: {
   };
 }
 
-function rainReply(pack: FarmManagerChatContextPack, questionInShona: boolean): FarmManagerChatReply {
+function normalizeWeatherQuestion(text: string): string {
+  return text.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').trim().replace(/\s+/gu, ' ');
+}
+
+function isRainQuestion(question: string): boolean {
+  return /^(?:(?:any idea kuti|ko|ndapota|mune ruzivo urwu kuti) )?(?:nhasi )?(?:kunonaya|kuchanaya|mvura (?:ichanaya|inonaya))(?: (?:here|nguvai|nguva dzipi|nhasi|mangwana|masikati|manheru|rinhi))*$/u.test(question)
+    || /^(?:(?:any idea |do you know )?(?:will it rain|when will it rain|when is it going to rain|what time will it rain|is it going to rain)(?: (?:today|tomorrow|tonight|this afternoon|here))*|(?:today s |the )?(?:rain|weather) forecast(?: (?:today|tomorrow))?)$/u.test(question);
+}
+
+function rainReply(
+  pack: FarmManagerChatContextPack,
+  questionInShona: boolean,
+  laterDay: boolean
+): FarmManagerChatReply {
   const forecast = pack.rain_forecast;
   const language = pack.farmer.preferred_language;
   const shona = language === 'sn' || (language === 'sn-en' && questionInShona);
   let answer = shona
-    ? 'Handisi kukwanisa kuwana fungidziro yemvura izvozvi. Edzai zvakare pashure.'
-    : 'The rain forecast is unavailable right now. Please try again later.';
-  if (forecast) {
+    ? 'Handina kuwana fungidziro yemvura yepano izvozvi. Dzvanyai Refresh pakadhi remamiriro ekunze kuti muedzezve.'
+    : 'I couldn’t get the rain forecast for this location. Tap Refresh on the weather card to check again.';
+  if (laterDay) {
+    answer = shona
+      ? 'Parizvino ndine fungidziro yemvura yanhasi chete. Bvunzai kuti: “Nhasi mvura ichanaya nguvai?”'
+      : 'I only have the rest of today’s rain forecast. You can ask what time rain is most likely today.';
+  } else if (forecast) {
     const place = forecast.location === 'odzi'
       ? (shona ? 'Munharaunda yeOdzi' : 'For the Odzi area')
       : pack.farm.name;
     const chance = forecast.peak_probability_percent;
     const time = forecast.peak_time_local;
     const outlook = shona
-      ? (chance === 0 ? 'Mvura ingangosanaya nhasi.' : `Mukana mukuru wekunaya kwemvura nhasi i${chance}% nenguva dzinenge ${time}.`)
+      ? (chance === 0 ? 'Mukana wekunaya kwemvura nhasi mudiki zvikuru.' : `Mukana mukuru wekunaya kwemvura nhasi i${chance}% nenguva dzinenge ${time}. Nguva iyi ndiyo ine mukana mukuru, asi mvura inogona kutanga imwe nguva.`)
       : (chance === 0 ? 'Rain looks unlikely for the rest of today.' : `The highest chance of rain for the rest of today is ${chance}% around ${time}.`);
     answer = `${place}: ${outlook}\nOpen-Meteo · ${forecast.timezone}`;
   }
@@ -240,14 +263,14 @@ function rainReply(pack: FarmManagerChatContextPack, questionInShona: boolean): 
     answer,
     shona_summary: null,
     recommended_next_step: null,
-    missing_information: forecast ? [] : ['rain_forecast'],
+    missing_information: forecast && !laterDay ? [] : ['rain_forecast'],
     evidence_used: [],
-    confidence: forecast ? 'medium' : 'low',
+    confidence: forecast && !laterDay ? 'medium' : 'low',
     coordinator_review_required: false,
     safety_flags: [],
     provider: 'edgechain',
     model: 'rain-forecast',
-    validation_status: forecast ? 'valid' : 'fallback',
+    validation_status: forecast && !laterDay ? 'valid' : 'fallback',
   };
 }
 
