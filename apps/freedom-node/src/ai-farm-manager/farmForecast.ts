@@ -34,7 +34,7 @@ export async function fetchFarmForecast(location: ForecastLocation | undefined) 
   const response = await fetch(url, { signal: AbortSignal.timeout(7000) });
   if (!response.ok) throw new Error('Weather provider unavailable');
 
-  const data = await response.json();
+  const data = await response.json() as { hourly?: { time?: unknown; precipitation_probability?: unknown } } | null;
   const hourly = data?.hourly;
   if (!Array.isArray(hourly?.time) || !Array.isArray(hourly?.precipitation_probability)) {
     throw new Error('Invalid weather response');
