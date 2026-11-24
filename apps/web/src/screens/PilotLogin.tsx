@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { AgentApiError } from '../agent/api';
 import { PilotBrand } from '../agent/PilotBrand';
 
@@ -13,6 +13,23 @@ export function PilotLogin({
   const [pin, setPin] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [googleInvite] = useState(() => {
+    const invite = new URLSearchParams(window.location.hash.slice(1)).get('google-invite');
+    return invite && /^[A-Za-z0-9_-]{43}$/.test(invite) ? invite : null;
+  });
+  const googleFailed = new URLSearchParams(window.location.search).get('google') === 'failed';
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch('/api/v1/auth/google/status', { signal: controller.signal })
+      .then(async (response) => {
+        if (response.ok) setGoogleEnabled((await response.json()).enabled === true);
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
+
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -97,6 +114,20 @@ export function PilotLogin({
               {submitting ? 'Opening your farm…' : 'Open Virtual Ndani Kit'}
             </button>
           </form>
+
+          {googleFailed && (
+            <p role="alert" className="mt-6 text-sm font-semibold text-red-800">
+              Google sign-in failed. If you used an invitation, reopen it and select the invited Google account.
+            </p>
+          )}
+          {googleEnabled && (
+            <form method="post" action="/api/v1/auth/google/start" className="mt-6">
+              {googleInvite && <input type="hidden" name="invite" value={googleInvite} />}
+              <button type="submit" className="w-full border-2 border-black px-5 py-3 font-bold">
+                {googleInvite ? 'Link your Google account' : 'Continue with Google'}
+              </button>
+            </form>
+          )}
 
           <button
             type="button"

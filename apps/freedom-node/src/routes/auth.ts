@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { Router } from 'express';
+import { googleAuthRouter } from './googleAuth';
 import { authRepository } from '../auth/authRepository';
 import { FarmerRequest, requireFarmerSession } from '../auth/authMiddleware';
 import { AuthError, authService } from '../auth/authService';
@@ -9,6 +10,7 @@ import {
 } from '../auth/session';
 
 const router = Router();
+router.use(googleAuthRouter);
 
 router.post('/enroll', async (req, res) => {
   try {

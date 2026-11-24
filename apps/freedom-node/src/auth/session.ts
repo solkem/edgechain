@@ -34,7 +34,7 @@ export function setSessionCookie(res: Response, token: string, req?: Request): v
     `Max-Age=${sessionLifetimeSeconds()}`,
   ];
   if (secure) attributes.push('Secure');
-  res.setHeader('Set-Cookie', attributes.join('; '));
+  res.append('Set-Cookie', attributes.join('; '));
 }
 
 export function clearSessionCookie(res: Response, req?: Request): void {
@@ -47,7 +47,7 @@ export function clearSessionCookie(res: Response, req?: Request): void {
     'Max-Age=0',
   ];
   if (secure) attributes.push('Secure');
-  res.setHeader('Set-Cookie', attributes.join('; '));
+  res.append('Set-Cookie', attributes.join('; '));
 }
 
 function cookieSameSite(secure: boolean, req?: Request): 'Lax' | 'None' {

@@ -461,3 +461,23 @@ MIT - see [LICENSE](LICENSE)
 ---
 
 *Built from long-horizon research, field-driven constraints, and the principle that farmers should be able to benefit from their data without having to surrender control of it.*
+### Pilot account recovery with Google
+
+Use the unified, same-origin web and API deployment for Google recovery. In Google Cloud,
+register a Web application OAuth client with the exact redirect URI
+`<app origin>/api/v1/auth/google/callback`. Set `EDGECHAIN_GOOGLE_APP_ORIGIN` to
+that app origin, supply `EDGECHAIN_GOOGLE_CLIENT_ID` and `EDGECHAIN_GOOGLE_CLIENT_SECRET`
+on the server, and include the app origin in `CORS_ORIGINS`. The pilot API must be
+enabled with `AGENT_ENABLED=true`. The database applies migration 016 on startup.
+
+An operator sends `POST /api/v1/auth/google/invites` with the existing
+`x-pilot-admin-key` header and a JSON body containing the existing account's
+`pilot_code` and intended Google `email`. Share the returned `invite_url` privately
+with that account holder. The link expires after 24 hours and issuing a replacement
+invalidates the previous link.
+
+For the first recovery check, use the existing coordinator account in a signed-out
+browser. Open the invitation, select **Link your Google account**, and choose the
+invited Google identity. Verify the existing coordinator ID, role, and access.
+Then sign out and verify **Continue with Google** restores the same account. The
+pilot-code and PIN login and admin coordinator enrollment remain available.
