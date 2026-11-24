@@ -1,6 +1,7 @@
 import type {
   AgentMessageResponse,
   AgentConversationResponse,
+  FarmForecastBriefing,
   FarmManagerChatResponse,
   PilotSession,
   VirtualNdaniDevice,
@@ -697,4 +698,34 @@ async function toApiError(response: Response): Promise<AgentApiError> {
     // Retain the status-based fallback.
   }
   return new AgentApiError(code, response.status);
+}
+
+export async function loadFarmForecast(farmId: string, signal?: AbortSignal): Promise<FarmForecastBriefing> {
+  const response = await request(farmForecastPath(farmId), { method: 'GET', signal });
+  if (!response.ok) throw await toApiError(response);
+  return response.json();
+}
+
+export async function setFarmForecastLocation(
+  farmId: string,
+  location: { latitude: number; longitude: number } | null
+): Promise<void> {
+  const response = await request(farmForecastPath(farmId) + '/location', location
+    ? { method: 'PUT', body: JSON.stringify(location) }
+    : { method: 'DELETE' });
+  if (!response.ok) throw await toApiError(response);
+}
+
+export async function reportFarmRain(
+  farmId: string, briefingId: string, observed: boolean
+): Promise<void> {
+  const response = await request(farmForecastPath(farmId) + '/rain', {
+    method: 'PUT',
+    body: JSON.stringify({ briefing_id: briefingId, rain_observed: observed }),
+  });
+  if (!response.ok) throw await toApiError(response);
+}
+
+function farmForecastPath(farmId: string): string {
+  return '/api/v1/ai-farm-manager/forecast/' + encodeURIComponent(farmId);
 }

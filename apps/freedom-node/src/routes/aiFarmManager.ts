@@ -14,8 +14,11 @@ import {
 } from '../ai-farm-manager/timelineReportService';
 import { aiFarmManagerWeeklyPlanService } from '../ai-farm-manager/weeklyPlanService';
 
+import { farmForecastRouter } from './farmForecast';
+
 const router = Router();
 router.use(requireFarmerSession);
+router.use('/forecast', farmForecastRouter);
 
 router.get('/checkins', async (req: FarmerRequest, res) => {
   try {

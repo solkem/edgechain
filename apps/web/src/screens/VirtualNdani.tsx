@@ -14,6 +14,7 @@ import type {
   PhysicalManualComparison,
 } from '../agent/types';
 import { PilotBrand } from '../agent/PilotBrand';
+import { FarmForecastCard } from '../components/FarmForecastCard';
 
 export function VirtualNdani({
   session,
@@ -65,6 +66,7 @@ export function VirtualNdani({
           <p className="mt-3 text-gray-700">
             Ask the pilot coordinator to check this farmer’s farm assignment.
           </p>
+          {session.farms[0] && <FarmForecastCard farmId={session.farms[0].farm_id} />}
         </section>
       </main>
     );
@@ -99,6 +101,7 @@ export function VirtualNdani({
             Sign out
           </button>
         </header>
+        {farm && <FarmForecastCard key={farm.farm_id} farmId={farm.farm_id} />}
 
         {error && (
           <p role="alert" className="mt-6 border-l-4 border-red-700 bg-red-50 p-4 font-bold text-red-800">
