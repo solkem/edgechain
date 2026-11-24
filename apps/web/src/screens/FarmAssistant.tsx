@@ -26,6 +26,7 @@ export function FarmAssistant({
   );
   const shona = replyLanguage === 'sn';
   const [input, setInput] = useState('');
+  const [lastQuestion, setLastQuestion] = useState<{ farmId: string; text: string } | null>(null);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<AgentChatMessage[]>([
@@ -86,7 +87,9 @@ export function FarmAssistant({
         farmId,
         text,
         replyLanguage: replyLanguage || undefined,
+        previousQuestion: lastQuestion?.farmId === farmId ? lastQuestion.text : undefined,
       });
+      setLastQuestion({ farmId, text });
       const reply = [
         result.reply.answer,
         !shona && result.reply.shona_summary ? `\nShona: ${result.reply.shona_summary}` : '',
@@ -182,7 +185,7 @@ export function FarmAssistant({
 
         <section className="overflow-hidden border-2 border-black bg-white">
           <div className="border-b-2 border-black bg-blue-700 px-5 py-3 text-sm font-bold text-white">
-            Your profile · weekly check-ins · AI plans · farm memory
+            {shona ? 'Bvunzai nezvemamiriro ekunze kana nezvemunda wenyu' : 'Ask about the weather or your farm'}
           </div>
           <div
             className="h-[52vh] min-h-[360px] space-y-4 overflow-y-auto bg-[#fbfbf7] p-4 md:p-6"
@@ -200,7 +203,11 @@ export function FarmAssistant({
                       : 'bg-white text-black shadow-[4px_4px_0_#d1d5db]'
                   }`}
                 >
-                  <p className="whitespace-pre-wrap leading-relaxed">{message.text}</p>
+                  <p className="whitespace-pre-wrap leading-relaxed">
+                    {message.id === 'welcome' && shona
+                      ? 'Mauya! Bvunzai nezvemvura pamunda wenyu. Semuyenzaniso: “Nhasi kunonaya here?”'
+                      : message.text}
+                  </p>
                   <time className={`mt-2 block text-xs ${
                     message.sender === 'farmer' ? 'text-gray-300' : 'text-gray-500'
                   }`}>
@@ -241,7 +248,7 @@ export function FarmAssistant({
                 onChange={(event) => setInput(event.target.value)}
                 rows={2}
                 maxLength={2000}
-                placeholder={shona ? 'Semuyenzaniso, ndotarisa chii mumunda nhasi?' : 'Ask about your farm, crops, or what to do next…'}
+                placeholder={shona ? 'Semuyenzaniso: Nhasi kunonaya here?' : 'For example: What time is rain most likely today?'}
                 aria-label={shona ? 'Mubvunzo wenyu' : 'Your farm question'}
                 className="min-h-16 flex-1 resize-none border-2 border-black px-4 py-3 text-lg"
               />
