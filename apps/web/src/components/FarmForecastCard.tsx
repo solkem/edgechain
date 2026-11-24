@@ -7,6 +7,7 @@ const buttonStyle = 'border border-black bg-white px-3 py-2 text-sm font-bold di
 export function FarmForecastCard({ farmId, shona = false }: { farmId: string; shona?: boolean }) {
   const [briefing, setBriefing] = useState<FarmForecastBriefing | null>(null);
   const [pendingLocation, setPendingLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [stale, setStale] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -16,11 +17,14 @@ export function FarmForecastCard({ farmId, shona = false }: { farmId: string; sh
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
-    setBriefing(null);
+    setStale(true);
     setError('');
     void loadFarmForecast(farmId, controller.signal)
       .then((forecast) => {
-        if (!controller.signal.aborted) setBriefing(forecast);
+        if (!controller.signal.aborted) {
+          setBriefing(forecast);
+          setStale(false);
+        }
       })
       .catch(() => {
         if (!controller.signal.aborted) setError(shona ? 'Zvakafanotaurwa nezvemamiriro ekunze hazviwanikwi izvozvi.' : 'Weather is unavailable right now.');
@@ -65,6 +69,7 @@ export function FarmForecastCard({ farmId, shona = false }: { farmId: string; sh
     try {
       await setFarmForecastLocation(farmId, location);
       setPendingLocation(null);
+      setBriefing(null);
       setFeedback(false);
       setRevision((value) => value + 1);
     } catch {
@@ -95,12 +100,15 @@ export function FarmForecastCard({ farmId, shona = false }: { farmId: string; sh
   const localHour = new Intl.DateTimeFormat('en-ZW', {
     timeZone, hour: 'numeric', hourCycle: 'h23',
   });
+  const checkedClock = new Intl.DateTimeFormat('en-ZW', {
+    timeZone, month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true,
+  });
   const zoneLabel = timeZone === 'Africa/Harare' ? 'Zimbabwe time' : timeZone;
 
   return (
     <section className="my-5 border-2 border-black bg-[#eff7ed] p-5" aria-label="Today’s weather">
       <h2 className="text-xl font-black">
-        {briefing?.location === 'farm'
+        {stale && briefing ? (shona ? 'Fungidziro yawakapedzisira kuona' : 'Last forecast received') : briefing?.location === 'farm'
           ? (shona ? 'Mamiriro ekunze pamunda wenyu nhasi' : 'Today on your farm')
           : (shona ? 'Mamiriro ekunze kuOdzi nhasi' : 'Odzi area forecast')}
       </h2>
@@ -108,15 +116,20 @@ export function FarmForecastCard({ farmId, shona = false }: { farmId: string; sh
         {loading && <p className="mt-2">{shona ? 'Tiri kutarisa mamiriro ekunze anhasi…' : 'Checking today’s weather…'}</p>}
         {briefing && (
           <>
+            {stale && <p className="mt-2 text-sm font-semibold">
+              {shona ? 'Iyi ingava fungidziro yekare.' : 'This forecast may be out of date.'}
+            </p>}
             <p className="mt-2 text-lg font-bold">
-              {briefing.probability === 0
+              {stale
+                ? (shona ? `Mukana mukuru wemvura pawakatarisa waiva ${briefing.probability}%.` : `The last forecast showed a peak rain chance of ${briefing.probability}%.`)
+                : briefing.probability === 0
                 ? (shona ? 'Mvura ingangosanaya nhasi.' : 'Rain looks unlikely for the rest of today.')
                 : shona
                   ? `Mukana mukuru wekunaya kwemvura nhasi i${briefing.probability}% nenguva dza${clock.format(briefing.peak_time * 1000)}.`
                 : `Highest rain chance from now: ${briefing.probability}% around ${clock.format(briefing.peak_time * 1000)}.`}
             </p>
             <p className="mt-1 text-sm text-gray-600">
-              Checked {clock.format(new Date(briefing.checked_at))} · {zoneLabel} · Open-Meteo
+              Checked {checkedClock.format(new Date(briefing.checked_at))} · {zoneLabel} · Open-Meteo
             </p>
           </>
         )}
@@ -147,7 +160,7 @@ export function FarmForecastCard({ farmId, shona = false }: { farmId: string; sh
           }}>Refresh</button>
         </div>
       )}
-      {briefing?.location === 'farm' && Number(localHour.format(new Date())) >= 18 && (
+      {!stale && briefing?.location === 'farm' && Number(localHour.format(new Date())) >= 18 && (
         <div className="mt-4 border-t border-black/20 pt-3">
           {feedback ? <p role="status">Rain report saved.</p> : (
             <>

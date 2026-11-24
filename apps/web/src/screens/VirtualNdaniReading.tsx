@@ -147,7 +147,7 @@ export function VirtualNdaniReadingScreen() {
               state: { readingStatus: confirmed.quality_status },
             });
           } catch {
-            setError('The reading could not be confirmed. Please try again.');
+            setError('Your reading is still ready to confirm. Reconnect and tap Confirm and submit again.');
           } finally {
             setSaving(false);
           }
@@ -253,7 +253,7 @@ export function VirtualNdaniReadingScreen() {
                 );
                 setReading(saved);
               } catch {
-                setError('The observations could not be saved. Please check each answer and try again.');
+                setError('Your answers are still on this screen. Check your connection, then tap Review my reading again.');
               } finally {
                 setSaving(false);
               }
