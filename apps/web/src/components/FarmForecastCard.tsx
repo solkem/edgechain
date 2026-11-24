@@ -2,12 +2,6 @@ import { useEffect, useState } from 'react';
 import { loadFarmForecast, reportFarmRain, setFarmForecastLocation } from '../agent/api';
 import type { FarmForecastBriefing } from '../agent/types';
 
-const clock = new Intl.DateTimeFormat('en-ZW', {
-  timeZone: 'Africa/Harare', hour: 'numeric', minute: '2-digit', hour12: true,
-});
-const localHour = new Intl.DateTimeFormat('en-ZW', {
-  timeZone: 'Africa/Harare', hour: 'numeric', hourCycle: 'h23',
-});
 const buttonStyle = 'border border-black bg-white px-3 py-2 text-sm font-bold disabled:opacity-50';
 
 export function FarmForecastCard({ farmId, shona = false }: { farmId: string; shona?: boolean }) {
@@ -94,6 +88,15 @@ export function FarmForecastCard({ farmId, shona = false }: { farmId: string; sh
     }
   }
 
+  const timeZone = briefing?.timezone ?? 'Africa/Harare';
+  const clock = new Intl.DateTimeFormat('en-ZW', {
+    timeZone, hour: 'numeric', minute: '2-digit', hour12: true,
+  });
+  const localHour = new Intl.DateTimeFormat('en-ZW', {
+    timeZone, hour: 'numeric', hourCycle: 'h23',
+  });
+  const zoneLabel = timeZone === 'Africa/Harare' ? 'Zimbabwe time' : timeZone;
+
   return (
     <section className="my-5 border-2 border-black bg-[#eff7ed] p-5" aria-label="Today’s weather">
       <h2 className="text-xl font-black">
@@ -113,14 +116,14 @@ export function FarmForecastCard({ farmId, shona = false }: { farmId: string; sh
                 : `Highest rain chance from now: ${briefing.probability}% around ${clock.format(briefing.peak_time * 1000)}.`}
             </p>
             <p className="mt-1 text-sm text-gray-600">
-              Checked {clock.format(new Date(briefing.checked_at))} Zimbabwe time · Open-Meteo
+              Checked {clock.format(new Date(briefing.checked_at))} · {zoneLabel} · Open-Meteo
             </p>
           </>
         )}
       </div>
       {pendingLocation ? (
         <div className="mt-3">
-          <p className="mb-2 text-sm">Are you at your farm? EdgeChain saves your approximate location and uses it to request your forecast.</p>
+          <p className="mb-2 text-sm">Save this location to switch the forecast to your farm. EdgeChain uses your approximate location.</p>
           <div className="flex flex-wrap gap-2">
             <button type="button" className={buttonStyle} disabled={busy} onClick={() => void saveLocation(pendingLocation)}>
               Yes, save my farm
