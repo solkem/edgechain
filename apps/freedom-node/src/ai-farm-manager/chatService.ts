@@ -10,6 +10,7 @@ import {
 } from './domain';
 import { aiFarmManagerRepository } from './repository';
 import { chatGateway } from './chatGateway';
+import { loadFarmForecast } from './farmForecast';
 import { CHAT_PROMPT_FAMILY, CHAT_PROMPT_VERSION } from './chatPrompt';
 import {
   ChatValidationError,
@@ -32,6 +33,14 @@ export interface FarmManagerChatContextPack {
   recent_checkins: WeeklyFarmCheckin[];
   important_memories: FarmerAiMemory[];
   recent_plans: AiFarmPlan[];
+  rain_forecast?: {
+    source: 'Open-Meteo';
+    location: 'farm' | 'odzi';
+    timezone: string;
+    checked_at: string;
+    peak_time_local: string;
+    peak_probability_percent: number;
+  } | null;
   farmer_question: string;
 }
 
@@ -78,6 +87,24 @@ export const farmManagerChatService = {
       preferredLanguage: input.replyLanguage ?? input.preferredLanguage,
       useRequestedLanguage: Boolean(input.replyLanguage),
     });
+    // Give common rain questions a direct answer even if the model is unavailable.
+    const question = text.toLowerCase().replace(/[?.!]+$/u, '').trim();
+    const isSimpleRainQuestion = /^(?:nhasi (?:kunonaya|kuchanaya|mvura ichanaya) here|(?:kuchanaya|kunonaya|mvura ichanaya) here nhasi|will it rain today|is it going to rain today)$/u.test(question);
+    if (isSimpleRainQuestion || /\b(?:weather|forecast|rain|kunaya|kunonaya|kuchanaya|ichanaya|mamiriro ekunze)\b/u.test(question)) {
+      const forecast = await loadFarmForecast(input.farmerId, farm.farm_id);
+      pack.rain_forecast = forecast && {
+        source: 'Open-Meteo',
+        location: forecast.location,
+        timezone: forecast.timezone,
+        checked_at: forecast.checked_at,
+        peak_time_local: new Intl.DateTimeFormat('en-ZW', {
+          timeZone: forecast.timezone, hour: 'numeric', minute: '2-digit', hour12: true,
+        }).format(forecast.peak_time * 1000),
+        peak_probability_percent: forecast.probability,
+      };
+    }
+    if (isSimpleRainQuestion) return rainReply(pack, !/^(?:will|is) /u.test(question));
+
     const modelResult = await chatGateway.generate(pack);
     if (modelResult.status === 'success' && modelResult.output) {
       try {
@@ -188,6 +215,39 @@ async function buildChatContextPack(input: {
     important_memories: memories,
     recent_plans: recentPlans,
     farmer_question: input.text,
+  };
+}
+
+function rainReply(pack: FarmManagerChatContextPack, questionInShona: boolean): FarmManagerChatReply {
+  const forecast = pack.rain_forecast;
+  const language = pack.farmer.preferred_language;
+  const shona = language === 'sn' || (language === 'sn-en' && questionInShona);
+  let answer = shona
+    ? 'Handisi kukwanisa kuwana fungidziro yemvura izvozvi. Edzai zvakare pashure.'
+    : 'The rain forecast is unavailable right now. Please try again later.';
+  if (forecast) {
+    const place = forecast.location === 'odzi'
+      ? (shona ? 'Munharaunda yeOdzi' : 'For the Odzi area')
+      : pack.farm.name;
+    const chance = forecast.peak_probability_percent;
+    const time = forecast.peak_time_local;
+    const outlook = shona
+      ? (chance === 0 ? 'Mvura ingangosanaya nhasi.' : `Mukana mukuru wekunaya kwemvura nhasi i${chance}% nenguva dzinenge ${time}.`)
+      : (chance === 0 ? 'Rain looks unlikely for the rest of today.' : `The highest chance of rain for the rest of today is ${chance}% around ${time}.`);
+    answer = `${place}: ${outlook}\nOpen-Meteo · ${forecast.timezone}`;
+  }
+  return {
+    answer,
+    shona_summary: null,
+    recommended_next_step: null,
+    missing_information: forecast ? [] : ['rain_forecast'],
+    evidence_used: [],
+    confidence: forecast ? 'medium' : 'low',
+    coordinator_review_required: false,
+    safety_flags: [],
+    provider: 'edgechain',
+    model: 'rain-forecast',
+    validation_status: forecast ? 'valid' : 'fallback',
   };
 }
 

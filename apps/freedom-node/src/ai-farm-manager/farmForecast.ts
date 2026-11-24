@@ -1,3 +1,5 @@
+import { db } from '../database';
+
 const ODZI = { latitude: -18.96, longitude: 32.41 };
 const ODZI_TIME_ZONE = 'Africa/Harare';
 
@@ -18,6 +20,14 @@ export function parseForecastLocation(input: Record<string, unknown>): ForecastL
     latitude: Math.round(latitude * 100) / 100,
     longitude: Math.round(longitude * 100) / 100,
   };
+}
+
+export async function loadFarmForecast(farmerId: string, farmId: string) {
+  const { rows } = await db.query(
+    'SELECT latitude, longitude FROM farm_forecast_locations WHERE farmer_id = $1 AND farm_id = $2',
+    [farmerId, farmId]
+  );
+  return fetchFarmForecast(rows[0]).catch(() => null);
 }
 
 export async function fetchFarmForecast(location: ForecastLocation | undefined) {

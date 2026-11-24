@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { FarmerRequest } from '../auth/authMiddleware';
 import { authRepository } from '../auth/authRepository';
 import { db } from '../database';
-import { fetchFarmForecast, parseForecastLocation } from '../ai-farm-manager/farmForecast';
+import { loadFarmForecast, parseForecastLocation } from '../ai-farm-manager/farmForecast';
 
 const router = Router();
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -25,11 +25,7 @@ router.get('/:farmId', async (req: FarmerRequest, res, next) => {
   const farmerId = req.farmer!.farmer_id;
   const farmId = req.params.farmId;
   try {
-    const { rows } = await db.query(
-      'SELECT latitude, longitude FROM farm_forecast_locations WHERE farmer_id = $1 AND farm_id = $2',
-      [farmerId, farmId]
-    );
-    const briefing = await fetchFarmForecast(rows[0]).catch(() => null);
+    const briefing = await loadFarmForecast(farmerId, farmId);
     if (!briefing) return res.status(503).json({ error: 'forecast_unavailable' });
 
     const briefingId = randomUUID();
