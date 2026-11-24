@@ -40,6 +40,7 @@ router.get('/:farmId', async (req: FarmerRequest, res, next) => {
     return res.json({
       briefing_id: briefingId,
       location: briefing.location,
+      timezone: briefing.timezone,
       checked_at: briefing.checked_at,
       peak_time: briefing.peak_time,
       probability: briefing.probability,
@@ -91,8 +92,9 @@ router.put('/:farmId/rain', async (req: FarmerRequest, res, next) => {
        SET rain_observed = $1, observed_at = NOW()
        WHERE briefing_id = $2 AND farmer_id = $3 AND farm_id = $4
          AND briefing->>'location' = 'farm'
-         AND (briefing->>'checked_at')::timestamptz AT TIME ZONE 'Africa/Harare' >=
-             DATE_TRUNC('day', NOW() AT TIME ZONE 'Africa/Harare')`,
+         AND ((briefing->>'checked_at')::timestamptz AT TIME ZONE
+              COALESCE(briefing->>'timezone', 'Africa/Harare'))::date =
+             (NOW() AT TIME ZONE COALESCE(briefing->>'timezone', 'Africa/Harare'))::date`,
       [rain_observed, briefing_id, req.farmer!.farmer_id, req.params.farmId]
     );
     return result.rowCount ? res.sendStatus(204) : res.status(404).json({ error: 'briefing_not_found' });

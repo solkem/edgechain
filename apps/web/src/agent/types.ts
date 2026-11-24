@@ -658,6 +658,7 @@ export interface PhysicalBindingResult {
 export interface FarmForecastBriefing {
   briefing_id: string;
   location: 'farm' | 'odzi';
+  timezone: string;
   checked_at: string;
   peak_time: number;
   probability: number;
