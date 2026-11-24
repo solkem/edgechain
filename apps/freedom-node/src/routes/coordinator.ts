@@ -57,6 +57,7 @@ router.patch('/farmers/:farmerId', async (req: FarmerRequest, res) => {
       preferredLanguage: req.body.preferred_language,
       status: req.body.status,
       farmDisplayName: req.body.farm_display_name,
+      scheduleHourLocal: req.body.schedule_hour_local,
       coordinatorId: req.farmer!.farmer_id,
     });
     return res.json({ success: true, farmer });

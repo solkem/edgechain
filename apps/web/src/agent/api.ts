@@ -277,6 +277,7 @@ export async function updateCoordinatorFarmer(input: {
   preferredLanguage: 'en' | 'sn' | 'sn-en';
   status: 'active' | 'suspended' | 'withdrawn';
   farmDisplayName: string;
+  scheduleHourLocal?: number;
 }): Promise<CoordinatorFarmer> {
   const response = await request(
     `/api/v1/coordinator/farmers/${encodeURIComponent(input.farmerId)}`,
@@ -287,6 +288,7 @@ export async function updateCoordinatorFarmer(input: {
         preferred_language: input.preferredLanguage,
         status: input.status,
         farm_display_name: input.farmDisplayName,
+        schedule_hour_local: input.scheduleHourLocal,
       }),
     }
   );

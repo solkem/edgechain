@@ -230,7 +230,7 @@ export function VirtualNdani({
           <OperationalCard
             label="Today’s pilot check"
             value={device.due_at ? formatDue(device.due_at) : 'Available now'}
-            note="One meaningful human check—not 48 manual prompts."
+            note="One manual check per day · Zimbabwe time"
           />
           <OperationalCard
             label="Completed checks"
@@ -469,6 +469,7 @@ function OperationalCard({
 
 function formatDue(epoch: number): string {
   return new Date(epoch * 1000).toLocaleString([], {
+    timeZone: 'Africa/Harare',
     weekday: 'short',
     hour: '2-digit',
     minute: '2-digit',

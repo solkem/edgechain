@@ -59,6 +59,7 @@ export interface CoordinatorFarmer {
   virtual_device_id: string | null;
   device_code: string | null;
   device_status: string | null;
+  schedule_hour_local: number | null;
   last_used_at: number | null;
   failed_attempts: number;
   locked_until: number | null;
