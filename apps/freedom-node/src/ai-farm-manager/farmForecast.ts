@@ -22,22 +22,22 @@ export function parseForecastLocation(input: Record<string, unknown>): ForecastL
   };
 }
 
-export async function loadFarmForecast(farmerId: string, farmId: string) {
+export async function loadFarmForecast(farmerId: string, farmId: string, days: 1 | 2 = 1) {
   const { rows } = await db.query(
     'SELECT latitude, longitude FROM farm_forecast_locations WHERE farmer_id = $1 AND farm_id = $2',
     [farmerId, farmId]
   );
-  return fetchFarmForecast(rows[0]).catch(() => null);
+  return fetchFarmForecast(rows[0], days).catch(() => null);
 }
 
-export async function fetchFarmForecast(location: ForecastLocation | undefined) {
+export async function fetchFarmForecast(location: ForecastLocation | undefined, days: 1 | 2 = 1) {
   const { latitude, longitude } = location ?? ODZI;
   const url = new URL('https://api.open-meteo.com/v1/forecast');
   url.search = new URLSearchParams({
     latitude: String(latitude),
     longitude: String(longitude),
     hourly: 'precipitation_probability',
-    forecast_days: '1',
+    forecast_days: String(days),
     timezone: location ? 'auto' : ODZI_TIME_ZONE,
     timeformat: 'unixtime',
   }).toString();
@@ -61,14 +61,15 @@ export async function fetchFarmForecast(location: ForecastLocation | undefined) 
   const today = localDate.format(checkedAt);
   const currentHour = Math.floor(checkedAt.getTime() / 3600000) * 3600;
   const hours: { time: number; probability: number }[] = [];
+  const followingHours: typeof hours = [];
   for (let index = 0; index < hourly.time.length; index += 1) {
     const time = hourly.time[index];
     const probability = hourly.precipitation_probability[index];
     if (typeof time === 'number' && Number.isFinite(time) && time >= currentHour
-      && localDate.format(time * 1000) === today
       && typeof probability === 'number' && Number.isFinite(probability)
       && probability >= 0 && probability <= 100) {
-      hours.push({ time, probability });
+      const dayHours = localDate.format(time * 1000) === today ? hours : followingHours;
+      dayHours.push({ time, probability });
     }
   }
   if (!hours.length) throw new Error('Weather provider returned no remaining hours');
@@ -82,5 +83,6 @@ export async function fetchFarmForecast(location: ForecastLocation | undefined) 
     peak_time: peak.time,
     probability: peak.probability,
     hours,
+    following_hours: followingHours,
   };
 }
