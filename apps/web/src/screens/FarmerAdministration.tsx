@@ -230,6 +230,7 @@ function FarmerCard({
     preferredLanguage: 'en' | 'sn' | 'sn-en';
     status: 'active' | 'suspended' | 'withdrawn';
     farmDisplayName: string;
+    scheduleHourLocal?: number;
   }) => Promise<void>;
   onResetPin: (pin: string) => Promise<void>;
   onDelete: () => Promise<void>;
@@ -239,6 +240,7 @@ function FarmerCard({
   const [farmDisplayName, setFarmDisplayName] = useState(farmer.farm_display_name || '');
   const [preferredLanguage, setPreferredLanguage] = useState(farmer.preferred_language);
   const [status, setStatus] = useState(farmer.status);
+  const [scheduleHour, setScheduleHour] = useState<number | undefined>();
   const [pin, setPin] = useState('');
 
   return (
@@ -285,6 +287,24 @@ function FarmerCard({
                 <option value="en">English</option>
               </select>
             </Field>
+            {farmer.schedule_hour_local != null && (
+              <Field label="Daily check time (Zimbabwe)">
+                <select
+                  value={scheduleHour ?? farmer.schedule_hour_local}
+                  onChange={(event) => setScheduleHour(Number(event.target.value))}
+                  className="input"
+                >
+                  {Array.from({ length: 24 }, (_, hour) => (
+                    <option key={hour} value={hour}>
+                      {String(hour).padStart(2, '0')}:00
+                    </option>
+                  ))}
+                </select>
+                <span className="mt-1 block text-xs text-gray-600">
+                  Applies to newly scheduled checks.
+                </span>
+              </Field>
+            )}
             <Field label="Account status">
               <select value={status} onChange={(event) => setStatus(event.target.value as typeof status)} className="input">
                 <option value="active">Active</option>
@@ -296,7 +316,10 @@ function FarmerCard({
           <button
             type="button"
             disabled={working}
-            onClick={() => void onSave({ displayName, farmDisplayName, preferredLanguage, status })}
+            onClick={() => void onSave({
+              displayName, farmDisplayName, preferredLanguage, status,
+              scheduleHourLocal: scheduleHour === farmer.schedule_hour_local ? undefined : scheduleHour,
+            })}
             className="mt-4 bg-black px-5 py-2 font-black text-white disabled:opacity-50"
           >
             Save profile

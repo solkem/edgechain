@@ -32,6 +32,7 @@ export const coordinatorAdministrationService = {
           farm.display_name AS farm_display_name,
           device.virtual_device_id,
           device.device_code,
+          device.schedule_hour_local,
           device.status AS device_status,
           credential.last_used_at,
           credential.failed_attempts,
@@ -116,6 +117,7 @@ export const coordinatorAdministrationService = {
     preferredLanguage: unknown;
     status: unknown;
     farmDisplayName: unknown;
+    scheduleHourLocal?: unknown;
     coordinatorId: string;
   }) {
     const current = await this.findFarmer(input.farmerId);
@@ -123,6 +125,10 @@ export const coordinatorAdministrationService = {
     const farmDisplayName = requiredText(input.farmDisplayName, 'farm_display_name', 120);
     const preferredLanguage = enumValue(input.preferredLanguage, LANGUAGES, 'invalid_language');
     const status = enumValue(input.status, FARMER_STATUSES, 'invalid_farmer_status');
+    const hour = input.scheduleHourLocal;
+    if (hour !== undefined && (typeof hour !== 'number' || !Number.isInteger(hour) || hour < 0 || hour > 23)) {
+      throw new CoordinatorAdministrationError('invalid_daily_check_hour', 400);
+    }
 
     const client = await db.connect();
     try {
@@ -150,6 +156,15 @@ export const coordinatorAdministrationService = {
           [farmDisplayName, status === 'active' ? 'active' : 'inactive', current.farm_id]
         );
       }
+      if (hour !== undefined) {
+        const device = await client.query(
+          'UPDATE virtual_ndani_devices SET schedule_hour_local = $1 WHERE virtual_device_id = $2',
+          [hour, current.virtual_device_id]
+        );
+        if (!device.rowCount) {
+          throw new CoordinatorAdministrationError('ndani_kit_not_found', 404);
+        }
+      }
       if (status !== 'active') {
         await client.query(
           `
@@ -165,6 +180,7 @@ export const coordinatorAdministrationService = {
         preferred_language: preferredLanguage,
         status,
         farm_display_name: farmDisplayName,
+        ...(hour === undefined ? {} : { schedule_hour_local: hour }),
       });
       await client.query('COMMIT');
     } catch (error) {
