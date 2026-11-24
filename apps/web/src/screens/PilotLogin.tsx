@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { AgentApiError } from '../agent/api';
+import { PilotInstall } from '../agent/PilotInstall';
 import { PilotBrand } from '../agent/PilotBrand';
 
 export function PilotLogin({
@@ -136,6 +137,7 @@ export function PilotLogin({
           >
             Use existing wallet access
           </button>
+          {!googleInvite && <PilotInstall />}
         </section>
       </div>
     </main>

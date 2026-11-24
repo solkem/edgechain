@@ -5,6 +5,13 @@ import { WalletProvider } from './providers/WalletProvider';
 import { ContractProvider } from './providers/ContractProvider';
 import './index.css'
 
+if (import.meta.env.PROD && import.meta.env.VITE_AGENT_ENABLED === 'true'
+  && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    void navigator.serviceWorker.register('/ndani-worker.js').catch(() => {});
+  }, { once: true });
+}
+
 const rootElement = document.getElementById('root');
 
 if (!rootElement) {
