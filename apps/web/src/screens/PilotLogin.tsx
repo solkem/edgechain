@@ -29,27 +29,13 @@ export function PilotLogin({
 
   return (
     <main className="min-h-screen bg-[#f7f7f2] px-5 py-10 flex items-center">
-      <div className="mx-auto grid w-full max-w-5xl gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-        <section className="flex flex-col justify-center">
-          <PilotBrand />
-          <p className="mb-4 text-sm font-bold uppercase tracking-[0.22em] text-blue-700">
-            <span className="mt-8 block">EdgeChain Farmer Pilot</span>
-          </p>
-          <h1 className="max-w-2xl text-5xl font-black leading-[0.98] text-black md:text-7xl">
-            Meet your farm’s Virtual Ndani Kit.
-          </h1>
-          <p className="mt-6 max-w-xl text-lg leading-relaxed text-gray-700">
-            Record today’s field conditions and see what the physical Ndani Kit
-            will collect automatically when hardware is deployed.
-          </p>
-          <div className="mt-8 border-l-4 border-blue-700 pl-5 text-gray-700">
-            You do not need a wallet to use Virtual Ndani Kit. The Farm Assistant
-            can support multiple languages, and wallet learning remains optional.
-          </div>
-        </section>
+      <div className="mx-auto w-full max-w-md">
+        <div className="mb-5">
+          <PilotBrand compact />
+        </div>
 
         <section className="border-2 border-black bg-white p-7 shadow-[10px_10px_0_#000] md:p-9">
-          <h2 className="text-3xl font-black text-black">Farmer access</h2>
+          <h1 className="text-3xl font-black text-black">Farmer access</h1>
           <p className="mt-2 text-gray-600">
             Enter the farmer number and PIN given during onboarding.
           </p>
