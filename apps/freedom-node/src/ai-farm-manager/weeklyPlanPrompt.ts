@@ -1,7 +1,7 @@
 import { FarmManagerContextPack } from './contextPackService';
 
 export const WEEKLY_PLAN_PROMPT_FAMILY = 'farm_manager_weekly_plan';
-export const WEEKLY_PLAN_PROMPT_VERSION = '1.0.0';
+export const WEEKLY_PLAN_PROMPT_VERSION = '1.1.0';
 
 export const WEEKLY_PLAN_OUTPUT_SCHEMA = {
   type: 'object',
@@ -86,7 +86,9 @@ export function buildWeeklyPlanPrompt(pack: FarmManagerContextPack): string {
     'Task:',
     'Using the Farm Manager Context Pack, create this farmer’s weekly farm manager plan.',
     'Use at least three relevant personalization facts if available.',
-    'Recommend 1 to 3 practical actions.',
+    'Recommend 1 to 3 practical actions. Tie a weather-sensitive action to a specific local date only if weekly_forecast supports it.',
+    'The daily value is the highest hourly chance of rain, not the chance of rain over the whole day or the expected amount. Distinguish an Odzi area forecast from a plot forecast. Recheck the forecast before acting.',
+    'Do not use a forecast alone to decide whether crops need water or to advise on spraying or outdoor safety.',
     'Include evidence_used entries that reference provided context IDs only.',
     'Return valid JSON only using the required schema.',
   ].join('\n');

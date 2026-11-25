@@ -12,6 +12,7 @@ import {
   farmManagerContextPackService,
 } from './contextPackService';
 import { aiFarmManagerRepository } from './repository';
+import { loadFarmForecast } from './farmForecast';
 import { weeklyPlanGateway } from './weeklyPlanGateway';
 import { WEEKLY_PLAN_PROMPT_FAMILY, WEEKLY_PLAN_PROMPT_VERSION } from './weeklyPlanPrompt';
 import {
@@ -28,6 +29,13 @@ export const aiFarmManagerWeeklyPlanService = {
 
   async createFromCheckin(checkin: WeeklyFarmCheckin): Promise<AiFarmPlan> {
     const pack = await farmManagerContextPackService.buildWeeklyPlanPack(checkin);
+    if (checkin.farm_id && checkin.farm_id === pack.farm.farm_id) {
+      const forecast = await loadFarmForecast(checkin.farmer_id, checkin.farm_id, 7).catch(() => null);
+      if (forecast) {
+        const { daily, location, timezone, checked_at } = forecast;
+        pack.weekly_forecast = { daily, location, timezone, checked_at };
+      }
+    }
     const modelResult = await weeklyPlanGateway.generate(pack);
     if (modelResult.status === 'success' && modelResult.output) {
       try {
@@ -67,7 +75,7 @@ export const aiFarmManagerWeeklyPlanService = {
           evidenceUsed: validated.evidenceUsed,
           safetyFlags: validated.safetyFlags,
           coordinatorReviewRequired: validated.coordinatorReviewRequired,
-          rawModelOutput: validated.rawOutput,
+          rawModelOutput: { ...validated.rawOutput, weekly_forecast: pack.weekly_forecast ?? null },
           validationStatus: 'valid',
         });
       } catch (error) {
@@ -118,6 +126,22 @@ function createDeterministicPlan(
     const riskLevel = checkin.risk_level ?? 'medium';
     const mainIssue = determineMainIssue(checkin, profile);
     const actions = buildRecommendedActions(checkin, profile);
+    const outlook = pack.weekly_forecast;
+    const lowerRainDay = outlook?.daily.reduce<(typeof outlook.daily)[number] | undefined>(
+      (best, day) => !best || day.peak_probability < best.peak_probability ? day : best, undefined
+    );
+    if (lowerRainDay && outlook) {
+      actions.push({
+        priority: actions.length + 1,
+        title: 'Pick a day for work that needs dry conditions',
+        action: 'Consider this day for routine outdoor work that can wait. Recheck the forecast and field conditions before starting.',
+        reason: `Lowest peak hourly rain chance in this outlook: ${lowerRainDay.peak_probability}% (${outlook.location === 'odzi' ? 'Odzi area' : 'farm location'}).`,
+        timeframe: lowerRainDay.date,
+        cost_level: 'none',
+        difficulty: 'easy',
+        shona_phrase: `Pamabasa anoda pakaoma, tarisa musi wa${lowerRainDay.date}. Wongorora fungidziro zvakare usati watanga.`,
+      });
+    }
     const missingInformation = missingInfo(checkin, profile);
     const safetyFlags = safetyFlagsFor(checkin);
 
@@ -162,6 +186,7 @@ function createDeterministicPlan(
         generator: 'deterministic',
         note: 'Pilot-safe plan generated without external LLM call.',
         context_pack_version: pack.context_pack_version,
+        weekly_forecast: pack.weekly_forecast ?? null,
       },
       validationStatus: 'valid',
     });

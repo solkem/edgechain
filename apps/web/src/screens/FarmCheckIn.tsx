@@ -217,6 +217,7 @@ export function FarmCheckIn({
                 {plan.shona_summary}
               </p>
             )}
+            <WeeklyWeather plan={plan} shona={session.farmer.preferred_language !== 'en'} />
             <ol className="mt-5 grid gap-3 md:grid-cols-2">
               {plan.recommended_actions.map((action) => (
                 <li key={`${plan.plan_id}-${action.priority}`} className="border border-black bg-white p-4">
@@ -405,6 +406,17 @@ export function FarmCheckIn({
                       <p className="mt-1 text-sm text-gray-600">
                         {riskLabel(farmPlan.risk_level)} risk · {farmPlan.recommended_actions.length} actions
                       </p>
+                      {farmPlan.plan_id !== plan?.plan_id && Boolean(farmPlan.raw_model_output?.weekly_forecast) && (
+                        <details className="mt-2">
+                          <summary className="cursor-pointer text-sm font-bold">View plan and rain outlook</summary>
+                          <WeeklyWeather plan={farmPlan} shona={session.farmer.preferred_language !== 'en'} />
+                          <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm">
+                            {farmPlan.recommended_actions.map(action => (
+                              <li key={action.priority}><strong>{action.timeframe}</strong> · {action.action}</li>
+                            ))}
+                          </ol>
+                        </details>
+                      )}
                     </li>
                   ))}
                 </ol>
@@ -414,6 +426,47 @@ export function FarmCheckIn({
         </section>
       </div>
     </main>
+  );
+}
+
+function WeeklyWeather({ plan, shona }: { plan: AiFarmPlan; shona: boolean }) {
+  const snapshot = plan.raw_model_output?.weekly_forecast as {
+    daily?: { date: string; peak_probability: number }[];
+    location?: 'odzi' | 'farm';
+    timezone?: string;
+    checked_at?: string;
+  } | null | undefined;
+  if (!snapshot?.daily?.length) {
+    return <p className="mt-3 text-sm text-gray-700">
+      {shona ? 'Hapana fungidziro yemvura yakachengetwa nehurongwa uhu.' : 'No rain outlook was available for this plan.'}
+    </p>;
+  }
+  const weekday = new Intl.DateTimeFormat(shona ? ['sn-ZW', 'en-ZW'] : 'en-ZW', {
+    timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric',
+  });
+  const checked = new Date(snapshot.checked_at ?? '').toLocaleString('en-ZW', {
+    timeZone: snapshot.timezone, dateStyle: 'medium', timeStyle: 'short',
+  });
+  return (
+    <section className="mt-4 rounded border border-[#27653a] bg-white p-3">
+      <h3 className="font-black">{shona ? 'Fungidziro yemvura yemazuva manomwe' : 'Seven-day rain outlook'}</h3>
+      <p className="mt-1 text-sm text-gray-600">
+        {snapshot.location === 'odzi' ? 'Odzi area' : 'Farm location'} · Open-Meteo · {checked} · {snapshot.timezone}
+      </p>
+      <ol className="my-3 divide-y divide-gray-200 text-sm">
+        {snapshot.daily.map(day => (
+          <li key={day.date} className="flex items-center justify-between gap-3 py-1.5">
+            <span>{weekday.format(new Date(day.date + 'T12:00:00Z'))}</span>
+            <strong>{day.peak_probability}%</strong>
+          </li>
+        ))}
+      </ol>
+      <p className="text-sm text-gray-700">
+        {shona
+          ? 'Nhamba iyi ndiyo mukana mukuru wekunaya muawa rimwe pazuva iroro. Ronga mabasa anoda pakaoma pamazuva ane mukana mudiki. Ongorora hunyoro hwevhu usati wadiridza. Tarisa fungidziro zvakare usati watanga.'
+          : 'Each number is the highest hourly rain chance for that date. Consider lower-rain days for work that needs dry conditions. Check soil moisture before irrigating and recheck the forecast before starting.'}
+      </p>
+    </section>
   );
 }
 
