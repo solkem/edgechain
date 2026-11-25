@@ -43,6 +43,7 @@ export interface FarmManagerChatContextPack {
     checked_at: string;
     peak_time_local: string;
     peak_probability_percent: number;
+    daily?: { date: string; peak_probability: number }[];
     tomorrow_peak?: { time: string; probability_percent: number };
     hourly: { local_date: string; local_time: string; probability_percent: number }[];
   } | null;
@@ -107,7 +108,7 @@ export const farmManagerChatService = {
 
     // Resolve the plot on the server for every turn so free-form questions and
     // follow-ups have weather data without relying on phrase detection.
-    const forecast = await loadFarmForecast(input.farmerId, farm.farm_id, 2);
+    const forecast = await loadFarmForecast(input.farmerId, farm.farm_id, 7);
     if (forecast) {
       const clock = new Intl.DateTimeFormat('en-ZW', {
         timeZone: forecast.timezone, hour: 'numeric', minute: '2-digit', hour12: true,
@@ -128,6 +129,7 @@ export const farmManagerChatService = {
         tomorrow_peak: tomorrowPeak && {
           time: clock.format(tomorrowPeak.time * 1000), probability_percent: tomorrowPeak.probability,
         },
+        daily: forecast.daily,
         hourly: [...forecast.hours, ...forecast.following_hours].map(hour => ({
           local_date: date.format(hour.time * 1000),
           local_time: clock.format(hour.time * 1000),
@@ -189,6 +191,19 @@ export const farmManagerChatService = {
         errorCode: modelResult.errorCode,
         contextSourceCounts: chatContextSourceCounts(pack),
       });
+    }
+    if (/\b(?:next (?:7|seven) days|7[ -]day|seven[ -]day|mazuva manomwe|mazuva 7)\b/u.test(question)) {
+      const shona = pack.farmer.preferred_language === 'sn' || /\bmazuva\b/u.test(question);
+      const base = rainReply(pack, shona, false);
+      if (forecast?.daily.length) {
+        return {
+          ...base,
+          answer: (shona ? 'Mukana mukuru wemvura pazuva rega rega' : 'Peak rain chance by day')
+            + (forecast.location === 'odzi' ? ' · Odzi' : '')
+            + '\n' + forecast.daily.map(day => `${day.date}: ${day.peak_probability}%`).join('\n')
+            + `\nOpen-Meteo · ${forecast.timezone}`,
+        };
+      }
     }
     if (needsWeatherFallback) {
       const questionInShona = /\b(?:nhasi|mangwana|kunonaya|kuchanaya|kunaya|ichanaya|nguvai|nguva|mamiriro|masikati|manheru)\b/u.test(question);

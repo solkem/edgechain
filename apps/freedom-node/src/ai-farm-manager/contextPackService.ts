@@ -1,3 +1,4 @@
+import type { loadFarmForecast } from './farmForecast';
 import { authRepository } from '../auth/authRepository';
 import {
   AiFarmPlan,
@@ -19,6 +20,8 @@ export interface FarmManagerContextPack {
     site_id: string | null;
   };
   ai_profile: FarmerAiProfile | null;
+  weekly_forecast?: Pick<NonNullable<Awaited<ReturnType<typeof loadFarmForecast>>>,
+    'daily' | 'location' | 'timezone' | 'checked_at'>;
   current_checkin: WeeklyFarmCheckin;
   recent_checkins: WeeklyFarmCheckin[];
   important_memories: FarmerAiMemory[];
@@ -86,6 +89,7 @@ export function contextSourceCounts(pack: FarmManagerContextPack): Record<string
     memory: pack.important_memories.length,
     previous_plan: pack.recent_plans.length,
     playbook: pack.agronomy_playbook_snippets.length,
+    forecast_days: pack.weekly_forecast?.daily.length ?? 0,
   };
 }
 
